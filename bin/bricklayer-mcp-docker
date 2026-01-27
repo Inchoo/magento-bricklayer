@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) Inchoo. All rights reserved.
+# See LICENSE.txt for license details.
+#
+# Magento Bricklayer MCP Server Docker Wrapper
+#
+# This script automatically detects the PHP container and runs
+# the MCP server inside it. Used by MCP clients that connect
+# via docker exec.
+#
+
+set -e
+
+# Find the PHP container
+# Looks for containers with common PHP/Magento patterns, excluding utility containers
+find_php_container() {
+    local container
+
+    # Try specific patterns first, then fall back to general patterns
+    # Exclude phpmyadmin, mysql, redis, elasticsearch, varnish, mailhog, etc.
+    container=$(docker ps --format '{{.Names}}' | grep -vE '(phpmyadmin|mysql|mariadb|redis|elastic|opensearch|varnish|mailhog|rabbitmq|database|nginx-proxy)' | grep -E '(apache-php|php-fpm|php|magento|web|app)' | head -1)
+
+    if [[ -z "$container" ]]; then
+        echo '{"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"No PHP container found. Make sure your Docker environment is running."}}' >&2
+        exit 1
+    fi
+
+    echo "$container"
+}
+
+# Get the Magento root directory inside the container
+# Defaults to /var/www/html which is standard for most setups
+MAGENTO_ROOT="${MAGENTO_ROOT:-/var/www/html}"
+
+# Find the container
+CONTAINER=$(find_php_container)
+
+# Execute the MCP server inside the container
+# -i flag enables interactive mode for stdin/stdout communication
+# -w sets the working directory to Magento root
+exec docker exec -i -w "$MAGENTO_ROOT" "$CONTAINER" php vendor/bin/bricklayer-mcp

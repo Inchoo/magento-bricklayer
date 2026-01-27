@@ -129,6 +129,29 @@ vendor/bin/bricklayer install
 # "command": "warden shell -c php vendor/bin/bricklayer-mcp"
 ```
 
+### Automatic Container Detection
+
+For Docker environments with dynamic or non-standard container names, use the `bricklayer-mcp-docker` wrapper script. This script automatically detects the PHP container at runtime:
+
+```json
+{
+    "mcpServers": {
+        "magento-bricklayer": {
+            "command": "vendor/inchoo/magento-bricklayer/bin/bricklayer-mcp-docker",
+            "args": []
+        }
+    }
+}
+```
+
+The wrapper script:
+- Automatically finds the PHP container by matching common patterns (apache-php, php-fpm, magento, web, app)
+- Excludes utility containers (phpmyadmin, redis, elasticsearch, varnish, etc.)
+- Returns a proper JSON-RPC error if no container is found
+- Supports custom Magento root via `MAGENTO_ROOT` environment variable (defaults to `/var/www/html`)
+
+This is useful when container names vary between environments or are dynamically generated (e.g., `projectname-apache-php-1`).
+
 ## MCP Tools Overview
 
 ### Application & Store Tools
