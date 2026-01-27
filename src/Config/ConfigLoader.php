@@ -1,0 +1,323 @@
+<?php
+/**
+ * Copyright (c) Inchoo. All rights reserved.
+ * See LICENSE.txt for license details.
+ */
+
+declare(strict_types=1);
+
+namespace Inchoo\MagentoBricklayer\Config;
+
+use Inchoo\MagentoBricklayer\Exception\ConfigurationException;
+
+/**
+ * Configuration Loader
+ *
+ * Loads and merges Bricklayer configuration from multiple sources:
+ * 1. Default configuration (built-in)
+ * 2. Project configuration (.bricklayer.json)
+ * 3. Environment variables (highest priority)
+ */
+class ConfigLoader
+{
+    /**
+     * Configuration file name
+     */
+    private const CONFIG_FILE = '.bricklayer.json';
+
+    /**
+     * @var EnvironmentResolver
+     */
+    private EnvironmentResolver $envResolver;
+
+    /**
+     * @var ConfigValidator
+     */
+    private ConfigValidator $validator;
+
+    /**
+     * @var array<string, mixed>|null Cached configuration
+     */
+    private ?array $config = null;
+
+    /**
+     * @var string|null The project root directory
+     */
+    private ?string $projectRoot = null;
+
+    /**
+     * @param EnvironmentResolver|null $envResolver
+     * @param ConfigValidator|null $validator
+     */
+    public function __construct(
+        ?EnvironmentResolver $envResolver = null,
+        ?ConfigValidator $validator = null
+    ) {
+        $this->envResolver = $envResolver ?? new EnvironmentResolver();
+        $this->validator = $validator ?? new ConfigValidator();
+    }
+
+    /**
+     * Load configuration
+     *
+     * @param string|null $projectRoot The project root directory
+     * @return array<string, mixed> The merged configuration
+     * @throws ConfigurationException If configuration is invalid
+     */
+    public function load(?string $projectRoot = null): array
+    {
+        if ($this->config !== null && $this->projectRoot === $projectRoot) {
+            return $this->config;
+        }
+
+        $this->projectRoot = $projectRoot;
+
+        // Start with defaults
+        $config = $this->getDefaultConfig();
+
+        // Merge project configuration if exists
+        if ($projectRoot !== null) {
+            $projectConfig = $this->loadProjectConfig($projectRoot);
+            if ($projectConfig !== null) {
+                $config = $this->mergeConfig($config, $projectConfig);
+            }
+        }
+
+        // Apply environment overrides
+        $config = $this->applyEnvironmentOverrides($config);
+
+        // Validate final configuration
+        if (!$this->validator->validate($config)) {
+            $errors = implode(', ', $this->validator->getErrors());
+            throw ConfigurationException::invalidFile(
+                $projectRoot . '/' . self::CONFIG_FILE,
+                $errors
+            );
+        }
+
+        $this->config = $config;
+        return $config;
+    }
+
+    /**
+     * Get a specific configuration value
+     *
+     * @param string $key Dot-notation key (e.g., "tools.code-runner.enabled")
+     * @param mixed $default Default value if not found
+     * @return mixed The configuration value
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        $config = $this->config ?? $this->load();
+        return $this->getNestedValue($config, $key, $default);
+    }
+
+    /**
+     * Check if a tool is enabled
+     *
+     * @param string $toolName The tool name
+     * @return bool True if enabled (default is true)
+     */
+    public function isToolEnabled(string $toolName): bool
+    {
+        return $this->get("tools.$toolName.enabled", true) === true;
+    }
+
+    /**
+     * Get tool configuration
+     *
+     * @param string $toolName The tool name
+     * @return array<string, mixed> The tool configuration
+     */
+    public function getToolConfig(string $toolName): array
+    {
+        return $this->get("tools.$toolName", []);
+    }
+
+    /**
+     * Get the default configuration
+     *
+     * @return array<string, mixed>
+     */
+    private function getDefaultConfig(): array
+    {
+        return [
+            'tools' => [
+                'code-runner' => [
+                    'enabled' => true,
+                ],
+                'database-query' => [
+                    'enabled' => true,
+                    'max_rows' => 100,
+                ],
+                'log-reader' => [
+                    'enabled' => true,
+                    'max_lines' => 500,
+                ],
+            ],
+            'guidelines' => [
+                'include' => ['core', 'modules', 'areas', 'patterns'],
+                'exclude' => [],
+            ],
+            'agents' => ['claude-code', 'cursor'],
+            'documentation' => [
+                'index_path' => '.bricklayer/docs-index',
+            ],
+        ];
+    }
+
+    /**
+     * Load project configuration from file
+     *
+     * @param string $projectRoot The project root directory
+     * @return array<string, mixed>|null The configuration or null if not found
+     * @throws ConfigurationException If file exists but is invalid
+     */
+    private function loadProjectConfig(string $projectRoot): ?array
+    {
+        $configPath = $projectRoot . '/' . self::CONFIG_FILE;
+
+        if (!file_exists($configPath)) {
+            return null;
+        }
+
+        $content = file_get_contents($configPath);
+        if ($content === false) {
+            throw ConfigurationException::invalidFile($configPath, 'Unable to read file');
+        }
+
+        $config = json_decode($content, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw ConfigurationException::invalidFile(
+                $configPath,
+                'Invalid JSON: ' . json_last_error_msg()
+            );
+        }
+
+        if (!is_array($config)) {
+            throw ConfigurationException::invalidFile(
+                $configPath,
+                'Configuration must be a JSON object'
+            );
+        }
+
+        return $config;
+    }
+
+    /**
+     * Merge two configuration arrays
+     *
+     * @param array<string, mixed> $base The base configuration
+     * @param array<string, mixed> $override The override configuration
+     * @return array<string, mixed> The merged configuration
+     */
+    private function mergeConfig(array $base, array $override): array
+    {
+        foreach ($override as $key => $value) {
+            if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
+                // Check if it's an associative array (merge) or indexed array (replace)
+                if ($this->isAssociativeArray($value) && $this->isAssociativeArray($base[$key])) {
+                    $base[$key] = $this->mergeConfig($base[$key], $value);
+                } else {
+                    $base[$key] = $value;
+                }
+            } else {
+                $base[$key] = $value;
+            }
+        }
+
+        return $base;
+    }
+
+    /**
+     * Check if an array is associative
+     *
+     * @param array<mixed> $array The array to check
+     * @return bool True if associative
+     */
+    private function isAssociativeArray(array $array): bool
+    {
+        if (empty($array)) {
+            return true;
+        }
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
+
+    /**
+     * Apply environment variable overrides
+     *
+     * @param array<string, mixed> $config The current configuration
+     * @return array<string, mixed> The configuration with overrides applied
+     */
+    private function applyEnvironmentOverrides(array $config): array
+    {
+        $envVars = $this->envResolver->getAll();
+
+        foreach ($envVars as $key => $value) {
+            $config = $this->setNestedValue($config, $key, $value);
+        }
+
+        return $config;
+    }
+
+    /**
+     * Get a nested configuration value using dot notation
+     *
+     * @param array<string, mixed> $array The configuration array
+     * @param string $key The dot-notation key
+     * @param mixed $default Default value if not found
+     * @return mixed The value or default
+     */
+    private function getNestedValue(array $array, string $key, mixed $default = null): mixed
+    {
+        $keys = explode('.', $key);
+        $value = $array;
+
+        foreach ($keys as $segment) {
+            if (!is_array($value) || !array_key_exists($segment, $value)) {
+                return $default;
+            }
+            $value = $value[$segment];
+        }
+
+        return $value;
+    }
+
+    /**
+     * Set a nested configuration value using dot notation
+     *
+     * @param array<string, mixed> $array The configuration array
+     * @param string $key The dot-notation key
+     * @param mixed $value The value to set
+     * @return array<string, mixed> The modified array
+     */
+    private function setNestedValue(array $array, string $key, mixed $value): array
+    {
+        $keys = explode('.', $key);
+        $current = &$array;
+
+        foreach ($keys as $i => $segment) {
+            if ($i === count($keys) - 1) {
+                $current[$segment] = $value;
+            } else {
+                if (!isset($current[$segment]) || !is_array($current[$segment])) {
+                    $current[$segment] = [];
+                }
+                $current = &$current[$segment];
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * Clear cached configuration
+     *
+     * @return void
+     */
+    public function clearCache(): void
+    {
+        $this->config = null;
+        $this->projectRoot = null;
+    }
+}

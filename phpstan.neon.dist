@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - vendor
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Magento classes may not be available during static analysis
+        - '#Class Magento\\[a-zA-Z0-9\\]+ not found#'
+        - '#Interface Magento\\[a-zA-Z0-9\\]+ not found#'
