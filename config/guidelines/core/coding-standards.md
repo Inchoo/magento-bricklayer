@@ -56,22 +56,6 @@ public function get(string $sku, bool $editMode = false, ?int $storeId = null): 
 - `@since` - Indicate version when feature was added
 - `@inheritdoc` - Reference parent documentation
 
-## Copyright Headers
-
-All PHP files must include a copyright header:
-
-```php
-<?php
-/**
- * Copyright © Vendor Name. All rights reserved.
- * See LICENSE.txt for license details.
- */
-
-declare(strict_types=1);
-
-namespace Vendor\Module\Model;
-```
-
 ## Error Handling
 
 ### Exception Types

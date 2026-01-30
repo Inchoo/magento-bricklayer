@@ -56,7 +56,6 @@ Generate all required files:
 Follow these requirements:
 - Use `declare(strict_types=1);` in all PHP files
 - Follow Magento 2 coding standards (PSR-12)
-- Include proper copyright headers
 - Use the correct XML schemas
 - Set appropriate composer type as "magento2-module"
 
@@ -113,7 +112,6 @@ Requirements:
 - Follow the correct plugin method naming convention ({$pluginType}Ucfirst({$targetMethod}))
 - Include PHPDoc with @param and @return annotations
 - Use constructor property promotion for any dependencies
-- Include copyright header
 PROMPT
                 ],
             ],
@@ -163,7 +161,7 @@ Requirements:
 - Extract event data properly from the observer
 - Use constructor DI for any dependencies
 - Include appropriate error handling
-- Include copyright header and PHPDoc
+- Include PHPDoc
 PROMPT
                 ],
             ],

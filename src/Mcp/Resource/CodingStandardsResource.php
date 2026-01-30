@@ -107,18 +107,6 @@ Magento 2 follows PSR-1, PSR-2, and PSR-12 coding standards with additional Mage
 - Add `@api` annotation for service contract methods
 - Add `@deprecated` for deprecated functionality
 
-## Copyright Headers
-
-All PHP files must include a copyright header:
-
-```php
-<?php
-/**
- * Copyright © Vendor Name. All rights reserved.
- * See LICENSE.txt for license details.
- */
-```
-
 ## Dependency Injection
 
 - Never use ObjectManager directly in application code

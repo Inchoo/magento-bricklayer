@@ -45,10 +45,6 @@ class CodeGenerationTools
         // registration.php
         $files['registration.php'] = <<<PHP
 <?php
-/**
- * Copyright © {$vendor}. All rights reserved.
- */
-
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;
@@ -63,11 +59,6 @@ PHP;
         // etc/module.xml
         $files['etc/module.xml'] = <<<XML
 <?xml version="1.0"?>
-<!--
-/**
- * Copyright © {$vendor}. All rights reserved.
- */
--->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
     <module name="{$moduleName}"/>

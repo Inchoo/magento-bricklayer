@@ -140,6 +140,7 @@ HELP
 
             try {
                 $compiler = new GuidelinesCompiler();
+                $envType = $detector->getEnvironmentType($magentoRoot);
 
                 // Get list of existing agent config files
                 $agentFiles = [
@@ -155,7 +156,7 @@ HELP
                 foreach ($agentFiles as $file => $agent) {
                     $filepath = $magentoRoot . '/' . $file;
                     if (file_exists($filepath)) {
-                        $content = $compiler->compile($agent);
+                        $content = $compiler->compile($agent, $envType);
                         file_put_contents($filepath, $content);
                         $regenerated[] = $file;
                     }
