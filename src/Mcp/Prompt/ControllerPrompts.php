@@ -62,7 +62,7 @@ Requirements:
 - Use ResultFactory to create responses (Page, Json, Redirect, Forward, Raw)
 - Inject dependencies via constructor
 - Add proper ACL checks if needed
-- Include copyright header and PHPDoc
+- Include PHPDoc
 
 Example URL: /{$route}/{$controllerPath}
 
@@ -124,7 +124,7 @@ Requirements:
 - Use context from parent for result factories
 - Add proper form key validation for POST requests
 - Include authorization check via _isAllowed() if custom logic needed
-- Include copyright header and PHPDoc
+- Include PHPDoc
 
 Admin controller specifics:
 - Always validate form_key for state-changing operations
