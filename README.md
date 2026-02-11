@@ -255,17 +255,23 @@ Comprehensive Magento development guidelines compiled from 20+ markdown document
 Magento coding standards reference with PSR-12 compliance and best practices.
 
 ### Skills Resource
-10+ development skills for common Magento tasks:
+17 development skills for common Magento tasks:
+- Checkout customization
 - Cron job development
 - EAV attribute development
 - GraphQL API development
+- Hyva Checkout & Magewire development
+- Hyva theme development (Alpine.js, Tailwind CSS, CSP, ViewModels)
+- Hyva UI component development (CSS layers, custom properties, Alpine.js patterns)
 - Import/Export functionality
 - Indexer development
 - Message queue implementation
+- Payment integration
 - Plugin development
 - REST API development
 - Shipping integration
 - Testing strategies
+- Theme development
 - UI component development
 
 ### Template & Reference Resources
