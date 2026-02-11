@@ -85,13 +85,8 @@ HELP
 
         $io->title('Magento Bricklayer Update');
 
-        // Detect Magento root
         $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root');
-
-        if ($magentoRoot === null) {
-            $magentoRoot = $detector->detect();
-        }
+        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
 
         if ($magentoRoot === null) {
             $io->error('Could not detect Magento installation. Please specify --magento-root option.');
@@ -104,20 +99,16 @@ HELP
 
         $hasErrors = false;
 
-        // Update documentation index
         if ($docsOnly || $updateBoth) {
             $io->section('Updating documentation index...');
 
             try {
                 $indexPath = $magentoRoot . '/.bricklayer/docs-index';
 
-                // Create index directory if it doesn't exist
                 if (!is_dir($indexPath)) {
                     mkdir($indexPath, 0755, true);
                 }
 
-                // For now, just create a placeholder
-                // In a full implementation, this would build a searchable index
                 $indexFile = $indexPath . '/index.json';
                 $indexData = [
                     'version' => '1.0.0',
@@ -136,7 +127,6 @@ HELP
             }
         }
 
-        // Regenerate configuration files
         if ($configOnly || $updateBoth) {
             $io->section('Regenerating configuration files...');
 
@@ -144,7 +134,6 @@ HELP
                 $compiler = new GuidelinesCompiler();
                 $envType = $detector->getEnvironmentType($magentoRoot);
 
-                // Get list of existing agent config files
                 $agentFiles = [
                     'CLAUDE.md' => 'claude-code',
                     '.cursorrules' => 'cursor',

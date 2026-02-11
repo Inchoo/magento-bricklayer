@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * Block and Template Prompts
- *
  * Provides MCP prompts for creating Magento blocks and templates.
  */
 class BlockPrompts
@@ -105,7 +103,6 @@ PROMPT
         string $dataSource = ''
     ): array {
         $moduleName = "{$vendor}_{$module}";
-        $namespace = "{$vendor}\\{$module}";
 
         return [
             [
@@ -164,8 +161,6 @@ PROMPT
         string $columns = 'id,name,status,created_at'
     ): array {
         $moduleName = "{$vendor}_{$module}";
-        $namespace = "{$vendor}\\{$module}";
-        $columnList = array_map('trim', explode(',', $columns));
 
         return [
             [
@@ -231,7 +226,6 @@ PROMPT
         string $fields = 'name,description,status,sort_order'
     ): array {
         $moduleName = "{$vendor}_{$module}";
-        $namespace = "{$vendor}\\{$module}";
 
         return [
             [
@@ -298,7 +292,6 @@ PROMPT
         string $description = ''
     ): array {
         $moduleName = "{$vendor}_{$module}";
-        $namespace = "{$vendor}\\{$module}";
         $patchFolder = ucfirst($patchType);
 
         return [

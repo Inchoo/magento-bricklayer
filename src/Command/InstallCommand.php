@@ -95,13 +95,8 @@ HELP
 
         $io->title('Magento Bricklayer Installation');
 
-        // Detect Magento root
         $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root');
-
-        if ($magentoRoot === null) {
-            $magentoRoot = $detector->detect();
-        }
+        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
 
         if ($magentoRoot === null) {
             $io->error('Could not detect Magento installation. Please specify --magento-root option.');

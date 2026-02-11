@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 use Mcp\Capability\Attribute\McpResource;
 
 /**
- * Skills Resource
- *
  * Provides Magento development skills documentation as MCP resources.
  */
 class SkillsResource

@@ -15,43 +15,21 @@ use Mcp\Server;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-/**
- * MCP Server Factory
- *
- * Creates and configures the MCP server using the official PHP MCP SDK.
- * Uses attribute-based discovery to find tools, resources, and prompts.
- */
 class McpServerFactory
 {
-    /**
-     * Server name
-     */
     private const SERVER_NAME = 'magento-bricklayer';
-
-    /**
-     * Server version
-     */
     private const SERVER_VERSION = '1.0.0';
 
-    /**
-     * Create the MCP server instance
-     *
-     * @param LoggerInterface|null $logger Optional logger instance
-     * @return Server The configured MCP server
-     */
     public function create(?LoggerInterface $logger = null): Server
     {
         $logger = $logger ?? new NullLogger();
 
-        // Initialize Magento bootstrap
         $this->initializeMagento($logger);
 
-        // Create container for dependency injection
         $container = new Container();
         $container->set(LoggerInterface::class, $logger);
 
-        // Build the server with discovery
-        $server = Server::builder()
+        return Server::builder()
             ->setServerInfo(self::SERVER_NAME, self::SERVER_VERSION)
             ->setLogger($logger)
             ->setContainer($container)
@@ -70,16 +48,8 @@ class McpServerFactory
                 completions: false,
             ))
             ->build();
-
-        return $server;
     }
 
-    /**
-     * Initialize Magento bootstrap
-     *
-     * @param LoggerInterface $logger
-     * @return void
-     */
     private function initializeMagento(LoggerInterface $logger): void
     {
         try {
@@ -92,11 +62,6 @@ class McpServerFactory
         }
     }
 
-    /**
-     * Get server instructions for LLM
-     *
-     * @return string
-     */
     private function getServerInstructions(): string
     {
         $magentoInfo = 'Magento installation not detected';

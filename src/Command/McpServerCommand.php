@@ -68,8 +68,6 @@ HELP
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // The actual MCP server runs via bin/bricklayer-mcp
-        // This command provides a wrapper for consistency with other commands
         $mcpServerPath = dirname(__DIR__, 2) . '/bin/bricklayer-mcp';
 
         if (!file_exists($mcpServerPath)) {

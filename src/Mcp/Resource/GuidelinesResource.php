@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 use Mcp\Capability\Attribute\McpResource;
 
 /**
- * Guidelines Resource
- *
  * Provides Magento development guidelines as MCP resources.
  */
 class GuidelinesResource

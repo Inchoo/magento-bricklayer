@@ -538,7 +538,6 @@ class CustomerTools
 
         $errors = [];
 
-        // Validate email format
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Invalid email format';
         }
@@ -549,17 +548,9 @@ class CustomerTools
             $customerRepository->get($email, $websiteId);
             $errors[] = "Customer with email $email already exists";
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            // Email is available, which is good
+            // Email is available
         } catch (\Throwable $e) {
             $errors[] = 'Error checking email: ' . $e->getMessage();
-        }
-
-        // Validate names
-        if ($firstname !== '' && strlen($firstname) < 1) {
-            $errors[] = 'First name is too short';
-        }
-        if ($lastname !== '' && strlen($lastname) < 1) {
-            $errors[] = 'Last name is too short';
         }
 
         return [

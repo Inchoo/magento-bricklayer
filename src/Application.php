@@ -13,24 +13,10 @@ use Inchoo\MagentoBricklayer\Command\InstallCommand;
 use Inchoo\MagentoBricklayer\Command\McpServerCommand;
 use Inchoo\MagentoBricklayer\Command\UpdateCommand;
 use Symfony\Component\Console\Application as ConsoleApplication;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * Magento Bricklayer CLI Application
- *
- * The main CLI application class that registers all available commands.
- */
 class Application extends ConsoleApplication
 {
-    /**
-     * Application name
-     */
     public const NAME = 'Magento Bricklayer';
-
-    /**
-     * Application version
-     */
     public const VERSION = '1.0.0';
 
     public function __construct()
@@ -39,11 +25,6 @@ class Application extends ConsoleApplication
         $this->registerCommands();
     }
 
-    /**
-     * Register all available commands
-     *
-     * @return void
-     */
     private function registerCommands(): void
     {
         $this->add(new InstallCommand());
@@ -52,11 +33,6 @@ class Application extends ConsoleApplication
         $this->add(new UpdateCommand());
     }
 
-    /**
-     * Get the application logo
-     *
-     * @return string
-     */
     public static function getLogo(): string
     {
         return <<<'LOGO'
@@ -69,19 +45,6 @@ class Application extends ConsoleApplication
 LOGO;
     }
 
-    /**
-     * @param InputInterface|null $input
-     * @param OutputInterface|null $output
-     * @return int
-     */
-    public function run(?InputInterface $input = null, ?OutputInterface $output = null): int
-    {
-        return parent::run($input, $output);
-    }
-
-    /**
-     * @return string
-     */
     public function getLongVersion(): string
     {
         return sprintf(

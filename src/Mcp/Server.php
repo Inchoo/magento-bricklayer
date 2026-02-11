@@ -9,16 +9,12 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp;
 
 /**
- * MCP Server
- *
  * @deprecated Use McpServerFactory to create MCP server instances.
  * @see McpServerFactory
  */
 class Server
 {
-    /**
-     * @deprecated Use McpServerFactory::create() instead
-     */
+    /** @deprecated Use McpServerFactory::create() instead */
     public function __construct()
     {
         trigger_error(
@@ -27,10 +23,7 @@ class Server
         );
     }
 
-    /**
-     * @return void
-     * @deprecated Use McpServerFactory::create() and run via transport
-     */
+    /** @deprecated Use McpServerFactory::create() and run via transport */
     public function run(): void
     {
         throw new \RuntimeException(

@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Config;
 use Inchoo\MagentoBricklayer\Exception\ConfigurationException;
 
 /**
- * Configuration Loader
- *
  * Loads and merges Bricklayer configuration from multiple sources:
  * 1. Default configuration (built-in)
  * 2. Project configuration (.bricklayer.json)
@@ -20,35 +18,13 @@ use Inchoo\MagentoBricklayer\Exception\ConfigurationException;
  */
 class ConfigLoader
 {
-    /**
-     * Configuration file name
-     */
     private const CONFIG_FILE = '.bricklayer.json';
 
-    /**
-     * @var EnvironmentResolver
-     */
     private EnvironmentResolver $envResolver;
-
-    /**
-     * @var ConfigValidator
-     */
     private ConfigValidator $validator;
-
-    /**
-     * @var array<string, mixed>|null Cached configuration
-     */
     private ?array $config = null;
-
-    /**
-     * @var string|null The project root directory
-     */
     private ?string $projectRoot = null;
 
-    /**
-     * @param EnvironmentResolver|null $envResolver
-     * @param ConfigValidator|null $validator
-     */
     public function __construct(
         ?EnvironmentResolver $envResolver = null,
         ?ConfigValidator $validator = null
@@ -58,11 +34,8 @@ class ConfigLoader
     }
 
     /**
-     * Load configuration
-     *
-     * @param string|null $projectRoot The project root directory
-     * @return array<string, mixed> The merged configuration
-     * @throws ConfigurationException If configuration is invalid
+     * @return array<string, mixed>
+     * @throws ConfigurationException
      */
     public function load(?string $projectRoot = null): array
     {
@@ -100,11 +73,7 @@ class ConfigLoader
     }
 
     /**
-     * Get a specific configuration value
-     *
-     * @param string $key Dot-notation key (e.g., "tools.code-runner.enabled")
-     * @param mixed $default Default value if not found
-     * @return mixed The configuration value
+     * Get a specific configuration value using dot-notation (e.g., "tools.code-runner.enabled").
      */
     public function get(string $key, mixed $default = null): mixed
     {
@@ -112,22 +81,13 @@ class ConfigLoader
         return $this->getNestedValue($config, $key, $default);
     }
 
-    /**
-     * Check if a tool is enabled
-     *
-     * @param string $toolName The tool name
-     * @return bool True if enabled (default is true)
-     */
     public function isToolEnabled(string $toolName): bool
     {
         return $this->get("tools.$toolName.enabled", true) === true;
     }
 
     /**
-     * Get tool configuration
-     *
-     * @param string $toolName The tool name
-     * @return array<string, mixed> The tool configuration
+     * @return array<string, mixed>
      */
     public function getToolConfig(string $toolName): array
     {
@@ -135,8 +95,6 @@ class ConfigLoader
     }
 
     /**
-     * Get the default configuration
-     *
      * @return array<string, mixed>
      */
     private function getDefaultConfig(): array
@@ -169,11 +127,8 @@ class ConfigLoader
     }
 
     /**
-     * Load project configuration from file
-     *
-     * @param string $projectRoot The project root directory
-     * @return array<string, mixed>|null The configuration or null if not found
-     * @throws ConfigurationException If file exists but is invalid
+     * @return array<string, mixed>|null
+     * @throws ConfigurationException
      */
     private function loadProjectConfig(string $projectRoot): ?array
     {
@@ -207,11 +162,9 @@ class ConfigLoader
     }
 
     /**
-     * Merge two configuration arrays
-     *
-     * @param array<string, mixed> $base The base configuration
-     * @param array<string, mixed> $override The override configuration
-     * @return array<string, mixed> The merged configuration
+     * @param array<string, mixed> $base
+     * @param array<string, mixed> $override
+     * @return array<string, mixed>
      */
     private function mergeConfig(array $base, array $override): array
     {
@@ -231,12 +184,6 @@ class ConfigLoader
         return $base;
     }
 
-    /**
-     * Check if an array is associative
-     *
-     * @param array<mixed> $array The array to check
-     * @return bool True if associative
-     */
     private function isAssociativeArray(array $array): bool
     {
         if (empty($array)) {
@@ -246,10 +193,8 @@ class ConfigLoader
     }
 
     /**
-     * Apply environment variable overrides
-     *
-     * @param array<string, mixed> $config The current configuration
-     * @return array<string, mixed> The configuration with overrides applied
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
      */
     private function applyEnvironmentOverrides(array $config): array
     {

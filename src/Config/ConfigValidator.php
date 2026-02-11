@@ -8,18 +8,8 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Config;
 
-use Inchoo\MagentoBricklayer\Exception\ConfigurationException;
-
-/**
- * Configuration Validator
- *
- * Validates Bricklayer configuration against the expected schema.
- */
 class ConfigValidator
 {
-    /**
-     * Known tool names
-     */
     private const KNOWN_TOOLS = [
         'application-info',
         'module-list',
@@ -74,9 +64,6 @@ class ConfigValidator
         'search-docs',
     ];
 
-    /**
-     * Known agent types
-     */
     private const KNOWN_AGENTS = [
         'claude-code',
         'cursor',
@@ -85,9 +72,6 @@ class ConfigValidator
         'gemini',
     ];
 
-    /**
-     * Known guideline categories
-     */
     private const KNOWN_GUIDELINE_CATEGORIES = [
         'core',
         'modules',
@@ -97,21 +81,14 @@ class ConfigValidator
         'ecosystem',
     ];
 
-    /**
-     * @var array<string> Validation errors
-     */
+    /** @var array<string> */
     private array $errors = [];
 
-    /**
-     * @var array<string> Validation warnings
-     */
+    /** @var array<string> */
     private array $warnings = [];
 
     /**
-     * Validate configuration array
-     *
-     * @param array<string, mixed> $config The configuration to validate
-     * @return bool True if valid, false otherwise
+     * @param array<string, mixed> $config
      */
     public function validate(array $config): bool
     {
@@ -126,36 +103,22 @@ class ConfigValidator
         return empty($this->errors);
     }
 
-    /**
-     * Get validation errors
-     *
-     * @return array<string>
-     */
+    /** @return array<string> */
     public function getErrors(): array
     {
         return $this->errors;
     }
 
-    /**
-     * Get validation warnings
-     *
-     * @return array<string>
-     */
+    /** @return array<string> */
     public function getWarnings(): array
     {
         return $this->warnings;
     }
 
-    /**
-     * Validate tools configuration
-     *
-     * @param mixed $tools The tools configuration
-     * @return void
-     */
     private function validateTools(mixed $tools): void
     {
         if (!is_array($tools)) {
-            if ($tools !== null && $tools !== []) {
+            if ($tools !== null) {
                 $this->errors[] = "Configuration 'tools' must be an array";
             }
             return;
@@ -181,20 +144,14 @@ class ConfigValidator
     }
 
     /**
-     * Validate individual tool configuration
-     *
-     * @param string $toolName The tool name
-     * @param array<string, mixed> $config The tool configuration
-     * @return void
+     * @param array<string, mixed> $config
      */
     private function validateToolConfig(string $toolName, array $config): void
     {
-        // Validate 'enabled' option
         if (isset($config['enabled']) && !is_bool($config['enabled'])) {
             $this->errors[] = "Tool '$toolName' 'enabled' option must be a boolean";
         }
 
-        // Tool-specific validations
         if ($toolName === 'database-query') {
             if (isset($config['max_rows'])) {
                 if (!is_int($config['max_rows']) || $config['max_rows'] < 1) {
@@ -215,22 +172,15 @@ class ConfigValidator
         }
     }
 
-    /**
-     * Validate guidelines configuration
-     *
-     * @param mixed $guidelines The guidelines configuration
-     * @return void
-     */
     private function validateGuidelines(mixed $guidelines): void
     {
         if (!is_array($guidelines)) {
-            if ($guidelines !== null && $guidelines !== []) {
+            if ($guidelines !== null) {
                 $this->errors[] = "Configuration 'guidelines' must be an array";
             }
             return;
         }
 
-        // Validate 'include'
         if (isset($guidelines['include'])) {
             if (!is_array($guidelines['include'])) {
                 $this->errors[] = "Guidelines 'include' must be an array";
@@ -248,7 +198,6 @@ class ConfigValidator
             }
         }
 
-        // Validate 'exclude'
         if (isset($guidelines['exclude'])) {
             if (!is_array($guidelines['exclude'])) {
                 $this->errors[] = "Guidelines 'exclude' must be an array";
@@ -262,16 +211,10 @@ class ConfigValidator
         }
     }
 
-    /**
-     * Validate agents configuration
-     *
-     * @param mixed $agents The agents configuration
-     * @return void
-     */
     private function validateAgents(mixed $agents): void
     {
         if (!is_array($agents)) {
-            if ($agents !== null && $agents !== []) {
+            if ($agents !== null) {
                 $this->errors[] = "Configuration 'agents' must be an array";
             }
             return;
@@ -289,16 +232,10 @@ class ConfigValidator
         }
     }
 
-    /**
-     * Validate documentation configuration
-     *
-     * @param mixed $documentation The documentation configuration
-     * @return void
-     */
     private function validateDocumentation(mixed $documentation): void
     {
         if (!is_array($documentation)) {
-            if ($documentation !== null && $documentation !== []) {
+            if ($documentation !== null) {
                 $this->errors[] = "Configuration 'documentation' must be an array";
             }
             return;
@@ -311,21 +248,13 @@ class ConfigValidator
         }
     }
 
-    /**
-     * Get list of known tools
-     *
-     * @return array<string>
-     */
+    /** @return array<string> */
     public static function getKnownTools(): array
     {
         return self::KNOWN_TOOLS;
     }
 
-    /**
-     * Get list of known agents
-     *
-     * @return array<string>
-     */
+    /** @return array<string> */
     public static function getKnownAgents(): array
     {
         return self::KNOWN_AGENTS;

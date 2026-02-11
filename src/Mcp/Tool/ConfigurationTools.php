@@ -208,17 +208,11 @@ class ConfigurationTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
-        try {
-            // This is a simplified implementation
-            // Full implementation would parse all events.xml files
-            return [
-                'area' => $area,
-                'filter' => $eventName,
-                'message' => 'Event list requires parsing events.xml files. Use module-structure tool to inspect specific module configuration.',
-            ];
-        } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
-        }
+        return [
+            'area' => $area,
+            'filter' => $eventName,
+            'message' => 'Event list requires parsing events.xml files. Use module-structure tool to inspect specific module configuration.',
+        ];
     }
 
     /**
@@ -382,19 +376,9 @@ class ConfigurationTools
      */
     private function maskSensitiveArray(array $array): array
     {
-        $sensitiveKeys = ['password', 'key', 'secret', 'token', 'api_key', 'private'];
-
         $result = [];
         foreach ($array as $key => $value) {
-            $isSensitive = false;
-            foreach ($sensitiveKeys as $sensitiveKey) {
-                if (stripos($key, $sensitiveKey) !== false) {
-                    $isSensitive = true;
-                    break;
-                }
-            }
-
-            if ($isSensitive && is_string($value) && strlen($value) > 0) {
+            if ($this->isSensitiveKey((string) $key) && is_string($value) && $value !== '') {
                 $result[$key] = '***MASKED***';
             } elseif (is_array($value)) {
                 $result[$key] = $this->maskSensitiveArray($value);
@@ -404,6 +388,21 @@ class ConfigurationTools
         }
 
         return $result;
+    }
+
+    /**
+     * Check if an array key matches any sensitive keyword
+     */
+    private function isSensitiveKey(string $key): bool
+    {
+        $sensitiveKeywords = ['password', 'key', 'secret', 'token', 'api_key', 'private'];
+
+        foreach ($sensitiveKeywords as $keyword) {
+            if (stripos($key, $keyword) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

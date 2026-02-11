@@ -221,12 +221,8 @@ class LogTools
 
                 // Extract exception class
                 $message = $parsed['message'] ?? '';
-                if (preg_match('/^([\w\\\\]+Exception):/', $message, $matches)) {
-                    $exceptionClass = $matches[1];
-                    if (!isset($errorTypes[$exceptionClass])) {
-                        $errorTypes[$exceptionClass] = 0;
-                    }
-                    $errorTypes[$exceptionClass]++;
+                if (preg_match('/^([\w\\\\]+(?:Exception|Error)):/', $message, $matches)) {
+                    $errorTypes[$matches[1]] = ($errorTypes[$matches[1]] ?? 0) + 1;
                 }
 
                 $recentErrors[] = $parsed;

@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * Catalog Prompts
- *
  * Provides MCP prompts for catalog operations (products, categories).
  */
 class CatalogPrompts

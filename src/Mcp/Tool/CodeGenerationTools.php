@@ -11,21 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Code Generation Tools
- *
- * Provides MCP tools for generating Magento 2 code scaffolding.
- */
 class CodeGenerationTools
 {
-    /**
-     * Scaffolds a new Magento 2 module.
-     *
-     * @param string $vendor Vendor name (e.g., "Acme")
-     * @param string $module Module name (e.g., "CustomFeature")
-     * @param string $version Module version (default: "1.0.0")
-     * @return array<string, mixed> Generated module files
-     */
     #[McpTool(
         name: 'generate-module',
         description: 'Scaffolds a new Magento 2 module with required files'
@@ -42,7 +29,6 @@ class CodeGenerationTools
 
         $files = [];
 
-        // registration.php
         $files['registration.php'] = <<<PHP
 <?php
 
@@ -57,7 +43,6 @@ ComponentRegistrar::register(
 );
 PHP;
 
-        // etc/module.xml
         $files['etc/module.xml'] = <<<XML
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -66,7 +51,6 @@ PHP;
 </config>
 XML;
 
-        // composer.json
         $composerJson = [
             'name' => "{$vendorLower}/module-{$moduleLower}",
             'description' => "Magento 2 {$module} module by {$vendor}",
@@ -91,16 +75,6 @@ XML;
         ];
     }
 
-    /**
-     * Creates model, resource model, and collection classes.
-     *
-     * @param string $vendor Vendor name
-     * @param string $module Module name
-     * @param string $entity Entity name (e.g., "Post")
-     * @param string $table Database table name
-     * @param string $fields Comma-separated field names (e.g., "title,content,status")
-     * @return array<string, mixed> Generated model files
-     */
     #[McpTool(
         name: 'generate-model',
         description: 'Creates model, resource model, and collection for an entity'
@@ -122,8 +96,6 @@ XML;
         $fieldList = $fields !== '' ? array_map('trim', explode(',', $fields)) : [];
 
         $files = [];
-
-        // Model class
         $gettersSetters = '';
         foreach ($fieldList as $field) {
             $methodName = str_replace('_', '', ucwords($field, '_'));
@@ -171,7 +143,6 @@ class {$entity} extends AbstractModel
 }
 PHP;
 
-        // Resource Model class
         $files["Model/ResourceModel/{$entity}.php"] = <<<PHP
 <?php
 
@@ -193,7 +164,6 @@ class {$entity} extends AbstractDb
 }
 PHP;
 
-        // Collection class
         $files["Model/ResourceModel/{$entity}/Collection.php"] = <<<PHP
 <?php
 
@@ -232,16 +202,6 @@ PHP;
         ];
     }
 
-    /**
-     * Creates a controller with optional layout and template.
-     *
-     * @param string $vendor Vendor name
-     * @param string $module Module name
-     * @param string $area Area (frontend or adminhtml)
-     * @param string $route Route name (e.g., "custom")
-     * @param string $action Action name (e.g., "index")
-     * @return array<string, mixed> Generated controller files
-     */
     #[McpTool(
         name: 'generate-controller',
         description: 'Creates a controller with layout and template files'
@@ -263,8 +223,6 @@ PHP;
         $routeLower = strtolower($route);
 
         $files = [];
-
-        // Determine controller path based on area
         $controllerPath = $area === 'adminhtml' ? 'Controller/Adminhtml' : 'Controller';
         $baseClass = $area === 'adminhtml'
             ? 'Magento\Backend\App\Action'
@@ -273,7 +231,6 @@ PHP;
             ? 'Magento\Backend\App\Action\Context'
             : 'Magento\Framework\App\Action\Context';
 
-        // Controller class
         $files["{$controllerPath}/{$actionClass}/Index.php"] = <<<PHP
 <?php
 
@@ -311,7 +268,6 @@ class Index extends Action
 }
 PHP;
 
-        // routes.xml
         $routerType = $area === 'adminhtml' ? 'admin' : 'standard';
         $routesFile = $area === 'adminhtml' ? 'etc/adminhtml/routes.xml' : 'etc/frontend/routes.xml';
 
@@ -327,7 +283,6 @@ PHP;
 </config>
 XML;
 
-        // Layout XML
         $layoutFile = $area === 'adminhtml'
             ? "view/adminhtml/layout/{$routeLower}_{$action}_index.xml"
             : "view/frontend/layout/{$routeLower}_{$action}_index.xml";
@@ -346,7 +301,6 @@ XML;
 </page>
 XML;
 
-        // Template file
         $templateFile = $area === 'adminhtml'
             ? "view/adminhtml/templates/{$action}/content.phtml"
             : "view/frontend/templates/{$action}/content.phtml";
@@ -375,16 +329,6 @@ PHTML;
         ];
     }
 
-    /**
-     * Creates REST API endpoint.
-     *
-     * @param string $vendor Vendor name
-     * @param string $module Module name
-     * @param string $resource Resource name (e.g., "post")
-     * @param string $method HTTP method (GET, POST, PUT, DELETE)
-     * @param string $path API path (e.g., "/V1/posts/:id")
-     * @return array<string, mixed> Generated API files
-     */
     #[McpTool(
         name: 'generate-api',
         description: 'Creates a REST API endpoint with interface and implementation'
@@ -412,7 +356,6 @@ PHTML;
 
         $files = [];
 
-        // Service interface
         $files["Api/{$resourceClass}ManagementInterface.php"] = <<<PHP
 <?php
 
@@ -460,7 +403,6 @@ interface {$resourceClass}ManagementInterface
 }
 PHP;
 
-        // Service implementation
         $files["Model/{$resourceClass}Management.php"] = <<<PHP
 <?php
 
@@ -509,7 +451,6 @@ class {$resourceClass}Management implements {$resourceClass}ManagementInterface
 }
 PHP;
 
-        // di.xml for preference
         $files['etc/di.xml'] = <<<XML
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -519,7 +460,6 @@ PHP;
 </config>
 XML;
 
-        // webapi.xml
         $files['etc/webapi.xml'] = <<<XML
 <?xml version="1.0"?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

@@ -9,8 +9,6 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 
 /**
- * File Loader Trait
- *
  * Provides common file loading functionality for MCP resources.
  */
 trait FileLoaderTrait

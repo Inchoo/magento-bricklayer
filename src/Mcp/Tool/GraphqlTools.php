@@ -11,20 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * GraphQL Tools
- *
- * Provides MCP tools for inspecting Magento GraphQL schema and resolvers.
- */
 class GraphqlTools
 {
-    /**
-     * Returns GraphQL schema types.
-     *
-     * @param string $typeName Filter by type name pattern (optional)
-     * @param string $kind Filter by type kind (OBJECT, INPUT_OBJECT, ENUM, INTERFACE, SCALAR)
-     * @return array<string, mixed> Schema types
-     */
     #[McpTool(
         name: 'graphql-types',
         description: 'Lists GraphQL schema types registered in Magento'
@@ -42,14 +30,12 @@ class GraphqlTools
 
             $types = [];
             foreach ($typeMap as $name => $type) {
-                // Skip internal types
                 if (str_starts_with($name, '__')) {
                     continue;
                 }
 
                 $typeKind = $this->getTypeKind($type);
 
-                // Apply filters
                 if ($typeName !== '' && stripos($name, $typeName) === false) {
                     continue;
                 }
@@ -63,23 +49,13 @@ class GraphqlTools
                     'description' => method_exists($type, 'getDescription') ? $type->getDescription() : null,
                 ];
 
-                // Add fields for object types
                 if (method_exists($type, 'getFields')) {
-                    $fields = [];
-                    foreach ($type->getFields() as $fieldName => $field) {
-                        $fields[] = [
-                            'name' => $fieldName,
-                            'type' => (string) $field->getType(),
-                            'description' => $field->getDescription(),
-                        ];
-                    }
-                    $typeInfo['field_count'] = count($fields);
+                    $typeInfo['field_count'] = count($type->getFields());
                 }
 
                 $types[] = $typeInfo;
             }
 
-            // Sort by name
             usort($types, fn($a, $b) => strcmp($a['name'], $b['name']));
 
             return [
@@ -93,12 +69,6 @@ class GraphqlTools
         }
     }
 
-    /**
-     * Returns details about a specific GraphQL type.
-     *
-     * @param string $typeName The exact type name
-     * @return array<string, mixed> Type details with fields
-     */
     #[McpTool(
         name: 'graphql-type-info',
         description: 'Returns detailed information about a specific GraphQL type'
@@ -124,7 +94,6 @@ class GraphqlTools
                 'description' => method_exists($type, 'getDescription') ? $type->getDescription() : null,
             ];
 
-            // Add fields for object types
             if (method_exists($type, 'getFields')) {
                 $fields = [];
                 foreach ($type->getFields() as $fieldName => $field) {
@@ -134,7 +103,6 @@ class GraphqlTools
                         'description' => $field->getDescription(),
                     ];
 
-                    // Add arguments
                     $args = $field->getArgs();
                     if (!empty($args)) {
                         $fieldInfo['arguments'] = [];
@@ -152,7 +120,6 @@ class GraphqlTools
                 $typeInfo['fields'] = $fields;
             }
 
-            // Add values for enum types
             if (method_exists($type, 'getValues')) {
                 $values = [];
                 foreach ($type->getValues() as $value) {
@@ -165,7 +132,6 @@ class GraphqlTools
                 $typeInfo['values'] = $values;
             }
 
-            // Add interfaces for object types
             if (method_exists($type, 'getInterfaces')) {
                 $interfaces = [];
                 foreach ($type->getInterfaces() as $interface) {
@@ -180,11 +146,6 @@ class GraphqlTools
         }
     }
 
-    /**
-     * Lists GraphQL queries available.
-     *
-     * @return array<string, mixed> List of queries
-     */
     #[McpTool(
         name: 'graphql-queries',
         description: 'Lists all GraphQL queries available in the schema'
@@ -234,11 +195,6 @@ class GraphqlTools
         }
     }
 
-    /**
-     * Lists GraphQL mutations available.
-     *
-     * @return array<string, mixed> List of mutations
-     */
     #[McpTool(
         name: 'graphql-mutations',
         description: 'Lists all GraphQL mutations available in the schema'
@@ -287,12 +243,6 @@ class GraphqlTools
         }
     }
 
-    /**
-     * Lists GraphQL resolvers registered in the system.
-     *
-     * @param string $typeName Filter by type name
-     * @return array<string, mixed> List of resolvers
-     */
     #[McpTool(
         name: 'graphql-resolvers',
         description: 'Lists GraphQL resolvers registered for types'
@@ -304,11 +254,6 @@ class GraphqlTools
         }
 
         try {
-            // Get resolver configuration from the reader
-            $resolverConfig = MagentoBootstrap::get(\Magento\Framework\GraphQl\Config\ConfigElementFactoryInterface::class);
-
-            // This is a simplified implementation - full implementation would
-            // parse schema_graphqls.xml files from all modules
             return [
                 'message' => 'Use graphql-type-info to inspect specific type resolvers',
                 'note' => 'Resolver configuration is defined in etc/schema.graphqls files',
@@ -320,12 +265,6 @@ class GraphqlTools
         }
     }
 
-    /**
-     * Get the kind of a GraphQL type
-     *
-     * @param object $type
-     * @return string
-     */
     private function getTypeKind(object $type): string
     {
         $className = get_class($type);

@@ -11,19 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Order Tools
- *
- * Provides MCP tools for managing Magento orders.
- */
 class OrderTools
 {
-    /**
-     * Retrieves order data by ID or increment ID.
-     *
-     * @param string $incrementId Order increment ID (e.g., "000000001")
-     * @return array<string, mixed> Order data
-     */
     #[McpTool(
         name: 'order-get',
         description: 'Retrieves order data by increment ID'
@@ -59,16 +48,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Lists orders with filtering and pagination.
-     *
-     * @param int $pageSize Number of results per page
-     * @param int $currentPage Current page number
-     * @param string $status Filter by order status
-     * @param string $sortField Field to sort by
-     * @param string $sortDir Sort direction (ASC or DESC)
-     * @return array<string, mixed> List of orders
-     */
     #[McpTool(
         name: 'order-list',
         description: 'Lists orders with pagination, sorting, and optional status filter'
@@ -118,15 +97,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Adds a comment to order history.
-     *
-     * @param int $orderId Order entity ID
-     * @param string $comment Comment text
-     * @param string $status New status (optional)
-     * @param bool $notifyCustomer Whether to notify customer
-     * @return array<string, mixed> Result
-     */
     #[McpTool(
         name: 'order-add-comment',
         description: 'Adds a comment to order history'
@@ -171,12 +141,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Cancels an order.
-     *
-     * @param int $orderId Order entity ID
-     * @return array<string, mixed> Result
-     */
     #[McpTool(
         name: 'order-cancel',
         description: 'Cancels an order'
@@ -201,12 +165,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Places order on hold.
-     *
-     * @param int $orderId Order entity ID
-     * @return array<string, mixed> Result
-     */
     #[McpTool(
         name: 'order-hold',
         description: 'Places an order on hold'
@@ -231,12 +189,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Releases order from hold.
-     *
-     * @param int $orderId Order entity ID
-     * @return array<string, mixed> Result
-     */
     #[McpTool(
         name: 'order-unhold',
         description: 'Releases an order from hold'
@@ -261,14 +213,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Creates an invoice for an order.
-     *
-     * @param int $orderId Order entity ID
-     * @param bool $capture Whether to capture payment
-     * @param bool $notify Whether to notify customer
-     * @return array<string, mixed> Created invoice ID or error
-     */
     #[McpTool(
         name: 'invoice-create',
         description: 'Creates an invoice for an order'
@@ -294,13 +238,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Creates a shipment for an order.
-     *
-     * @param int $orderId Order entity ID
-     * @param bool $notify Whether to notify customer
-     * @return array<string, mixed> Created shipment ID or error
-     */
     #[McpTool(
         name: 'shipment-create',
         description: 'Creates a shipment for an order'
@@ -325,13 +262,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Creates a credit memo (refund) for an order.
-     *
-     * @param int $orderId Order entity ID
-     * @param bool $notify Whether to notify customer
-     * @return array<string, mixed> Created credit memo ID or error
-     */
     #[McpTool(
         name: 'creditmemo-create',
         description: 'Creates a credit memo (refund) for an order'
@@ -356,12 +286,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Returns line items for an order.
-     *
-     * @param int $orderId Order entity ID
-     * @return array<string, mixed> Order items
-     */
     #[McpTool(
         name: 'order-items',
         description: 'Returns line items for an order'
@@ -410,12 +334,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Lists order status history and comments.
-     *
-     * @param int $orderId Order entity ID
-     * @return array<string, mixed> Order comments/history
-     */
     #[McpTool(
         name: 'order-comments',
         description: 'Lists order status history and comments'
@@ -456,14 +374,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Lists invoices with filtering and pagination.
-     *
-     * @param int $pageSize Number of results per page
-     * @param int $currentPage Current page number
-     * @param int $orderId Filter by order ID (optional)
-     * @return array<string, mixed> List of invoices
-     */
     #[McpTool(
         name: 'invoice-list',
         description: 'Lists invoices with pagination'
@@ -517,14 +427,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Lists shipments with filtering and pagination.
-     *
-     * @param int $pageSize Number of results per page
-     * @param int $currentPage Current page number
-     * @param int $orderId Filter by order ID (optional)
-     * @return array<string, mixed> List of shipments
-     */
     #[McpTool(
         name: 'shipment-list',
         description: 'Lists shipments with pagination'
@@ -586,15 +488,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Adds tracking information to a shipment.
-     *
-     * @param int $shipmentId Shipment entity ID
-     * @param string $carrierCode Carrier code (e.g., "ups", "fedex", "custom")
-     * @param string $title Carrier title
-     * @param string $trackNumber Tracking number
-     * @return array<string, mixed> Created track ID or error
-     */
     #[McpTool(
         name: 'shipment-track-add',
         description: 'Adds tracking information to a shipment'
@@ -639,14 +532,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Lists credit memos with filtering and pagination.
-     *
-     * @param int $pageSize Number of results per page
-     * @param int $currentPage Current page number
-     * @param int $orderId Filter by order ID (optional)
-     * @return array<string, mixed> List of credit memos
-     */
     #[McpTool(
         name: 'creditmemo-list',
         description: 'Lists credit memos with pagination'
@@ -702,13 +587,6 @@ class OrderTools
         }
     }
 
-    /**
-     * Format order data for output
-     *
-     * @param object $order
-     * @param bool $includeItems
-     * @return array<string, mixed>
-     */
     private function formatOrderData(object $order, bool $includeItems): array
     {
         $data = [

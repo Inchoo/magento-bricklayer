@@ -10,19 +10,9 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Search Tools
- *
- * Provides semantic search capabilities for Magento documentation.
- */
 class SearchTools
 {
-    /**
-     * Documentation index organized by topic
-     */
     private const DOCUMENTATION_INDEX = [
-
-        // ===== CORE DEVELOPMENT =====
 
         'module' => [
             'keywords' => ['module', 'registration', 'composer', 'etc/module.xml', 'scaffold'],
@@ -187,8 +177,6 @@ class SearchTools
             'dev_context' => 'testing',
         ],
 
-        // ===== EXTENDED DEVELOPMENT =====
-
         'hyva-checkout' => [
             'keywords' => ['hyva checkout', 'hyvä checkout', 'magewire', 'livewire', 'hyva'],
             'topics' => [
@@ -345,8 +333,6 @@ class SearchTools
             'dev_context' => 'data-patch',
         ],
 
-        // ===== OPERATIONAL TOOL DISCOVERY =====
-
         'orders' => [
             'keywords' => ['order', 'invoice', 'shipment', 'creditmemo', 'credit memo', 'refund', 'fulfillment'],
             'topics' => [
@@ -491,13 +477,6 @@ class SearchTools
         ],
     ];
 
-    /**
-     * Searches Magento documentation based on query.
-     *
-     * @param string $query Search query
-     * @param int $limit Maximum number of results
-     * @return array<string, mixed> Search results
-     */
     #[McpTool(
         name: 'search-docs',
         description: 'Searches Magento documentation for relevant topics and guidance'
@@ -514,7 +493,6 @@ class SearchTools
         foreach (self::DOCUMENTATION_INDEX as $category => $data) {
             $score = 0;
 
-            // Check keyword matches
             foreach ($data['keywords'] as $keyword) {
                 if (str_contains($queryLower, strtolower($keyword))) {
                     $score += 10;
@@ -524,7 +502,6 @@ class SearchTools
                 }
             }
 
-            // Check topic matches
             foreach ($data['topics'] as $topic) {
                 if (str_contains(strtolower($topic), $queryLower)) {
                     $score += 3;
@@ -541,13 +518,8 @@ class SearchTools
             }
         }
 
-        // Sort by score
         usort($results, fn($a, $b) => $b['score'] <=> $a['score']);
-
-        // Limit results
         $results = array_slice($results, 0, $limit);
-
-        // Generate guidance based on top results
         $guidance = $this->generateGuidance($query, $results);
 
         return [
@@ -558,13 +530,6 @@ class SearchTools
         ];
     }
 
-    /**
-     * Generate guidance based on search results
-     *
-     * @param string $query
-     * @param array<array<string, mixed>> $results
-     * @return string
-     */
     private function generateGuidance(string $query, array $results): string
     {
         if (empty($results)) {

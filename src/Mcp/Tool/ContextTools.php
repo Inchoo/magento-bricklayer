@@ -245,15 +245,21 @@ class ContextTools
             $mapping = self::CATEGORY_MAP[$category];
             $configDir = dirname(__DIR__, 3) . '/config';
 
-            $skillsContent = $this->loadSkills($configDir, $mapping['skills']);
-            $guidelinesContent = $this->loadGuidelines($configDir, $mapping['guidelines']);
+            $loadedSkills = 0;
+            $skillsContent = $this->loadFiles(
+                $configDir . '/skills',
+                $mapping['skills'],
+                'SKILL.md',
+                $loadedSkills
+            );
 
-            $loadedSkills = count(array_filter($mapping['skills'], fn(string $name) =>
-                file_exists($configDir . '/skills/' . $name . '/SKILL.md')
-            ));
-            $loadedGuidelines = count(array_filter($mapping['guidelines'], fn(string $name) =>
-                file_exists($configDir . '/guidelines/' . $name . '.md')
-            ));
+            $loadedGuidelines = 0;
+            $guidelinesContent = $this->loadFiles(
+                $configDir . '/guidelines',
+                $mapping['guidelines'],
+                '.md',
+                $loadedGuidelines
+            );
 
             return [
                 'category' => $category,
@@ -297,53 +303,36 @@ class ContextTools
     }
 
     /**
-     * Load and compile skill files into markdown
+     * Load and compile markdown files from a base directory.
      *
-     * @param string $configDir Base config directory path
-     * @param string[] $skillNames Skill directory names
+     * For skills, suffix is 'SKILL.md' and names map to {baseDir}/{name}/SKILL.md.
+     * For guidelines, suffix is '.md' and names map to {baseDir}/{name}.md.
+     *
+     * @param string $baseDir Base directory path
+     * @param string[] $names File or directory names
+     * @param string $suffix File suffix (e.g., 'SKILL.md' or '.md')
+     * @param int &$loadedCount Reference counter for successfully loaded files
      * @return string Compiled markdown content
      */
-    private function loadSkills(string $configDir, array $skillNames): string
+    private function loadFiles(string $baseDir, array $names, string $suffix, int &$loadedCount): string
     {
-        if (empty($skillNames)) {
+        if (empty($names)) {
             return '';
         }
 
+        $isSkill = $suffix === 'SKILL.md';
         $sections = [];
-        foreach ($skillNames as $skillName) {
-            $filePath = $configDir . '/skills/' . $skillName . '/SKILL.md';
-            if (file_exists($filePath)) {
-                $content = file_get_contents($filePath);
-                if ($content !== false) {
-                    $sections[] = "<!-- source: skills/$skillName/SKILL.md -->\n\n$content";
-                }
-            }
-        }
 
-        return implode("\n\n---\n\n", $sections);
-    }
+        foreach ($names as $name) {
+            $filePath = $isSkill
+                ? $baseDir . '/' . $name . '/SKILL.md'
+                : $baseDir . '/' . $name . '.md';
 
-    /**
-     * Load and compile guideline files into markdown
-     *
-     * @param string $configDir Base config directory path
-     * @param string[] $guidelineNames Guideline paths (relative, without .md extension)
-     * @return string Compiled markdown content
-     */
-    private function loadGuidelines(string $configDir, array $guidelineNames): string
-    {
-        if (empty($guidelineNames)) {
-            return '';
-        }
-
-        $sections = [];
-        foreach ($guidelineNames as $guidelineName) {
-            $filePath = $configDir . '/guidelines/' . $guidelineName . '.md';
-            if (file_exists($filePath)) {
-                $content = file_get_contents($filePath);
-                if ($content !== false) {
-                    $sections[] = "<!-- source: guidelines/$guidelineName.md -->\n\n$content";
-                }
+            $content = file_exists($filePath) ? file_get_contents($filePath) : false;
+            if ($content !== false) {
+                $relativePath = $isSkill ? "skills/$name/SKILL.md" : "guidelines/$name.md";
+                $sections[] = "<!-- source: $relativePath -->\n\n$content";
+                $loadedCount++;
             }
         }
 
