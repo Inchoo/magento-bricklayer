@@ -28,6 +28,7 @@ class Server
     }
 
     /**
+     * @return void
      * @deprecated Use McpServerFactory::create() and run via transport
      */
     public function run(): void

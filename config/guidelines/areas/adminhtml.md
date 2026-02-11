@@ -106,6 +106,7 @@ app/code/Vendor/Module/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Adminhtml\Entity;
@@ -118,6 +119,10 @@ class Index extends Action
 {
     public const ADMIN_RESOURCE = 'Vendor_Module::entity_view';
 
+    /**
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     */
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory
@@ -125,6 +130,9 @@ class Index extends Action
         parent::__construct($context);
     }
 
+    /**
+     * @return \Magento\Framework\View\Result\Page
+     */
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();
@@ -140,6 +148,7 @@ class Index extends Action
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Adminhtml\Entity;
@@ -154,6 +163,11 @@ class Save extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'Vendor_Module::entity_save';
 
+    /**
+     * @param Context $context
+     * @param RepositoryInterface $repository
+     * @param EntityInterfaceFactory $entityFactory
+     */
     public function __construct(
         Context $context,
         private readonly RepositoryInterface $repository,
@@ -162,6 +176,9 @@ class Save extends Action implements HttpPostActionInterface
         parent::__construct($context);
     }
 
+    /**
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     public function execute()
     {
         $resultRedirect = $this->resultRedirectFactory->create();

@@ -63,6 +63,7 @@ Requirements:
 Structure:
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace {$vendor}\\{$module}\\Test\\Unit;
@@ -75,7 +76,14 @@ use PHPUnit\\Framework\\MockObject\\MockObject;
  */
 class {TestClassName}Test extends TestCase
 {
+    /**
+     * @var {ClassType}
+     */
     private {ClassType} \$subject;
+
+    /**
+     * @var MockObject
+     */
     private MockObject \$dependencyMock;
 
     protected function setUp(): void
@@ -167,6 +175,7 @@ Requirements:
 Structure:
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace {$vendor}\\{$module}\\Test\\Integration;
@@ -180,8 +189,15 @@ use Magento\\TestFramework\\Helper\\Bootstrap;
  */
 class {TestClassName}Test extends AbstractController
 {
-    private \$objectManager;
-    private \$subject;
+    /**
+     * @var \Magento\Framework\ObjectManagerInterface
+     */
+    private \Magento\Framework\ObjectManagerInterface \$objectManager;
+
+    /**
+     * @var mixed
+     */
+    private mixed \$subject;
 
     protected function setUp(): void
     {
@@ -277,6 +293,7 @@ Requirements:
 Structure:
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace {$vendor}\\{$module}\\Test\\Api;
@@ -381,6 +398,7 @@ Requirements:
 Structure:
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace {$vendor}\\{$module}\\Test\\GraphQl;
@@ -446,6 +464,11 @@ GRAPHQL;
         \$this->assertTrue(\$response['{$queryName}']['success']);
     }
 
+    /**
+     * @param string \$email
+     * @param string \$password
+     * @return string
+     */
     private function getCustomerToken(string \$email, string \$password): string
     {
         \$mutation = <<<GRAPHQL

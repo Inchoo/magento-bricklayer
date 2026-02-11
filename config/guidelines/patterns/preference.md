@@ -44,6 +44,10 @@ namespace Vendor\Module\Api;
 
 interface ServiceInterface
 {
+    /**
+     * @param int $id
+     * @return bool
+     */
     public function process(int $id): bool;
 }
 
@@ -52,6 +56,10 @@ namespace Vendor\Module\Model;
 
 class Service implements \Vendor\Module\Api\ServiceInterface
 {
+    /**
+     * @param int $id
+     * @return bool
+     */
     public function process(int $id): bool
     {
         // Implementation
@@ -69,6 +77,7 @@ class Service implements \Vendor\Module\Api\ServiceInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Product;
@@ -78,7 +87,7 @@ use Magento\Catalog\Model\Product\Type as BaseType;
 class Type extends BaseType
 {
     /**
-     * Override parent method
+     * @return array
      */
     public function getAllowedSelectionTypes(): array
     {
@@ -88,7 +97,7 @@ class Type extends BaseType
     }
 
     /**
-     * Add new method
+     * @return void
      */
     public function customMethod(): void
     {
@@ -135,11 +144,17 @@ namespace Vendor\Module\Model;
 
 class ServiceDecorator implements ServiceInterface
 {
+    /**
+     * @param ServiceInterface $decorated
+     */
     public function __construct(
         private readonly ServiceInterface $decorated
     ) {
     }
 
+    /**
+     * @return void
+     */
     public function process(): void
     {
         // Pre-processing

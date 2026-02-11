@@ -69,7 +69,7 @@ app/code/Vendor/Payment/
 
 ```php
 <?php
-// registration.php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;
@@ -366,6 +366,7 @@ ComponentRegistrar::register(
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Config;
@@ -383,26 +384,46 @@ class Config extends GatewayConfig
     public const ENV_SANDBOX = 'sandbox';
     public const ENV_PRODUCTION = 'production';
 
+    /**
+     * @param int|null $storeId
+     * @return string
+     */
     public function getEnvironment(?int $storeId = null): string
     {
         return $this->getValue(self::KEY_ENVIRONMENT, $storeId) ?? self::ENV_SANDBOX;
     }
 
+    /**
+     * @param int|null $storeId
+     * @return string
+     */
     public function getApiKey(?int $storeId = null): string
     {
         return (string) $this->getValue(self::KEY_API_KEY, $storeId);
     }
 
+    /**
+     * @param int|null $storeId
+     * @return string
+     */
     public function getSecretKey(?int $storeId = null): string
     {
         return (string) $this->getValue(self::KEY_SECRET_KEY, $storeId);
     }
 
+    /**
+     * @param int|null $storeId
+     * @return bool
+     */
     public function isSandbox(?int $storeId = null): bool
     {
         return $this->getEnvironment($storeId) === self::ENV_SANDBOX;
     }
 
+    /**
+     * @param int|null $storeId
+     * @return string
+     */
     public function getApiUrl(?int $storeId = null): string
     {
         return $this->isSandbox($storeId)
@@ -416,6 +437,7 @@ class Config extends GatewayConfig
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway;
@@ -425,16 +447,29 @@ use Magento\Payment\Gateway\Helper\SubjectReader as BaseSubjectReader;
 
 class SubjectReader
 {
+    /**
+     * @param array $subject
+     * @return PaymentDataObjectInterface
+     */
     public function readPayment(array $subject): PaymentDataObjectInterface
     {
         return BaseSubjectReader::readPayment($subject);
     }
 
+    /**
+     * @param array $subject
+     * @return float
+     */
     public function readAmount(array $subject): float
     {
         return (float) BaseSubjectReader::readAmount($subject);
     }
 
+    /**
+     * @param array $subject
+     * @return string
+     * @throws \InvalidArgumentException
+     */
     public function readTransaction(array $subject): string
     {
         if (!isset($subject['transaction_id'])) {
@@ -444,6 +479,11 @@ class SubjectReader
         return (string) $subject['transaction_id'];
     }
 
+    /**
+     * @param array $subject
+     * @return array
+     * @throws \InvalidArgumentException
+     */
     public function readResponse(array $subject): array
     {
         if (!isset($subject['response']) || !is_array($subject['response'])) {
@@ -459,6 +499,7 @@ class SubjectReader
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Request;
@@ -468,11 +509,18 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class TransactionDataBuilder implements BuilderInterface
 {
+    /**
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         private readonly SubjectReader $subjectReader
     ) {
     }
 
+    /**
+     * @param array $buildSubject
+     * @return array
+     */
     public function build(array $buildSubject): array
     {
         $paymentDO = $this->subjectReader->readPayment($buildSubject);
@@ -486,6 +534,10 @@ class TransactionDataBuilder implements BuilderInterface
         ];
     }
 
+    /**
+     * @param float $amount
+     * @return int
+     */
     private function formatAmount(float $amount): int
     {
         return (int) round($amount * 100);
@@ -495,6 +547,7 @@ class TransactionDataBuilder implements BuilderInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Request;
@@ -504,11 +557,18 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class CustomerDataBuilder implements BuilderInterface
 {
+    /**
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         private readonly SubjectReader $subjectReader
     ) {
     }
 
+    /**
+     * @param array $buildSubject
+     * @return array
+     */
     public function build(array $buildSubject): array
     {
         $paymentDO = $this->subjectReader->readPayment($buildSubject);
@@ -528,6 +588,7 @@ class CustomerDataBuilder implements BuilderInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Request;
@@ -537,11 +598,18 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class CaptureDataBuilder implements BuilderInterface
 {
+    /**
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         private readonly SubjectReader $subjectReader
     ) {
     }
 
+    /**
+     * @param array $buildSubject
+     * @return array
+     */
     public function build(array $buildSubject): array
     {
         $paymentDO = $this->subjectReader->readPayment($buildSubject);
@@ -556,6 +624,10 @@ class CaptureDataBuilder implements BuilderInterface
         ];
     }
 
+    /**
+     * @param float $amount
+     * @return int
+     */
     private function formatAmount(float $amount): int
     {
         return (int) round($amount * 100);
@@ -567,6 +639,7 @@ class CaptureDataBuilder implements BuilderInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Http;
@@ -578,12 +651,20 @@ use Vendor\Payment\Gateway\Config\Config;
 
 class TransferFactory implements TransferFactoryInterface
 {
+    /**
+     * @param TransferBuilder $transferBuilder
+     * @param Config $config
+     */
     public function __construct(
         private readonly TransferBuilder $transferBuilder,
         private readonly Config $config
     ) {
     }
 
+    /**
+     * @param array $request
+     * @return TransferInterface
+     */
     public function create(array $request): TransferInterface
     {
         return $this->transferBuilder
@@ -601,6 +682,7 @@ class TransferFactory implements TransferFactoryInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Http\Client;
@@ -612,12 +694,20 @@ use Psr\Log\LoggerInterface;
 
 class TransactionAuthorize implements ClientInterface
 {
+    /**
+     * @param Curl $curl
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly Curl $curl,
         private readonly LoggerInterface $logger
     ) {
     }
 
+    /**
+     * @param TransferInterface $transferObject
+     * @return array
+     */
     public function placeRequest(TransferInterface $transferObject): array
     {
         $this->curl->setHeaders($transferObject->getHeaders());
@@ -656,6 +746,7 @@ class TransactionAuthorize implements ClientInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Response;
@@ -666,11 +757,19 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class TransactionIdHandler implements HandlerInterface
 {
+    /**
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         private readonly SubjectReader $subjectReader
     ) {
     }
 
+    /**
+     * @param array $handlingSubject
+     * @param array $response
+     * @return void
+     */
     public function handle(array $handlingSubject, array $response): void
     {
         $paymentDO = $this->subjectReader->readPayment($handlingSubject);
@@ -689,6 +788,7 @@ class TransactionIdHandler implements HandlerInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Response;
@@ -699,11 +799,19 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class PaymentDetailsHandler implements HandlerInterface
 {
+    /**
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         private readonly SubjectReader $subjectReader
     ) {
     }
 
+    /**
+     * @param array $handlingSubject
+     * @param array $response
+     * @return void
+     */
     public function handle(array $handlingSubject, array $response): void
     {
         $paymentDO = $this->subjectReader->readPayment($handlingSubject);
@@ -731,6 +839,7 @@ class PaymentDetailsHandler implements HandlerInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Gateway\Validator;
@@ -742,6 +851,10 @@ use Vendor\Payment\Gateway\SubjectReader;
 
 class ResponseValidator extends AbstractValidator
 {
+    /**
+     * @param ResultInterfaceFactory $resultFactory
+     * @param SubjectReader $subjectReader
+     */
     public function __construct(
         ResultInterfaceFactory $resultFactory,
         private readonly SubjectReader $subjectReader
@@ -749,6 +862,10 @@ class ResponseValidator extends AbstractValidator
         parent::__construct($resultFactory);
     }
 
+    /**
+     * @param array $validationSubject
+     * @return ResultInterface
+     */
     public function validate(array $validationSubject): ResultInterface
     {
         $response = $validationSubject['response'] ?? [];
@@ -791,6 +908,7 @@ class ResponseValidator extends AbstractValidator
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Model\Ui;
@@ -802,11 +920,17 @@ class ConfigProvider implements ConfigProviderInterface
 {
     public const CODE = 'vendor_payment';
 
+    /**
+     * @param Config $config
+     */
     public function __construct(
         private readonly Config $config
     ) {
     }
 
+    /**
+     * @return array
+     */
     public function getConfig(): array
     {
         return [
@@ -1113,6 +1237,7 @@ define([
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Payment\Test\Unit\Gateway\Request;
@@ -1125,13 +1250,22 @@ use Magento\Payment\Gateway\Data\OrderAdapterInterface;
 
 class TransactionDataBuilderTest extends TestCase
 {
+    /**
+     * @var TransactionDataBuilder
+     */
     private TransactionDataBuilder $builder;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         $this->builder = new TransactionDataBuilder(new SubjectReader());
     }
 
+    /**
+     * @return void
+     */
     public function testBuildReturnsCorrectData(): void
     {
         $orderMock = $this->createMock(OrderAdapterInterface::class);

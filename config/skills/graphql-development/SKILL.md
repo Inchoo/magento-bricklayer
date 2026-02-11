@@ -52,6 +52,7 @@ input CustomEntityFilterInput @doc(description: "Filter input for custom entitie
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver;
@@ -63,17 +64,28 @@ use Vendor\Module\Api\CustomEntityRepositoryInterface;
 
 class CustomEntity implements ResolverInterface
 {
+    /**
+     * @param CustomEntityRepositoryInterface $repository
+     */
     public function __construct(
         private readonly CustomEntityRepositoryInterface $repository
     ) {
     }
 
+    /**
+     * @param Field $field
+     * @param ContextInterface $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(
         Field $field,
-        $context,
+        ContextInterface $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array $value = null,
+        ?array $args = null
     ): array {
         $entityId = $args['id'];
 
@@ -98,6 +110,7 @@ class CustomEntity implements ResolverInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver;
@@ -110,18 +123,30 @@ use Vendor\Module\Api\CustomEntityRepositoryInterface;
 
 class CustomEntities implements ResolverInterface
 {
+    /**
+     * @param CustomEntityRepositoryInterface $repository
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     */
     public function __construct(
         private readonly CustomEntityRepositoryInterface $repository,
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
     }
 
+    /**
+     * @param Field $field
+     * @param ContextInterface $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(
         Field $field,
-        $context,
+        ContextInterface $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array $value = null,
+        ?array $args = null
     ): array {
         $pageSize = $args['pageSize'] ?? 20;
         $currentPage = $args['currentPage'] ?? 1;
@@ -158,6 +183,10 @@ class CustomEntities implements ResolverInterface
         ];
     }
 
+    /**
+     * @param array $filters
+     * @return void
+     */
     private function applyFilters(array $filters): void
     {
         foreach ($filters as $field => $condition) {
@@ -205,6 +234,7 @@ type CustomEntityOutput @doc(description: "Output for custom entity mutation") {
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver;
@@ -217,18 +247,30 @@ use Vendor\Module\Api\Data\CustomEntityInterfaceFactory;
 
 class CreateCustomEntity implements ResolverInterface
 {
+    /**
+     * @param CustomEntityRepositoryInterface $repository
+     * @param CustomEntityInterfaceFactory $entityFactory
+     */
     public function __construct(
         private readonly CustomEntityRepositoryInterface $repository,
         private readonly CustomEntityInterfaceFactory $entityFactory
     ) {
     }
 
+    /**
+     * @param Field $field
+     * @param ContextInterface $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(
         Field $field,
-        $context,
+        ContextInterface $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array $value = null,
+        ?array $args = null
     ): array {
         $input = $args['input'];
 
@@ -257,6 +299,7 @@ class CreateCustomEntity implements ResolverInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver\CustomEntity;
@@ -265,8 +308,15 @@ use Magento\Framework\GraphQl\Query\Resolver\IdentityInterface;
 
 class Identity implements IdentityInterface
 {
-    private string $cacheTag = 'CUSTOM_ENTITY';
+    /**
+     * @var string
+     */
+    private readonly string $cacheTag = 'CUSTOM_ENTITY';
 
+    /**
+     * @param array $resolvedData
+     * @return array
+     */
     public function getIdentities(array $resolvedData): array
     {
         $ids = [];

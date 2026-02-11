@@ -34,7 +34,7 @@ class InspectCommand extends Command
     protected static $defaultDescription = 'Display information about the current Magento installation';
 
     /**
-     * @inheritdoc
+     * @return void
      */
     protected function configure(): void
     {
@@ -81,7 +81,9 @@ HELP
     }
 
     /**
-     * @inheritdoc
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

@@ -112,6 +112,7 @@ Events allow modules to react to actions without modifying core code. Observers 
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Observer;
@@ -122,11 +123,18 @@ use Psr\Log\LoggerInterface;
 
 class ProductSaveObserver implements ObserverInterface
 {
+    /**
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly LoggerInterface $logger
     ) {
     }
 
+    /**
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer): void
     {
         /** @var \Magento\Catalog\Model\Product $product */
@@ -154,11 +162,18 @@ use Magento\Framework\Event\ManagerInterface;
 
 class CustomService
 {
+    /**
+     * @param ManagerInterface $eventManager
+     */
     public function __construct(
         private readonly ManagerInterface $eventManager
     ) {
     }
 
+    /**
+     * @param array $data
+     * @return void
+     */
     public function process(array $data): void
     {
         // Dispatch before event
@@ -507,11 +522,18 @@ namespace Vendor\Module\Model;
 
 class Service
 {
+    /**
+     * @param EntityFactory $entityFactory
+     */
     public function __construct(
         private readonly EntityFactory $entityFactory
     ) {
     }
 
+    /**
+     * @param array $data
+     * @return Entity
+     */
     public function createEntity(array $data): Entity
     {
         return $this->entityFactory->create(['data' => $data]);
@@ -601,6 +623,7 @@ MARKDOWN;
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Adminhtml\Entity;
@@ -614,6 +637,9 @@ class Index extends Action
      */
     public const ADMIN_RESOURCE = 'Vendor_Module::manage';
 
+    /**
+     * @return mixed
+     */
     public function execute()
     {
         // Controller logic
@@ -723,6 +749,7 @@ class Index extends Action
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Block\Adminhtml;
@@ -732,6 +759,11 @@ use Magento\Framework\AuthorizationInterface;
 
 class EntityBlock extends Template
 {
+    /**
+     * @param Template\Context $context
+     * @param AuthorizationInterface $authorization
+     * @param array $data
+     */
     public function __construct(
         Template\Context $context,
         private readonly AuthorizationInterface $authorization,
@@ -740,11 +772,17 @@ class EntityBlock extends Template
         parent::__construct($context, $data);
     }
 
+    /**
+     * @return bool
+     */
     public function canEdit(): bool
     {
         return $this->authorization->isAllowed('Vendor_Module::edit');
     }
 
+    /**
+     * @return bool
+     */
     public function canDelete(): bool
     {
         return $this->authorization->isAllowed('Vendor_Module::delete');

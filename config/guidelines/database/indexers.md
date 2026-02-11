@@ -91,6 +91,7 @@ bin/magento indexer:reset
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Indexer;
@@ -101,6 +102,10 @@ use Psr\Log\LoggerInterface;
 
 class CustomIndexer implements ActionInterface, MviewActionInterface
 {
+    /**
+     * @param IndexBuilder $indexBuilder
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly IndexBuilder $indexBuilder,
         private readonly LoggerInterface $logger
@@ -108,7 +113,7 @@ class CustomIndexer implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute full reindex
+     * @return void
      */
     public function executeFull(): void
     {
@@ -118,9 +123,8 @@ class CustomIndexer implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute partial reindex by IDs
-     *
      * @param int[] $ids
+     * @return void
      */
     public function executeList(array $ids): void
     {
@@ -128,21 +132,19 @@ class CustomIndexer implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute single entity reindex
-     *
      * @param int $id
+     * @return void
      */
-    public function executeRow($id): void
+    public function executeRow(int $id): void
     {
         $this->indexBuilder->reindexByIds([$id]);
     }
 
     /**
-     * Execute MView indexer
-     *
      * @param int[] $ids
+     * @return void
      */
-    public function execute($ids): void
+    public function execute(array $ids): void
     {
         $this->executeList($ids);
     }
@@ -153,6 +155,7 @@ class CustomIndexer implements ActionInterface, MviewActionInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Indexer;
@@ -165,11 +168,17 @@ class IndexBuilder
     private const INDEX_TABLE = 'vendor_custom_index';
     private const SOURCE_TABLE = 'vendor_custom_entity';
 
+    /**
+     * @param ResourceConnection $resource
+     */
     public function __construct(
         private readonly ResourceConnection $resource
     ) {
     }
 
+    /**
+     * @return void
+     */
     public function reindexAll(): void
     {
         $connection = $this->getConnection();
@@ -191,6 +200,10 @@ class IndexBuilder
         );
     }
 
+    /**
+     * @param array $ids
+     * @return void
+     */
     public function reindexByIds(array $ids): void
     {
         if (empty($ids)) {
@@ -220,16 +233,25 @@ class IndexBuilder
         );
     }
 
+    /**
+     * @return AdapterInterface
+     */
     private function getConnection(): AdapterInterface
     {
         return $this->resource->getConnection();
     }
 
+    /**
+     * @return string
+     */
     private function getIndexTable(): string
     {
         return $this->resource->getTableName(self::INDEX_TABLE);
     }
 
+    /**
+     * @return string
+     */
     private function getSourceTable(): string
     {
         return $this->resource->getTableName(self::SOURCE_TABLE);

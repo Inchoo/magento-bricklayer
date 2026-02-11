@@ -310,6 +310,7 @@ $storeName = $storeConfig->getStoreConfig('general/store_information/name');
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\ViewModel;
@@ -318,11 +319,18 @@ use Magento\Framework\View\Element\Block\ArgumentInterface;
 
 class CustomData implements ArgumentInterface
 {
+    /**
+     * @param \Magento\Catalog\Api\ProductRepositoryInterface $productRepository
+     */
     public function __construct(
         private readonly \Magento\Catalog\Api\ProductRepositoryInterface $productRepository
     ) {
     }
 
+    /**
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @return string
+     */
     public function getProductJson(\Magento\Catalog\Api\Data\ProductInterface $product): string
     {
         return json_encode([
@@ -495,6 +503,7 @@ The `hyva-themes/magento2-compat-module-fallback` package provides Luma fallback
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Hyva\Theme\Model\ViewModelRegistry;

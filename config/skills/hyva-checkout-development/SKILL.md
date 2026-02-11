@@ -48,6 +48,7 @@ Hyva Checkout is a reactive, server-driven checkout for Magento 2 built on **Mag
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Magewire;
@@ -57,10 +58,20 @@ use Magewirephp\Magewire\Component;
 class MyComponent extends Component
 {
     // Public properties are reactive (synced with frontend)
+
+    /**
+     * @var string
+     */
     public string $name = '';
+
+    /**
+     * @var int
+     */
     public int $count = 0;
 
-    // Callable from templates via wire:click="increment"
+    /**
+     * @return void
+     */
     public function increment(): void
     {
         $this->count++;
@@ -97,6 +108,7 @@ class MyComponent extends Component
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Vendor\Module\Magewire\MyComponent;
@@ -135,32 +147,61 @@ use Magento\Framework\Escaper;
 ```php
 class MyComponent extends Component
 {
-    // Every request, immediately after instantiation
+    /**
+     * @return void
+     */
     public function boot(): void {}
 
-    // Initial page load ONLY (like a constructor)
+    /**
+     * @return void
+     */
     public function mount(): void {}
 
-    // Every request after boot/mount, before update methods
+    /**
+     * @return void
+     */
     public function booted(): void {}
 
-    // Subsequent requests only, after state restoration
+    /**
+     * @return void
+     */
     public function hydrate(): void {}
 
-    // Before ANY property update
-    public function updating($value, string $name) {}
+    /**
+     * @param mixed $value
+     * @param string $name
+     * @return void
+     */
+    public function updating(mixed $value, string $name): void {}
 
-    // After ANY property update
-    public function updated($value, string $name) {}
+    /**
+     * @param mixed $value
+     * @param string $name
+     * @return void
+     */
+    public function updated(mixed $value, string $name): void {}
 
-    // Property-specific hooks (for property $method)
-    public function updatingMethod($value) {}
-    public function updatedMethod($value): string { return $value; }
+    /**
+     * @param mixed $value
+     * @return void
+     */
+    public function updatingMethod(mixed $value): void {}
 
-    // Nested property hooks (for $data['email_address'])
-    public function updatedDataEmailAddress($value) {}
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    public function updatedMethod(mixed $value): string { return $value; }
 
-    // Before sending response to frontend
+    /**
+     * @param mixed $value
+     * @return void
+     */
+    public function updatedDataEmailAddress(mixed $value): void {}
+
+    /**
+     * @return void
+     */
     public function dehydrate(): void {}
 }
 ```
@@ -171,11 +212,19 @@ class MyComponent extends Component
 class ShippingComponent extends Component
 {
     // Declare listeners: event name => method name
-    protected $listeners = [
+
+    /**
+     * @var array
+     */
+    protected array $listeners = [
         'shipping_address_saved' => 'refresh',
         'coupon_code_applied' => 'refresh',
     ];
 
+    /**
+     * @param string $code
+     * @return void
+     */
     public function selectMethod(string $code): void
     {
         // Save method...
@@ -195,6 +244,9 @@ class ShippingComponent extends Component
 ### Flash Messages
 
 ```php
+/**
+ * @return void
+ */
 public function save(): void
 {
     try {
@@ -212,6 +264,9 @@ public function save(): void
 ### Browser Events from PHP
 
 ```php
+/**
+ * @return void
+ */
 public function onComplete(): void
 {
     $this->dispatchBrowserEvent('checkout:step:complete', [
@@ -226,7 +281,11 @@ public function onComplete(): void
 class PaymentMethodList extends Component
 {
     // Show loader text while specific properties/methods are processing
-    protected $loader = [
+
+    /**
+     * @var array
+     */
+    protected array $loader = [
         'method' => 'Saving method',         // Property update
         'placeOrder' => 'Processing order',   // Method call
     ];
@@ -338,6 +397,7 @@ Magewire.emitTo('checkout.payment.methods', 'refresh');
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Checkout\Condition;
@@ -346,6 +406,9 @@ use Hyva\Checkout\Model\CustomConditionInterface;
 
 class HasGiftCard implements CustomConditionInterface
 {
+    /**
+     * @return bool
+     */
     public function validate(): bool
     {
         // Return true if condition is met
@@ -463,6 +526,7 @@ Any enabled payment method automatically appears in the payment step. Methods ne
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Magewire\Checkout\Payment\Method;
@@ -474,8 +538,15 @@ use Magewirephp\Magewire\Component;
 
 class MyPayment extends Component implements EvaluationInterface
 {
+    /**
+     * @var string|null
+     */
     public ?string $cardToken = null;
 
+    /**
+     * @param EvaluationResultFactory $resultFactory
+     * @return EvaluationResultInterface
+     */
     public function evaluateCompletion(
         EvaluationResultFactory $resultFactory
     ): EvaluationResultInterface {
@@ -515,6 +586,7 @@ For payment methods requiring special order placement logic (redirects, 3DS, hos
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Payment;
@@ -525,11 +597,19 @@ use Hyva\Checkout\Model\Magewire\Payment\EvaluationResultInterface;
 
 class MyPaymentPlaceOrderService extends AbstractPlaceOrderService
 {
+    /**
+     * @return bool
+     */
     public function canRedirect(): bool
     {
         return false; // Prevent auto-redirect after order placement
     }
 
+    /**
+     * @param EvaluationResultFactory $resultFactory
+     * @param int|null $orderId
+     * @return EvaluationResultInterface
+     */
     public function evaluateCompletion(
         EvaluationResultFactory $resultFactory,
         ?int $orderId = null
@@ -561,6 +641,11 @@ class MyPaymentPlaceOrderService extends AbstractPlaceOrderService
 ### Redirect-Based Payment (Hosted Payment Page)
 
 ```php
+/**
+ * @param EvaluationResultFactory $resultFactory
+ * @param int|null $orderId
+ * @return EvaluationResultInterface
+ */
 public function evaluateCompletion(
     EvaluationResultFactory $resultFactory,
     ?int $orderId = null
@@ -615,6 +700,7 @@ The Evaluation API determines component "completeness" for step navigation and o
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Hyva\Checkout\Model\Magewire\Component\EvaluationInterface;
@@ -624,8 +710,15 @@ use Magewirephp\Magewire\Component;
 
 class MyCheckoutComponent extends Component implements EvaluationInterface
 {
+    /**
+     * @var string|null
+     */
     public ?string $selectedOption = null;
 
+    /**
+     * @param EvaluationResultFactory $resultFactory
+     * @return EvaluationResultInterface
+     */
     public function evaluateCompletion(
         EvaluationResultFactory $resultFactory
     ): EvaluationResultInterface {
@@ -698,6 +791,10 @@ class PaymentMethodList extends Component implements EvaluationInterface
 {
     use Evaluatable;
 
+    /**
+     * @param EvaluationResultFactory $resultFactory
+     * @return EvaluationResultInterface
+     */
     public function evaluateCompletion(
         EvaluationResultFactory $resultFactory
     ): EvaluationResultInterface {
@@ -715,6 +812,9 @@ class PaymentMethodList extends Component implements EvaluationInterface
         );
     }
 
+    /**
+     * @return static
+     */
     private function evaluateSelection(): static
     {
         if ($this->method === null) {
@@ -785,6 +885,7 @@ hyvaCheckout.messenger.dispatch(
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Form;
@@ -796,6 +897,9 @@ class CustomForm extends AbstractEntityForm
 {
     public const FORM_NAMESPACE = 'vendor_custom_form';
 
+    /**
+     * @return EntityFormInterface
+     */
     public function populate(): EntityFormInterface
     {
         $this->addField(
@@ -820,6 +924,9 @@ class CustomForm extends AbstractEntityForm
         return $this;
     }
 
+    /**
+     * @return string
+     */
     public function getTitle(): string
     {
         return 'Business Details';
@@ -831,6 +938,7 @@ class CustomForm extends AbstractEntityForm
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Form;
@@ -840,6 +948,10 @@ use Hyva\Checkout\Model\Form\EntityFormInterface;
 
 class CustomFormSaveService extends AbstractEntityFormSaveService
 {
+    /**
+     * @param EntityFormInterface $form
+     * @return EntityFormInterface
+     */
     public function save(EntityFormInterface $form): EntityFormInterface
     {
         $companyName = $form->getField('company_name')->getValue();
@@ -856,6 +968,7 @@ class CustomFormSaveService extends AbstractEntityFormSaveService
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Magewire\Checkout;
@@ -865,12 +978,20 @@ use Hyva\Checkout\Magewire\Component\AbstractForm;
 class BusinessDetails extends AbstractForm
 {
     // Form validation rules (Laravel-like syntax)
+
+    /**
+     * @var array
+     */
     public array $rules = [
         'data.company_name' => 'required|min:2',
         'data.vat_number' => 'required|regex:/^[A-Z]{2}[0-9]+$/',
     ];
 
     // Custom validation messages
+
+    /**
+     * @var array
+     */
     public array $messages = [
         'data.company_name.required' => 'Company name is required.',
         'data.vat_number.regex' => 'Please enter a valid VAT number (e.g., NL123456789B01).',
@@ -934,6 +1055,7 @@ Extend forms from third-party modules without modifying the original:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Form\Modifier;
@@ -943,6 +1065,10 @@ use Hyva\Checkout\Model\Form\EntityFormModifier\AbstractEntityFormModifier;
 
 class AddLoyaltyFieldModifier extends AbstractEntityFormModifier
 {
+    /**
+     * @param EntityFormInterface $form
+     * @return EntityFormInterface
+     */
     public function modify(EntityFormInterface $form): EntityFormInterface
     {
         $form->addField(
@@ -996,15 +1122,28 @@ $methods = $viewModel->getList();
 ```php
 class CouponCode extends Component
 {
+    /**
+     * @var string|null
+     */
     public ?string $couponCode = null;
+
+    /**
+     * @var int
+     */
     public int $couponHits = 0;
 
+    /**
+     * @return void
+     */
     public function boot(): void
     {
         $couponCode = $this->couponManagement->get($this->sessionCheckout->getQuoteId());
         $this->couponCode = ($couponCode && $couponCode != '') ? $couponCode : null;
     }
 
+    /**
+     * @return void
+     */
     public function applyCouponCode()
     {
         try {
@@ -1018,6 +1157,9 @@ class CouponCode extends Component
         }
     }
 
+    /**
+     * @return void
+     */
     public function revokeCouponCode()
     {
         $this->couponManagement->remove($this->sessionCheckout->getQuoteId());
@@ -1097,6 +1239,7 @@ app/design/frontend/Vendor/hyva-child/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin\Checkout\Payment;
@@ -1105,6 +1248,11 @@ use Hyva\Checkout\Magewire\Checkout\Payment\MethodList;
 
 class MethodListPlugin
 {
+    /**
+     * @param MethodList $subject
+     * @param string $result
+     * @return string
+     */
     public function afterUpdatedMethod(MethodList $subject, string $result): string
     {
         // Custom logic after payment method selection

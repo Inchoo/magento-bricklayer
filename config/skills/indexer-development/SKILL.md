@@ -82,6 +82,7 @@ Magento indexers optimize data for fast retrieval. They transform EAV and relati
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Indexer;
@@ -92,6 +93,10 @@ use Psr\Log\LoggerInterface;
 
 class Product implements ActionInterface, MviewActionInterface
 {
+    /**
+     * @param ProductIndexer $productIndexer
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly ProductIndexer $productIndexer,
         private readonly LoggerInterface $logger
@@ -99,7 +104,7 @@ class Product implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute full reindex
+     * @return void
      */
     public function executeFull(): void
     {
@@ -109,9 +114,8 @@ class Product implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute partial reindex by IDs
-     *
      * @param int[] $ids
+     * @return void
      */
     public function executeList(array $ids): void
     {
@@ -120,21 +124,19 @@ class Product implements ActionInterface, MviewActionInterface
     }
 
     /**
-     * Execute reindex for single entity
-     *
      * @param int $id
+     * @return void
      */
-    public function executeRow($id): void
+    public function executeRow(int $id): void
     {
         $this->productIndexer->reindexByIds([$id]);
     }
 
     /**
-     * Execute by MView (changelog)
-     *
      * @param int[] $ids
+     * @return void
      */
-    public function execute($ids): void
+    public function execute(array $ids): void
     {
         $this->executeList($ids);
     }
@@ -145,6 +147,7 @@ class Product implements ActionInterface, MviewActionInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Indexer;
@@ -155,6 +158,12 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class ProductIndexer
 {
+    /**
+     * @param ResourceConnection $resource
+     * @param CollectionFactory $productCollectionFactory
+     * @param StoreManagerInterface $storeManager
+     * @param ScoreCalculator $scoreCalculator
+     */
     public function __construct(
         private readonly ResourceConnection $resource,
         private readonly CollectionFactory $productCollectionFactory,
@@ -163,6 +172,9 @@ class ProductIndexer
     ) {
     }
 
+    /**
+     * @return void
+     */
     public function reindexAll(): void
     {
         $connection = $this->resource->getConnection();
@@ -177,6 +189,10 @@ class ProductIndexer
         }
     }
 
+    /**
+     * @param array $productIds
+     * @return void
+     */
     public function reindexByIds(array $productIds): void
     {
         if (empty($productIds)) {
@@ -195,6 +211,10 @@ class ProductIndexer
         }
     }
 
+    /**
+     * @param int $storeId
+     * @return void
+     */
     private function reindexStore(int $storeId): void
     {
         $collection = $this->productCollectionFactory->create();
@@ -210,6 +230,11 @@ class ProductIndexer
         }
     }
 
+    /**
+     * @param array $productIds
+     * @param int $storeId
+     * @return void
+     */
     private function reindexProducts(array $productIds, int $storeId): void
     {
         $connection = $this->resource->getConnection();
@@ -235,7 +260,11 @@ class ProductIndexer
         }
     }
 
-    private function computeValue($product): string
+    /**
+     * @param ProductInterface $product
+     * @return string
+     */
+    private function computeValue(ProductInterface $product): string
     {
         // Custom computation logic
         return sprintf('%s-%s', $product->getSku(), $product->getTypeId());
@@ -297,6 +326,7 @@ $indexer->invalidate();
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -305,11 +335,19 @@ use Magento\Framework\App\ResourceConnection;
 
 class ProductScoreProvider
 {
+    /**
+     * @param ResourceConnection $resource
+     */
     public function __construct(
         private readonly ResourceConnection $resource
     ) {
     }
 
+    /**
+     * @param int $storeId
+     * @param int $limit
+     * @return array
+     */
     public function getTopProducts(int $storeId, int $limit = 10): array
     {
         $connection = $this->resource->getConnection();

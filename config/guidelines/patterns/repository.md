@@ -12,6 +12,7 @@ Define the entity structure:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;
@@ -28,19 +29,59 @@ interface CustomEntityInterface extends ExtensibleDataInterface
     public const STATUS = 'status';
     public const CREATED_AT = 'created_at';
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int;
+
+    /**
+     * @param int|null $entityId
+     * @return self
+     */
     public function setEntityId(?int $entityId): self;
 
+    /**
+     * @return string|null
+     */
     public function getName(): ?string;
+
+    /**
+     * @param string|null $name
+     * @return self
+     */
     public function setName(?string $name): self;
 
+    /**
+     * @return int|null
+     */
     public function getStatus(): ?int;
+
+    /**
+     * @param int|null $status
+     * @return self
+     */
     public function setStatus(?int $status): self;
 
+    /**
+     * @return string|null
+     */
     public function getCreatedAt(): ?string;
+
+    /**
+     * @param string|null $createdAt
+     * @return self
+     */
     public function setCreatedAt(?string $createdAt): self;
 
+    /**
+     * @return CustomEntityExtensionInterface|null
+     */
     public function getExtensionAttributes(): ?CustomEntityExtensionInterface;
+
+    /**
+     * @param CustomEntityExtensionInterface $attributes
+     * @return self
+     */
     public function setExtensionAttributes(CustomEntityExtensionInterface $attributes): self;
 }
 ```
@@ -51,6 +92,7 @@ Define CRUD operations:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -68,25 +110,37 @@ use Vendor\Module\Api\Data\CustomEntitySearchResultsInterface;
 interface CustomEntityRepositoryInterface
 {
     /**
+     * @param int $entityId
+     * @return CustomEntityInterface
      * @throws NoSuchEntityException
      */
     public function get(int $entityId): CustomEntityInterface;
 
     /**
+     * @param CustomEntityInterface $entity
+     * @return CustomEntityInterface
      * @throws CouldNotSaveException
      */
     public function save(CustomEntityInterface $entity): CustomEntityInterface;
 
     /**
+     * @param CustomEntityInterface $entity
+     * @return bool
      * @throws CouldNotDeleteException
      */
     public function delete(CustomEntityInterface $entity): bool;
 
     /**
+     * @param int $entityId
+     * @return bool
      * @throws CouldNotDeleteException
      */
     public function deleteById(int $entityId): bool;
 
+    /**
+     * @param SearchCriteriaInterface $searchCriteria
+     * @return CustomEntitySearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): CustomEntitySearchResultsInterface;
 }
 ```
@@ -95,6 +149,7 @@ interface CustomEntityRepositoryInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -105,27 +160,44 @@ use Vendor\Module\Model\ResourceModel\CustomEntity as ResourceModel;
 
 class CustomEntity extends AbstractExtensibleModel implements CustomEntityInterface
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init(ResourceModel::class);
     }
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int
     {
         $id = $this->getData(self::ENTITY_ID);
         return $id !== null ? (int) $id : null;
     }
 
+    /**
+     * @param int|null $entityId
+     * @return CustomEntityInterface
+     */
     public function setEntityId(?int $entityId): CustomEntityInterface
     {
         return $this->setData(self::ENTITY_ID, $entityId);
     }
 
+    /**
+     * @return string|null
+     */
     public function getName(): ?string
     {
         return $this->getData(self::NAME);
     }
 
+    /**
+     * @param string|null $name
+     * @return CustomEntityInterface
+     */
     public function setName(?string $name): CustomEntityInterface
     {
         return $this->setData(self::NAME, $name);
@@ -139,6 +211,7 @@ class CustomEntity extends AbstractExtensibleModel implements CustomEntityInterf
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\ResourceModel;
@@ -147,6 +220,9 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 class CustomEntity extends AbstractDb
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init('vendor_custom_entity', 'entity_id');
@@ -158,6 +234,7 @@ class CustomEntity extends AbstractDb
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\ResourceModel\CustomEntity;
@@ -168,6 +245,9 @@ use Vendor\Module\Model\ResourceModel\CustomEntity as ResourceModel;
 
 class Collection extends AbstractCollection
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init(CustomEntity::class, ResourceModel::class);
@@ -179,6 +259,7 @@ class Collection extends AbstractCollection
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -197,6 +278,13 @@ use Vendor\Module\Model\ResourceModel\CustomEntity\CollectionFactory;
 
 class CustomEntityRepository implements CustomEntityRepositoryInterface
 {
+    /**
+     * @param ResourceModel $resource
+     * @param CustomEntityFactory $entityFactory
+     * @param CollectionFactory $collectionFactory
+     * @param CollectionProcessorInterface $collectionProcessor
+     * @param CustomEntitySearchResultsInterfaceFactory $searchResultsFactory
+     */
     public function __construct(
         private readonly ResourceModel $resource,
         private readonly CustomEntityFactory $entityFactory,
@@ -206,6 +294,11 @@ class CustomEntityRepository implements CustomEntityRepositoryInterface
     ) {
     }
 
+    /**
+     * @param int $entityId
+     * @return CustomEntityInterface
+     * @throws NoSuchEntityException
+     */
     public function get(int $entityId): CustomEntityInterface
     {
         $entity = $this->entityFactory->create();
@@ -220,6 +313,11 @@ class CustomEntityRepository implements CustomEntityRepositoryInterface
         return $entity;
     }
 
+    /**
+     * @param CustomEntityInterface $entity
+     * @return CustomEntityInterface
+     * @throws CouldNotSaveException
+     */
     public function save(CustomEntityInterface $entity): CustomEntityInterface
     {
         try {
@@ -234,6 +332,11 @@ class CustomEntityRepository implements CustomEntityRepositoryInterface
         return $entity;
     }
 
+    /**
+     * @param CustomEntityInterface $entity
+     * @return bool
+     * @throws CouldNotDeleteException
+     */
     public function delete(CustomEntityInterface $entity): bool
     {
         try {
@@ -248,11 +351,20 @@ class CustomEntityRepository implements CustomEntityRepositoryInterface
         return true;
     }
 
+    /**
+     * @param int $entityId
+     * @return bool
+     * @throws CouldNotDeleteException
+     */
     public function deleteById(int $entityId): bool
     {
         return $this->delete($this->get($entityId));
     }
 
+    /**
+     * @param SearchCriteriaInterface $searchCriteria
+     * @return CustomEntitySearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): CustomEntitySearchResultsInterface
     {
         $collection = $this->collectionFactory->create();

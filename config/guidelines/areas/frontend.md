@@ -91,6 +91,7 @@ Common layout handles:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Block;
@@ -101,6 +102,11 @@ use Vendor\Module\Api\RepositoryInterface;
 
 class Custom extends Template
 {
+    /**
+     * @param Context $context
+     * @param RepositoryInterface $repository
+     * @param array $data
+     */
     public function __construct(
         Context $context,
         private readonly RepositoryInterface $repository,
@@ -109,11 +115,18 @@ class Custom extends Template
         parent::__construct($context, $data);
     }
 
+    /**
+     * @return array
+     */
     public function getItems(): array
     {
         return $this->repository->getActiveItems();
     }
 
+    /**
+     * @param int $itemId
+     * @return string
+     */
     public function getItemUrl(int $itemId): string
     {
         return $this->getUrl('vendor_module/item/view', ['id' => $itemId]);

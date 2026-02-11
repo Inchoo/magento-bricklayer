@@ -32,6 +32,7 @@ app/code/Vendor/Module/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Unit\Model;
@@ -43,15 +44,28 @@ use Vendor\Module\Api\RepositoryInterface;
 
 class ServiceTest extends TestCase
 {
+    /**
+     * @var Service
+     */
     private Service $subject;
+
+    /**
+     * @var MockObject
+     */
     private MockObject $repositoryMock;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         $this->repositoryMock = $this->createMock(RepositoryInterface::class);
         $this->subject = new Service($this->repositoryMock);
     }
 
+    /**
+     * @return void
+     */
     public function testProcessReturnsExpectedResult(): void
     {
         // Arrange
@@ -71,6 +85,9 @@ class ServiceTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
+    /**
+     * @return void
+     */
     public function testProcessThrowsExceptionOnEmptyInput(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -93,6 +110,9 @@ public function testValidateAcceptsValidInput(string $input, bool $expected): vo
     $this->assertEquals($expected, $result);
 }
 
+/**
+ * @return array
+ */
 public static function validInputDataProvider(): array
 {
     return [
@@ -135,6 +155,7 @@ app/code/Vendor/Module/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Integration\Model;
@@ -149,8 +170,14 @@ use Vendor\Module\Api\RepositoryInterface;
  */
 class RepositoryTest extends AbstractController
 {
+    /**
+     * @var RepositoryInterface
+     */
     private RepositoryInterface $repository;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -183,6 +210,7 @@ class RepositoryTest extends AbstractController
 ```php
 // _files/entity.php
 <?php
+
 declare(strict_types=1);
 
 use Magento\TestFramework\Helper\Bootstrap;
@@ -202,6 +230,7 @@ $repository->save($entity);
 ```php
 // _files/entity_rollback.php
 <?php
+
 declare(strict_types=1);
 
 use Magento\TestFramework\Helper\Bootstrap;
@@ -247,6 +276,7 @@ cp phpunit.xml.dist phpunit.xml
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Api;
@@ -276,6 +306,9 @@ class CustomEndpointTest extends WebapiAbstract
         $this->assertNotEmpty($response['items']);
     }
 
+    /**
+     * @return void
+     */
     public function testCreateItem(): void
     {
         $serviceInfo = [
@@ -297,6 +330,7 @@ class CustomEndpointTest extends WebapiAbstract
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\GraphQl;

@@ -125,6 +125,7 @@ input FilterIntInput {
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver;
@@ -139,6 +140,11 @@ use Magento\Framework\Api\SortOrderBuilder;
 
 class CustomItems implements ResolverInterface
 {
+    /**
+     * @param ItemRepositoryInterface $itemRepository
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     * @param SortOrderBuilder $sortOrderBuilder
+     */
     public function __construct(
         private readonly ItemRepositoryInterface $itemRepository,
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
@@ -146,12 +152,20 @@ class CustomItems implements ResolverInterface
     ) {
     }
 
+    /**
+     * @param Field $field
+     * @param ContextInterface $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(
         Field $field,
-        $context,
+        ContextInterface $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array $value = null,
+        ?array $args = null
     ): array {
         $pageSize = $args['pageSize'] ?? 20;
         $currentPage = $args['currentPage'] ?? 1;
@@ -196,6 +210,10 @@ class CustomItems implements ResolverInterface
         ];
     }
 
+    /**
+     * @param array $filters
+     * @return void
+     */
     private function applyFilters(array $filters): void
     {
         foreach ($filters as $field => $condition) {
@@ -209,6 +227,10 @@ class CustomItems implements ResolverInterface
         }
     }
 
+    /**
+     * @param array $sort
+     * @return void
+     */
     private function applySorting(array $sort): void
     {
         foreach ($sort as $field => $direction) {
@@ -220,6 +242,10 @@ class CustomItems implements ResolverInterface
         }
     }
 
+    /**
+     * @param string $type
+     * @return string
+     */
     private function mapConditionType(string $type): string
     {
         return match ($type) {
@@ -238,6 +264,7 @@ class CustomItems implements ResolverInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver;
@@ -252,18 +279,32 @@ use Vendor\Module\Api\Data\ItemInterfaceFactory;
 
 class CreateCustomItem implements ResolverInterface
 {
+    /**
+     * @param ItemRepositoryInterface $itemRepository
+     * @param ItemInterfaceFactory $itemFactory
+     */
     public function __construct(
         private readonly ItemRepositoryInterface $itemRepository,
         private readonly ItemInterfaceFactory $itemFactory
     ) {
     }
 
+    /**
+     * @param Field $field
+     * @param ContextInterface $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     * @throws GraphQlAuthorizationException
+     * @throws GraphQlInputException
+     */
     public function resolve(
         Field $field,
-        $context,
+        ContextInterface $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array $value = null,
+        ?array $args = null
     ): array {
         // Check authorization
         if (false === $context->getExtensionAttributes()->getIsCustomer()) {
@@ -339,6 +380,7 @@ type Query {
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Resolver\Identity;
@@ -347,6 +389,10 @@ use Magento\Framework\GraphQl\Query\Resolver\IdentityInterface;
 
 class CustomItems implements IdentityInterface
 {
+    /**
+     * @param array $resolvedData
+     * @return array
+     */
     public function getIdentities(array $resolvedData): array
     {
         $ids = [];

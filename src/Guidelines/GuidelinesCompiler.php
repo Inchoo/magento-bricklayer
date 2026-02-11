@@ -37,8 +37,24 @@ for AI-assisted development tooling.
 
 ## MCP Server: magento-bricklayer
 
-You have access to an MCP server with 50+ tools for Magento development.
+You have access to an MCP server with 85+ tools for Magento development.
 Always prefer using these tools over assumptions about the codebase.
+
+### Development Context Tool
+
+Before writing or generating code, call the `development-context` tool with the relevant
+task category to load coding guidelines and development patterns.
+
+| Example Category | Use Case |
+|------------------|----------|
+| `hyva-checkout` | Hyvä Checkout & Magewire development |
+| `plugin` | Plugin (interceptor) development |
+| `eav` | EAV attribute and entity development |
+| `rest-api` | REST API endpoint development |
+| `graphql` | GraphQL schema and resolver development |
+| `model` | Model, repository, and data layer development |
+| `module` | Module scaffolding and structure |
+| `list` | See all 25 available categories |
 
 ### Introspection Tools (Use First)
 
@@ -47,41 +63,116 @@ Before generating or modifying code, use these tools to understand context:
 | Tool | When to Use |
 |------|-------------|
 | `application-info` | Start of session to understand Magento version and edition |
+| `store-configuration` | View store/website/store view hierarchy |
 | `module-list` | Before creating modules to check naming conflicts |
 | `module-structure` | Before modifying a module to understand its layout |
+| `validate-module` | Validate module structure and configuration |
 | `database-schema` | Before creating models to verify table structures |
 | `eav-attributes` | Before creating/modifying attributes |
+| `eav-entity-types` | List all EAV entity types in the system |
 | `di-configuration` | Before creating plugins to check existing interceptors |
+| `plugin-list` | List all plugins (interceptors) for a class |
+| `event-list` | List events and their observers |
+| `preference-list` | List all class preferences (rewrites) |
+| `configuration-get` | Retrieve a system configuration value |
+| `configuration-list` | List available configuration paths for a section |
 | `route-list` | Before creating controllers to avoid route conflicts |
+| `route-info` | Get detailed information about a specific route |
+| `api-endpoints` | List all configured REST API endpoints |
+| `url-rewrites` | List URL rewrites with optional filtering |
 
 ### Catalog Tools
 
-| Tool | Purpose | Example Use Case |
-|------|---------|------------------|
-| `product-get` | Retrieve single product | Verify product exists before update |
-| `product-list` | Search products | Find products matching criteria |
-| `product-create` | Create new product | After verifying SKU is unique |
-| `product-update` | Modify product | Update attributes or status |
-| `product-stock-update` | Adjust inventory | Bulk stock adjustments |
-| `category-tree` | View hierarchy | Understand category structure |
+| Tool | Purpose |
+|------|---------|
+| `product-get` | Retrieve product data by SKU |
+| `product-list` | Search/list products with pagination |
+| `product-create` | Create a new product (verify SKU is unique first) |
+| `product-update` | Update an existing product |
+| `product-delete` | Delete a product by SKU |
+| `product-stock-get` | Get stock/inventory information |
+| `product-stock-update` | Update stock quantity |
+| `product-media-list` | List media gallery entries for a product |
+| `product-media-add` | Add media to product gallery |
+| `product-link-list` | List related/upsell/crosssell products |
+| `product-link-set` | Set product links (related, upsell, crosssell) |
+| `category-tree` | View category hierarchy |
+| `category-get` | Retrieve category data by ID |
+| `category-create` | Create a new category |
+| `category-update` | Update an existing category |
+| `category-delete` | Delete a category |
+| `category-products` | List products in a category |
+| `category-assign-products` | Assign products to a category |
 
 ### Order Tools
 
 | Tool | Purpose | Prerequisite |
 |------|---------|--------------|
-| `order-get` | Retrieve order details | None |
-| `order-cancel` | Cancel order | Order must be in cancellable state |
+| `order-get` | Retrieve order by increment ID | None |
+| `order-list` | List orders with pagination/filters | None |
+| `order-items` | Get line items for an order | None |
+| `order-comments` | List order status history/comments | None |
+| `order-add-comment` | Add comment to order history | None |
+| `order-cancel` | Cancel an order | Order must be cancellable |
+| `order-hold` | Place order on hold | Order must be holdable |
+| `order-unhold` | Release order from hold | Order must be on hold |
 | `invoice-create` | Create invoice | Order must be uninvoiced |
+| `invoice-list` | List invoices with pagination | None |
 | `shipment-create` | Create shipment | Order must be invoiced (usually) |
-| `creditmemo-create` | Process refund | Order must have invoice |
+| `shipment-list` | List shipments with pagination | None |
+| `shipment-track-add` | Add tracking to a shipment | Shipment must exist |
+| `creditmemo-create` | Create credit memo (refund) | Order must have invoice |
+| `creditmemo-list` | List credit memos with pagination | None |
 
 ### Customer Tools
 
-| Tool | Purpose | Note |
-|------|---------|------|
-| `customer-get` | Retrieve by ID or email | Use email for lookups |
-| `customer-create` | Create account | Validates email uniqueness |
-| `customer-orders` | Order history | Useful for customer service tasks |
+| Tool | Purpose |
+|------|---------|
+| `customer-get` | Retrieve customer by email |
+| `customer-list` | List customers with pagination |
+| `customer-create` | Create a new customer account |
+| `customer-update` | Update customer data |
+| `customer-delete` | Delete a customer account |
+| `customer-validate` | Validate customer data before create/update |
+| `customer-groups-list` | List all customer groups |
+| `customer-orders` | List orders for a customer |
+| `customer-addresses` | List customer addresses |
+| `customer-address-create` | Add address to a customer |
+| `customer-address-update` | Update a customer address |
+| `customer-address-delete` | Delete a customer address |
+
+### Database & Log Tools
+
+| Tool | Purpose |
+|------|---------|
+| `database-schema` | View table structure with columns, indexes, foreign keys |
+| `database-query` | Execute read-only SELECT queries against the database |
+| `log-read` | Read recent entries from Magento log files |
+| `log-list` | List available log files with sizes |
+| `log-analyze` | Analyze exception log for error patterns and frequency |
+| `log-search` | Search for a pattern across all log files |
+
+### GraphQL Tools
+
+| Tool | Purpose |
+|------|---------|
+| `graphql-types` | List GraphQL schema types |
+| `graphql-type-info` | Get detailed info about a specific GraphQL type |
+| `graphql-queries` | List all available GraphQL queries |
+| `graphql-mutations` | List all available GraphQL mutations |
+| `graphql-resolvers` | List GraphQL resolvers registered for types |
+
+### System & Development Tools
+
+| Tool | Purpose |
+|------|---------|
+| `cache-status` | View cache status for all cache types |
+| `indexer-status` | View status of all indexers |
+| `cron-list` | List all configured cron jobs |
+| `cron-history` | View recent cron job execution history |
+| `deploy-mode` | View current deploy mode |
+| `code-runner` | Execute PHP code in Magento context (disabled in production) |
+| `search-docs` | Search Magento documentation for topics and guidance |
 
 ### Code Generation Tools
 

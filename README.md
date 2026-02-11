@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 50+ tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 85+ tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -57,7 +57,8 @@ The MCP server is automatically started by compatible agents. Your agent can now
 - Use `module-list` to see installed modules
 - Use `database-schema` to inspect table structures
 - Use `product-get`, `order-get`, `customer-get` for data access
-- And 50+ more tools for comprehensive Magento development
+- Use `development-context` to load coding guidelines for your task
+- And 85+ more tools for comprehensive Magento development
 
 ## Supported AI Agents
 
@@ -235,6 +236,15 @@ This is useful when container names vary between environments or are dynamically
 - `log-list` - List all available log files with sizes and modification times
 - `log-analyze` - Analyze exception log for error patterns and frequency
 - `log-search` - Search across all log files with pattern matching
+
+### Code Generation Tools
+- `generate-module` - Scaffold a new Magento 2 module with registration.php, module.xml, composer.json
+- `generate-model` - Create model, resource model, and collection classes with db_schema.xml
+- `generate-controller` - Create controller with routes.xml, layout XML, and template
+- `generate-api` - Create REST API endpoint with interface, implementation, and webapi.xml
+
+### Development Context Tool
+- `development-context` - Load coding guidelines and development patterns for a task category (25 categories covering plugins, EAV, GraphQL, Hyvä, checkout, testing, and more). Use category `list` to see all available categories.
 
 ## MCP Resources
 

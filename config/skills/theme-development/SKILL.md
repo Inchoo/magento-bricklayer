@@ -46,6 +46,7 @@ app/design/frontend/Vendor/themename/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;

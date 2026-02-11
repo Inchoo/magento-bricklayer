@@ -103,6 +103,7 @@ Developing for Mage-OS follows the same patterns as Magento:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module;

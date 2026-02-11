@@ -19,6 +19,7 @@ Magento 2's REST API enables external systems and frontends to interact with the
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;
@@ -28,8 +29,8 @@ namespace Vendor\Module\Api\Data;
  */
 interface ItemInterface
 {
-    public const ID = 'entity_id';
-    public const NAME = 'name';
+    public const string ID = 'entity_id';
+    public const string NAME = 'name';
 
     /**
      * @return int|null
@@ -59,6 +60,7 @@ interface ItemInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -261,6 +263,11 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\LocalizedException;
 
+/**
+ * @param int $id
+ * @return ItemInterface
+ * @throws NoSuchEntityException
+ */
 public function getById(int $id): ItemInterface
 {
     $item = $this->itemFactory->create();
@@ -283,12 +290,21 @@ use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Framework\Api\FilterBuilder;
 
+/**
+ * @param SearchCriteriaBuilder $searchCriteriaBuilder
+ * @param SortOrderBuilder $sortOrderBuilder
+ * @param FilterBuilder $filterBuilder
+ */
 public function __construct(
     private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
     private readonly SortOrderBuilder $sortOrderBuilder,
     private readonly FilterBuilder $filterBuilder
-) {}
+) {
+}
 
+/**
+ * @return array
+ */
 public function getActiveItems(): array
 {
     $filter = $this->filterBuilder

@@ -7,13 +7,18 @@
 Never trust user input. Validate and sanitize all data:
 
 ```php
-// Use type hints for automatic validation
+/**
+ * @param int $productId
+ * @param string $sku
+ * @return void
+ */
 public function process(int $productId, string $sku): void
-
-// For arrays, validate each element
-foreach ($items as $item) {
-    if (!is_array($item) || !isset($item['sku'])) {
-        throw new InputException(__('Invalid item format'));
+{
+    // For arrays, validate each element
+    foreach ($items as $item) {
+        if (!is_array($item) || !isset($item['sku'])) {
+            throw new InputException(__('Invalid item format'));
+        }
     }
 }
 ```
@@ -98,6 +103,10 @@ All forms must include a form key:
 ### Validate Form Keys
 
 ```php
+/**
+ * @return ResultInterface
+ * @throws LocalizedException
+ */
 public function execute(): ResultInterface
 {
     if (!$this->formKeyValidator->validate($this->getRequest())) {
@@ -129,6 +138,10 @@ Define ACL resources in `etc/acl.xml`:
 ### Check Authorization
 
 ```php
+/**
+ * @return ResultInterface
+ * @throws AuthorizationException
+ */
 public function execute(): ResultInterface
 {
     if (!$this->authorization->isAllowed('Vendor_Module::config')) {

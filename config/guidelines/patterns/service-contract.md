@@ -16,6 +16,7 @@ Service contracts are interfaces that define the public API for Magento modules.
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -49,6 +50,7 @@ interface CustomServiceInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;
@@ -99,6 +101,7 @@ interface EntityInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -163,6 +166,7 @@ interface EntityRepositoryInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;

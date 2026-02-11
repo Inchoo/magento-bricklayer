@@ -74,52 +74,67 @@ class CodingStandardsResource
     private function getDefaultCodingStandards(): string
     {
         return <<<'MARKDOWN'
-# Magento 2 Coding Standards
+# Magento 2 Coding Standards (MCGA)
 
-## PHP Standards
+## CRITICAL: Follow These Rules Exactly
 
-Magento 2 follows PSR-1, PSR-2, and PSR-12 coding standards with additional Magento-specific rules.
+All generated PHP code MUST comply with these standards.
 
-### Key Requirements
+## File Structure
 
+- `<?php` tag MUST be the first item (no whitespace before it)
 - Use `declare(strict_types=1);` in all PHP files
-- Use constructor property promotion (PHP 8.1+)
-- Always type-hint method parameters and return types
-- Use `readonly` properties where applicable
+- Do NOT use the closing `?>` tag in PHP-only files
+- Files MUST end with exactly one newline
+- One blank line after namespace declaration
+- One `use` per line; one blank line after final `use` statement
+- One class per file under a namespace
 
-### Naming Conventions
+## Naming & Properties
 
-- Classes: PascalCase (e.g., `ProductRepository`)
-- Methods: camelCase (e.g., `getProductById`)
-- Constants: UPPER_SNAKE_CASE (e.g., `DEFAULT_STORE_ID`)
-- Variables: camelCase (e.g., `$productCollection`)
+- Classes: PascalCase, Methods: camelCase, Constants: UPPER_SNAKE_CASE
+- Do NOT prefix properties/methods with underscore (exception: framework overrides like `_construct()`, `$_idFieldName`)
+- Use visibility keywords, not `var`; one property per statement
+- `static` MUST come after visibility: `public static`
+- Class constants MUST have visibility declared
 
-### File Organization
+## Brace Placement
 
-- One class per file
-- Class name must match filename
-- Namespace must match directory structure
+- Classes and methods: opening brace on NEW line
+- Control structures (if, for, foreach, while): opening brace on SAME line
+- Method keyword order: `final`/`abstract`, visibility, `static`
 
-## Documentation
+## Spacing & Formatting
 
-- All public methods must have PHPDoc blocks
-- Include `@param`, `@return`, and `@throws` annotations
-- Add `@api` annotation for service contract methods
-- Add `@deprecated` for deprecated functionality
+- 4 spaces indentation, no tabs
+- 0 spaces inside control structure parentheses
+- 1 space between keyword and parenthesis, 1 space before brace
+- Multi-line function calls: one arg per line, closing paren on new line
+- One space after commas; spaces around `=` in defaults
+- All keywords lowercase; `true`, `false`, `null` lowercase
+- Always use braces on control structures
+- Use `elseif` not `else if`
+- Short array syntax `[]` required (not `array()`)
+- No trailing whitespace, no consecutive blank lines in functions
+- No multiple statements per line
+
+## Quality Rules
+
+- No `TODO` or `FIXME` comments
+- No error suppression with `@` operator
+- No deprecated functions
+- Cyclomatic complexity under 20 (aim for under 10)
+- Nesting level under 10 (aim for under 5)
+- All function parameters must be used
+- Default value arguments at end of parameter list
+- Document `@throws` for exception-throwing methods
 
 ## Dependency Injection
 
 - Never use ObjectManager directly in application code
 - Inject dependencies via constructor
-- Use interfaces for dependencies, not concrete classes
-- Define preferences in di.xml for interface implementations
-
-## Error Handling
-
-- Use specific exception types (NoSuchEntityException, LocalizedException)
-- Never catch generic \Exception unless re-throwing
-- Log errors before throwing exceptions
-- Provide meaningful exception messages
+- Use interfaces, not concrete classes
+- Use constructor property promotion (PHP 8.0+) and `readonly` (PHP 8.1+)
 MARKDOWN;
     }
 
@@ -158,10 +173,34 @@ Repositories provide CRUD operations for entities.
 ```php
 interface ProductRepositoryInterface
 {
+    /**
+     * @param ProductInterface $product
+     * @return ProductInterface
+     */
     public function save(ProductInterface $product): ProductInterface;
+
+    /**
+     * @param string $sku
+     * @return ProductInterface
+     */
     public function get(string $sku): ProductInterface;
+
+    /**
+     * @param int $productId
+     * @return ProductInterface
+     */
     public function getById(int $productId): ProductInterface;
+
+    /**
+     * @param ProductInterface $product
+     * @return bool
+     */
     public function delete(ProductInterface $product): bool;
+
+    /**
+     * @param SearchCriteriaInterface $criteria
+     * @return ProductSearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $criteria): ProductSearchResultsInterface;
 }
 ```

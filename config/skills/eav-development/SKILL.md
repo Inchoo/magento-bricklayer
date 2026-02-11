@@ -35,6 +35,7 @@ The Entity-Attribute-Value (EAV) model is Magento's flexible data storage system
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -48,12 +49,19 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddCustomProductAttribute implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param EavSetupFactory $eavSetupFactory
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly EavSetupFactory $eavSetupFactory
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -80,11 +88,17 @@ class AddCustomProductAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -117,6 +131,7 @@ $eavSetup->addAttribute(
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Source;
@@ -129,6 +144,9 @@ class CustomStatus extends AbstractSource
     public const STATUS_APPROVED = 2;
     public const STATUS_REJECTED = 3;
 
+    /**
+     * @return array
+     */
     public function getAllOptions(): array
     {
         return [
@@ -144,6 +162,7 @@ class CustomStatus extends AbstractSource
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -156,12 +175,19 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddCustomerAttribute implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param CustomerSetupFactory $customerSetupFactory
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly CustomerSetupFactory $customerSetupFactory
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $customerSetup = $this->customerSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -196,11 +222,17 @@ class AddCustomerAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];

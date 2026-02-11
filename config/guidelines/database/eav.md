@@ -31,6 +31,7 @@ catalog_product_entity_* - Value tables (varchar, int, decimal, datetime, text)
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -43,12 +44,19 @@ use Magento\Catalog\Model\Product;
 
 class AddCustomAttribute implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param EavSetupFactory $eavSetupFactory
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly EavSetupFactory $eavSetupFactory
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         /** @var EavSetup $eavSetup */
@@ -78,11 +86,17 @@ class AddCustomAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -129,6 +143,7 @@ For select/multiselect attributes:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Attribute\Source;
@@ -137,17 +152,25 @@ use Magento\Eav\Model\Entity\Attribute\Source\AbstractSource;
 
 class CustomOptions extends AbstractSource
 {
+    /**
+     * @var array|null
+     */
+    private ?array $options = null;
+
+    /**
+     * @return array
+     */
     public function getAllOptions(): array
     {
-        if ($this->_options === null) {
-            $this->_options = [
+        if ($this->options === null) {
+            $this->options = [
                 ['value' => '', 'label' => __('-- Please Select --')],
                 ['value' => 'option1', 'label' => __('Option 1')],
                 ['value' => 'option2', 'label' => __('Option 2')],
                 ['value' => 'option3', 'label' => __('Option 3')],
             ];
         }
-        return $this->_options;
+        return $this->options;
     }
 }
 ```
@@ -172,6 +195,7 @@ For custom save/load logic:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Attribute\Backend;
@@ -181,7 +205,11 @@ use Magento\Framework\DataObject;
 
 class CustomBackend extends AbstractBackend
 {
-    public function beforeSave($object): self
+    /**
+     * @param DataObject $object
+     * @return self
+     */
+    public function beforeSave(DataObject $object): self
     {
         $value = $object->getData($this->getAttribute()->getAttributeCode());
         // Process value before save
@@ -190,7 +218,11 @@ class CustomBackend extends AbstractBackend
         return parent::beforeSave($object);
     }
 
-    public function afterLoad($object): self
+    /**
+     * @param DataObject $object
+     * @return self
+     */
+    public function afterLoad(DataObject $object): self
     {
         // Process value after load
         return parent::afterLoad($object);
@@ -204,6 +236,7 @@ For display rendering:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\Attribute\Frontend;
@@ -212,6 +245,10 @@ use Magento\Eav\Model\Entity\Attribute\Frontend\AbstractFrontend;
 
 class CustomFrontend extends AbstractFrontend
 {
+    /**
+     * @param \Magento\Framework\DataObject $object
+     * @return string
+     */
     public function getValue(\Magento\Framework\DataObject $object): string
     {
         $value = parent::getValue($object);

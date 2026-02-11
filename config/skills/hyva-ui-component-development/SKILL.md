@@ -362,6 +362,7 @@ table.mobile-friendly-table {
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Hyva\Theme\Model\ViewModelRegistry;

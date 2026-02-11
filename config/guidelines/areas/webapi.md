@@ -82,6 +82,7 @@ Magento's WebAPI layer provides REST and SOAP endpoints. Use service contracts (
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -141,6 +142,7 @@ interface ItemRepositoryInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;
@@ -224,6 +226,7 @@ interface ItemInterface extends ExtensibleDataInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;

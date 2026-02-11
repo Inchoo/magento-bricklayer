@@ -209,6 +209,7 @@ define([
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Block\Checkout;
@@ -218,12 +219,10 @@ use Magento\Checkout\Block\Checkout\LayoutProcessorInterface;
 class ShippingLayoutProcessor implements LayoutProcessorInterface
 {
     /**
-     * Process js layout of checkout page
-     *
      * @param array $jsLayout
      * @return array
      */
-    public function process($jsLayout): array
+    public function process(array $jsLayout): array
     {
         $customField = [
             'component' => 'Magento_Ui/js/form/element/abstract',
@@ -288,6 +287,7 @@ class ShippingLayoutProcessor implements LayoutProcessorInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -301,14 +301,15 @@ class CustomConfigProvider implements ConfigProviderInterface
     private const XML_PATH_ENABLED = 'vendor_module/checkout/enabled';
     private const XML_PATH_MESSAGE = 'vendor_module/checkout/message';
 
+    /**
+     * @param ScopeConfigInterface $scopeConfig
+     */
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig
     ) {
     }
 
     /**
-     * Retrieve assoc array of checkout configuration
-     *
      * @return array
      */
     public function getConfig(): array
@@ -322,6 +323,9 @@ class CustomConfigProvider implements ConfigProviderInterface
         ];
     }
 
+    /**
+     * @return bool
+     */
     private function isEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -330,6 +334,9 @@ class CustomConfigProvider implements ConfigProviderInterface
         );
     }
 
+    /**
+     * @return string
+     */
     private function getMessage(): string
     {
         return (string) $this->scopeConfig->getValue(
@@ -338,6 +345,9 @@ class CustomConfigProvider implements ConfigProviderInterface
         );
     }
 
+    /**
+     * @return array
+     */
     private function getAdditionalData(): array
     {
         return [
@@ -627,8 +637,6 @@ define([
 
     return {
         /**
-         * Validate checkout form
-         *
          * @returns {Boolean}
          */
         validate: function () {
@@ -683,6 +691,7 @@ define([
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin\Checkout;
@@ -693,11 +702,20 @@ use Magento\Quote\Api\CartRepositoryInterface;
 
 class ShippingInformationManagementPlugin
 {
+    /**
+     * @param CartRepositoryInterface $quoteRepository
+     */
     public function __construct(
         private readonly CartRepositoryInterface $quoteRepository
     ) {
     }
 
+    /**
+     * @param ShippingInformationManagement $subject
+     * @param int $cartId
+     * @param ShippingInformationInterface $addressInformation
+     * @return array
+     */
     public function beforeSaveAddressInformation(
         ShippingInformationManagement $subject,
         int $cartId,

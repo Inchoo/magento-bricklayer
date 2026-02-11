@@ -55,6 +55,7 @@ Patches replace the old InstallSchema/UpgradeSchema system.
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Schema;
@@ -64,11 +65,17 @@ use Magento\Framework\Setup\SchemaSetupInterface;
 
 class AddColumn implements SchemaPatchInterface
 {
+    /**
+     * @param SchemaSetupInterface $schemaSetup
+     */
     public function __construct(
         private readonly SchemaSetupInterface $schemaSetup
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $this->schemaSetup->startSetup();
@@ -77,11 +84,17 @@ class AddColumn implements SchemaPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -93,6 +106,7 @@ class AddColumn implements SchemaPatchInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -103,11 +117,17 @@ use Magento\Framework\Setup\ModuleDataSetupInterface;
 
 class AddData implements DataPatchInterface, PatchVersionInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $this->moduleDataSetup->startSetup();
@@ -116,16 +136,25 @@ class AddData implements DataPatchInterface, PatchVersionInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
     }
 
+    /**
+     * @return string
+     */
     public static function getVersion(): string
     {
         return '1.0.1';

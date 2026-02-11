@@ -27,16 +27,25 @@ Use ESI or JavaScript for truly dynamic parts instead of disabling cache.
 ### Block Cache
 
 ```php
+/**
+ * @return int
+ */
 protected function getCacheLifetime(): int
 {
     return 3600; // 1 hour
 }
 
+/**
+ * @return string
+ */
 protected function getCacheKey(): string
 {
     return 'MY_BLOCK_' . $this->getStoreId() . '_' . $this->getCustomerGroupId();
 }
 
+/**
+ * @return array
+ */
 protected function getCacheTags(): array
 {
     return [
@@ -49,11 +58,19 @@ protected function getCacheTags(): array
 ### Data Cache
 
 ```php
+/**
+ * @param \Magento\Framework\App\CacheInterface $cache
+ * @param \Magento\Framework\Serialize\SerializerInterface $serializer
+ */
 public function __construct(
     private readonly \Magento\Framework\App\CacheInterface $cache,
     private readonly \Magento\Framework\Serialize\SerializerInterface $serializer
 ) {}
 
+/**
+ * @param int $id
+ * @return array
+ */
 public function getExpensiveData(int $id): array
 {
     $cacheKey = 'expensive_data_' . $id;

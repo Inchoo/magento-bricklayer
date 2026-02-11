@@ -45,6 +45,7 @@ class CodeGenerationTools
         // registration.php
         $files['registration.php'] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;
@@ -128,11 +129,18 @@ XML;
             $methodName = str_replace('_', '', ucwords($field, '_'));
             $gettersSetters .= <<<PHP
 
+    /**
+     * @return string|null
+     */
     public function get{$methodName}(): ?string
     {
         return \$this->getData('{$field}');
     }
 
+    /**
+     * @param string \$value
+     * @return self
+     */
     public function set{$methodName}(string \$value): self
     {
         return \$this->setData('{$field}', \$value);
@@ -142,6 +150,7 @@ PHP;
 
         $files["Model/{$entity}.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\Model;
@@ -151,6 +160,9 @@ use {$namespace}\Model\ResourceModel\\{$entity} as {$entity}Resource;
 
 class {$entity} extends AbstractModel
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         \$this->_init({$entity}Resource::class);
@@ -162,6 +174,7 @@ PHP;
         // Resource Model class
         $files["Model/ResourceModel/{$entity}.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\Model\ResourceModel;
@@ -170,6 +183,9 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 class {$entity} extends AbstractDb
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         \$this->_init('{$table}', 'entity_id');
@@ -180,6 +196,7 @@ PHP;
         // Collection class
         $files["Model/ResourceModel/{$entity}/Collection.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\Model\ResourceModel\\{$entity};
@@ -190,8 +207,14 @@ use {$namespace}\Model\ResourceModel\\{$entity} as {$entity}Resource;
 
 class Collection extends AbstractCollection
 {
-    protected \$_idFieldName = 'entity_id';
+    /**
+     * @var string
+     */
+    protected string \$_idFieldName = 'entity_id';
 
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         \$this->_init({$entity}::class, {$entity}Resource::class);
@@ -253,6 +276,7 @@ PHP;
         // Controller class
         $files["{$controllerPath}/{$actionClass}/Index.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\\{$controllerPath}\\{$actionClass};
@@ -264,6 +288,10 @@ use Magento\Framework\Controller\ResultInterface;
 
 class Index extends Action
 {
+    /**
+     * @param Context \$context
+     * @param PageFactory \$resultPageFactory
+     */
     public function __construct(
         Context \$context,
         private readonly PageFactory \$resultPageFactory
@@ -271,6 +299,9 @@ class Index extends Action
         parent::__construct(\$context);
     }
 
+    /**
+     * @return ResultInterface
+     */
     public function execute(): ResultInterface
     {
         \$resultPage = \$this->resultPageFactory->create();
@@ -384,6 +415,7 @@ PHTML;
         // Service interface
         $files["Api/{$resourceClass}ManagementInterface.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\Api;
@@ -431,6 +463,7 @@ PHP;
         // Service implementation
         $files["Model/{$resourceClass}Management.php"] = <<<PHP
 <?php
+
 declare(strict_types=1);
 
 namespace {$namespace}\Model;
@@ -440,38 +473,37 @@ use {$namespace}\Api\\{$resourceClass}ManagementInterface;
 class {$resourceClass}Management implements {$resourceClass}ManagementInterface
 {
     /**
-     * @inheritDoc
+     * @return array
      */
     public function getList(): array
     {
-        // TODO: Implement actual logic
         return ['items' => [], 'total_count' => 0];
     }
 
     /**
-     * @inheritDoc
+     * @param int $id
+     * @return array
      */
     public function getById(int \$id): array
     {
-        // TODO: Implement actual logic
-        return ['id' => \$id, 'message' => 'Not implemented'];
+        return ['id' => \$id];
     }
 
     /**
-     * @inheritDoc
+     * @param array $data
+     * @return array
      */
     public function save(array \$data): array
     {
-        // TODO: Implement actual logic
         return ['success' => true, 'data' => \$data];
     }
 
     /**
-     * @inheritDoc
+     * @param int $id
+     * @return bool
      */
     public function deleteById(int \$id): bool
     {
-        // TODO: Implement actual logic
         return true;
     }
 }

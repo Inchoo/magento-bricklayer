@@ -31,6 +31,7 @@ UI Component
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Ui\DataProvider;
@@ -40,7 +41,7 @@ use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider;
 class EntityListingDataProvider extends DataProvider
 {
     /**
-     * @inheritdoc
+     * @return array
      */
     public function getData(): array
     {
@@ -223,6 +224,7 @@ class EntityListingDataProvider extends DataProvider
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Ui\Component\Listing\Column;
@@ -237,6 +239,13 @@ class EntityActions extends Column
     private const URL_PATH_EDIT = 'vendor_module/entity/edit';
     private const URL_PATH_DELETE = 'vendor_module/entity/delete';
 
+    /**
+     * @param ContextInterface $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param UrlInterface $urlBuilder
+     * @param array $components
+     * @param array $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -247,6 +256,10 @@ class EntityActions extends Column
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
+    /**
+     * @param array $dataSource
+     * @return array
+     */
     public function prepareDataSource(array $dataSource): array
     {
         if (!isset($dataSource['data']['items'])) {
@@ -411,6 +424,7 @@ class EntityActions extends Column
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Ui\DataProvider\Entity;
@@ -421,8 +435,20 @@ use Vendor\Module\Model\ResourceModel\Entity\CollectionFactory;
 
 class FormDataProvider extends AbstractDataProvider
 {
+    /**
+     * @var array
+     */
     private array $loadedData = [];
 
+    /**
+     * @param string $name
+     * @param string $primaryFieldName
+     * @param string $requestFieldName
+     * @param CollectionFactory $collectionFactory
+     * @param DataPersistorInterface $dataPersistor
+     * @param array $meta
+     * @param array $data
+     */
     public function __construct(
         string $name,
         string $primaryFieldName,
@@ -436,6 +462,9 @@ class FormDataProvider extends AbstractDataProvider
         $this->collection = $collectionFactory->create();
     }
 
+    /**
+     * @return array
+     */
     public function getData(): array
     {
         if (!empty($this->loadedData)) {
@@ -478,6 +507,7 @@ class FormDataProvider extends AbstractDataProvider
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Ui\DataProvider\Entity\Form\Modifier;
@@ -486,6 +516,10 @@ use Magento\Ui\DataProvider\Modifier\ModifierInterface;
 
 class CustomModifier implements ModifierInterface
 {
+    /**
+     * @param array $meta
+     * @return array
+     */
     public function modifyMeta(array $meta): array
     {
         // Add dynamic fields
@@ -518,6 +552,10 @@ class CustomModifier implements ModifierInterface
         return $meta;
     }
 
+    /**
+     * @param array $data
+     * @return array
+     */
     public function modifyData(array $data): array
     {
         // Transform data

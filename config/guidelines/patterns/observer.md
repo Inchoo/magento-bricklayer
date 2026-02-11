@@ -45,6 +45,7 @@ Observers react to events dispatched throughout Magento. They're ideal for decou
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Observer;
@@ -55,12 +56,20 @@ use Psr\Log\LoggerInterface;
 
 class OrderPlacedObserver implements ObserverInterface
 {
+    /**
+     * @param LoggerInterface $logger
+     * @param OrderSyncService $syncService
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly OrderSyncService $syncService
     ) {
     }
 
+    /**
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer): void
     {
         /** @var \Magento\Sales\Model\Order $order */
@@ -90,6 +99,10 @@ class OrderPlacedObserver implements ObserverInterface
 ## Accessing Event Data
 
 ```php
+/**
+ * @param Observer $observer
+ * @return void
+ */
 public function execute(Observer $observer): void
 {
     // Get event object
@@ -130,6 +143,10 @@ public function execute(Observer $observer): void
 
 ```php
 // WRONG
+/**
+ * @param Observer $observer
+ * @return void
+ */
 public function execute(Observer $observer): void
 {
     $order = $observer->getEvent()->getOrder();
@@ -137,6 +154,10 @@ public function execute(Observer $observer): void
 }
 
 // RIGHT - Use repository or model save
+/**
+ * @param Observer $observer
+ * @return void
+ */
 public function execute(Observer $observer): void
 {
     $order = $observer->getEvent()->getOrder();
@@ -152,12 +173,20 @@ public function execute(Observer $observer): void
 
 ```php
 // WRONG - Breaks event chain
+/**
+ * @param Observer $observer
+ * @return void
+ */
 public function execute(Observer $observer): void
 {
     throw new \Exception('Error occurred');
 }
 
 // RIGHT - Log and continue
+/**
+ * @param Observer $observer
+ * @return void
+ */
 public function execute(Observer $observer): void
 {
     try {

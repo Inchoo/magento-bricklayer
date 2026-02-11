@@ -30,6 +30,7 @@ app/code/Vendor/Module/Test/Unit/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Unit\Model;
@@ -41,15 +42,28 @@ use Vendor\Module\Api\ConfigInterface;
 
 class CalculatorTest extends TestCase
 {
+    /**
+     * @var Calculator
+     */
     private Calculator $calculator;
+
+    /**
+     * @var MockObject
+     */
     private MockObject $configMock;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         $this->configMock = $this->createMock(ConfigInterface::class);
         $this->calculator = new Calculator($this->configMock);
     }
 
+    /**
+     * @return void
+     */
     public function testCalculateReturnsCorrectValue(): void
     {
         // Arrange
@@ -62,6 +76,9 @@ class CalculatorTest extends TestCase
         $this->assertEquals(20.0, $result);
     }
 
+    /**
+     * @return void
+     */
     public function testCalculateWithZeroReturnsZero(): void
     {
         $this->configMock->method('getMultiplier')->willReturn(5.0);
@@ -71,6 +88,9 @@ class CalculatorTest extends TestCase
         $this->assertEquals(0.0, $result);
     }
 
+    /**
+     * @return void
+     */
     public function testCalculateThrowsExceptionOnNegative(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -96,6 +116,9 @@ public function testCalculateWithVariousInputs(float $input, float $multiplier, 
     $this->assertEquals($expected, $result);
 }
 
+/**
+ * @return array
+ */
 public static function calculationDataProvider(): array
 {
     return [
@@ -137,6 +160,7 @@ cp phpunit.xml.dist phpunit.xml
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Integration\Model;
@@ -152,8 +176,14 @@ use Vendor\Module\Api\Data\ItemInterface;
  */
 class ItemRepositoryTest extends AbstractController
 {
+    /**
+     * @var ItemRepositoryInterface
+     */
     private ItemRepositoryInterface $repository;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -179,6 +209,9 @@ class ItemRepositoryTest extends AbstractController
         // Test with specific configuration
     }
 
+    /**
+     * @return void
+     */
     public function testGetByIdThrowsExceptionForInvalidId(): void
     {
         $this->expectException(\Magento\Framework\Exception\NoSuchEntityException::class);
@@ -193,6 +226,7 @@ class ItemRepositoryTest extends AbstractController
 ```php
 // Test/Integration/_files/item.php
 <?php
+
 declare(strict_types=1);
 
 use Magento\TestFramework\Helper\Bootstrap;
@@ -214,6 +248,7 @@ $repository->save($item);
 ```php
 // Test/Integration/_files/item_rollback.php
 <?php
+
 declare(strict_types=1);
 
 use Magento\TestFramework\Helper\Bootstrap;
@@ -242,6 +277,7 @@ $registry->unregister('isSecureArea');
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\Api;
@@ -271,6 +307,9 @@ class ItemApiTest extends WebapiAbstract
         $this->assertEquals('Test Item', $item['name']);
     }
 
+    /**
+     * @return void
+     */
     public function testCreateItem(): void
     {
         $serviceInfo = [
@@ -299,6 +338,7 @@ class ItemApiTest extends WebapiAbstract
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Test\GraphQl;

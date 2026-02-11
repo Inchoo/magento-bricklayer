@@ -57,6 +57,7 @@ class McpServerFactory
             ->setContainer($container)
             ->setInstructions($this->getServerInstructions())
             ->setDiscovery(__DIR__, ['Tool', 'Resource', 'Prompt'])
+            ->setPaginationLimit(200)
             ->setCapabilities(new ServerCapabilities(
                 tools: true,
                 toolsListChanged: false,
@@ -127,6 +128,8 @@ Key capabilities:
 
 Always use the introspection tools before generating code to understand
 the existing codebase structure and conventions.
+
+Before writing or generating code, call the `development-context` tool with the relevant task category to load coding guidelines and development patterns.
 INSTRUCTIONS;
     }
 }

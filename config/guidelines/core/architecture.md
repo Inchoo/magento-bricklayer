@@ -19,9 +19,26 @@ interface CustomEntityInterface extends ExtensibleDataInterface
     public const ENTITY_ID = 'entity_id';
     public const NAME = 'name';
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int;
+
+    /**
+     * @param int|null $entityId
+     * @return self
+     */
     public function setEntityId(?int $entityId): self;
+
+    /**
+     * @return string|null
+     */
     public function getName(): ?string;
+
+    /**
+     * @param string|null $name
+     * @return self
+     */
     public function setName(?string $name): self;
 }
 ```
@@ -38,9 +55,28 @@ namespace Vendor\Module\Api;
  */
 interface CustomEntityRepositoryInterface
 {
+    /**
+     * @param CustomEntityInterface $entity
+     * @return CustomEntityInterface
+     */
     public function save(CustomEntityInterface $entity): CustomEntityInterface;
+
+    /**
+     * @param int $entityId
+     * @return CustomEntityInterface
+     */
     public function get(int $entityId): CustomEntityInterface;
+
+    /**
+     * @param CustomEntityInterface $entity
+     * @return bool
+     */
     public function delete(CustomEntityInterface $entity): bool;
+
+    /**
+     * @param SearchCriteriaInterface $searchCriteria
+     * @return SearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): SearchResultsInterface;
 }
 ```
@@ -56,6 +92,12 @@ namespace Vendor\Module\Model;
 
 class CustomEntityRepository implements CustomEntityRepositoryInterface
 {
+    /**
+     * @param ResourceCustomEntity $resource
+     * @param CustomEntityFactory $factory
+     * @param CollectionFactory $collectionFactory
+     * @param SearchResultsInterfaceFactory $searchResultsFactory
+     */
     public function __construct(
         private readonly ResourceCustomEntity $resource,
         private readonly CustomEntityFactory $factory,
@@ -64,6 +106,11 @@ class CustomEntityRepository implements CustomEntityRepositoryInterface
     ) {
     }
 
+    /**
+     * @param CustomEntityInterface $entity
+     * @return CustomEntityInterface
+     * @throws CouldNotSaveException
+     */
     public function save(CustomEntityInterface $entity): CustomEntityInterface
     {
         try {
@@ -91,6 +138,11 @@ Plugins modify method behavior without changing the original class.
 ### Before Plugin
 
 ```php
+/**
+ * @param ProductInterface $subject
+ * @param string $name
+ * @return array
+ */
 public function beforeSetName(ProductInterface $subject, string $name): array
 {
     $name = trim($name);
@@ -101,6 +153,11 @@ public function beforeSetName(ProductInterface $subject, string $name): array
 ### After Plugin
 
 ```php
+/**
+ * @param ProductInterface $subject
+ * @param string|null $result
+ * @return string|null
+ */
 public function afterGetName(ProductInterface $subject, ?string $result): ?string
 {
     return $result ? strtoupper($result) : null;
@@ -110,6 +167,12 @@ public function afterGetName(ProductInterface $subject, ?string $result): ?strin
 ### Around Plugin
 
 ```php
+/**
+ * @param ProductRepositoryInterface $subject
+ * @param callable $proceed
+ * @param ProductInterface $product
+ * @return ProductInterface
+ */
 public function aroundSave(
     ProductRepositoryInterface $subject,
     callable $proceed,
@@ -149,6 +212,10 @@ namespace Vendor\Module\Observer;
 
 class EntitySaveObserver implements ObserverInterface
 {
+    /**
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer): void
     {
         $entity = $observer->getData('entity');
@@ -186,6 +253,10 @@ class EntitySaveObserver implements ObserverInterface
 ### Constructor Injection (Preferred)
 
 ```php
+/**
+ * @param ProductRepositoryInterface $productRepository
+ * @param LoggerInterface $logger
+ */
 public function __construct(
     private readonly ProductRepositoryInterface $productRepository,
     private readonly LoggerInterface $logger

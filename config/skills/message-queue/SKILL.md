@@ -142,6 +142,7 @@ app/code/Vendor/Queue/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Api\Data;
@@ -153,16 +154,48 @@ interface MessageInterface
     public const DATA = 'data';
     public const CREATED_AT = 'created_at';
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int;
+
+    /**
+     * @param int $entityId
+     * @return self
+     */
     public function setEntityId(int $entityId): self;
 
+    /**
+     * @return string
+     */
     public function getOperation(): string;
+
+    /**
+     * @param string $operation
+     * @return self
+     */
     public function setOperation(string $operation): self;
 
+    /**
+     * @return array
+     */
     public function getData(): array;
+
+    /**
+     * @param array $data
+     * @return self
+     */
     public function setData(array $data): self;
 
+    /**
+     * @return string|null
+     */
     public function getCreatedAt(): ?string;
+
+    /**
+     * @param string $createdAt
+     * @return self
+     */
     public function setCreatedAt(string $createdAt): self;
 }
 ```
@@ -171,6 +204,7 @@ interface MessageInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Model;
@@ -179,49 +213,92 @@ use Vendor\Queue\Api\Data\MessageInterface;
 
 class Message implements MessageInterface
 {
+    /**
+     * @var int|null
+     */
     private ?int $entityId = null;
+
+    /**
+     * @var string
+     */
     private string $operation = '';
+
+    /**
+     * @var array
+     */
     private array $data = [];
+
+    /**
+     * @var string|null
+     */
     private ?string $createdAt = null;
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int
     {
         return $this->entityId;
     }
 
+    /**
+     * @param int $entityId
+     * @return MessageInterface
+     */
     public function setEntityId(int $entityId): MessageInterface
     {
         $this->entityId = $entityId;
         return $this;
     }
 
+    /**
+     * @return string
+     */
     public function getOperation(): string
     {
         return $this->operation;
     }
 
+    /**
+     * @param string $operation
+     * @return MessageInterface
+     */
     public function setOperation(string $operation): MessageInterface
     {
         $this->operation = $operation;
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public function getData(): array
     {
         return $this->data;
     }
 
+    /**
+     * @param array $data
+     * @return MessageInterface
+     */
     public function setData(array $data): MessageInterface
     {
         $this->data = $data;
         return $this;
     }
 
+    /**
+     * @return string|null
+     */
     public function getCreatedAt(): ?string
     {
         return $this->createdAt;
     }
 
+    /**
+     * @param string $createdAt
+     * @return MessageInterface
+     */
     public function setCreatedAt(string $createdAt): MessageInterface
     {
         $this->createdAt = $createdAt;
@@ -234,6 +311,7 @@ class Message implements MessageInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Model;
@@ -247,6 +325,11 @@ class Publisher
 {
     private const TOPIC_NAME = 'vendor.queue.custom.operation';
 
+    /**
+     * @param PublisherInterface $publisher
+     * @param MessageInterfaceFactory $messageFactory
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly PublisherInterface $publisher,
         private readonly MessageInterfaceFactory $messageFactory,
@@ -255,7 +338,10 @@ class Publisher
     }
 
     /**
-     * Publish message to queue
+     * @param int $entityId
+     * @param string $operation
+     * @param array $data
+     * @return void
      */
     public function publish(int $entityId, string $operation, array $data = []): void
     {
@@ -283,7 +369,9 @@ class Publisher
     }
 
     /**
-     * Publish bulk messages
+     * @param array $items
+     * @param string $operation
+     * @return void
      */
     public function publishBulk(array $items, string $operation): void
     {
@@ -298,6 +386,7 @@ class Publisher
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Model;
@@ -308,6 +397,10 @@ use Magento\Framework\Exception\LocalizedException;
 
 class Consumer
 {
+    /**
+     * @param LoggerInterface $logger
+     * @param OperationProcessor $processor
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly OperationProcessor $processor
@@ -315,7 +408,8 @@ class Consumer
     }
 
     /**
-     * Process queue message
+     * @param MessageInterface $message
+     * @return void
      */
     public function process(MessageInterface $message): void
     {
@@ -350,6 +444,7 @@ class Consumer
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Model;
@@ -358,6 +453,10 @@ use Magento\Framework\MessageQueue\MergerInterface;
 
 class BatchConsumer
 {
+    /**
+     * @param LoggerInterface $logger
+     * @param BatchProcessor $batchProcessor
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly BatchProcessor $batchProcessor
@@ -365,7 +464,8 @@ class BatchConsumer
     }
 
     /**
-     * Process batch of messages
+     * @param array $messages
+     * @return void
      */
     public function processBatch(array $messages): void
     {
@@ -386,6 +486,10 @@ class BatchConsumer
  */
 class MessageMerger implements MergerInterface
 {
+    /**
+     * @param array $messages
+     * @return array
+     */
     public function merge(array $messages): array
     {
         // Group messages by operation type
@@ -446,6 +550,7 @@ bin/magento queue:consumers:list
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Queue\Model;
@@ -456,12 +561,20 @@ class RetryConsumer
 {
     private const MAX_RETRIES = 3;
 
+    /**
+     * @param LoggerInterface $logger
+     * @param DeadLetterPublisher $deadLetterPublisher
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly DeadLetterPublisher $deadLetterPublisher
     ) {
     }
 
+    /**
+     * @param MessageInterface $message
+     * @return void
+     */
     public function process(MessageInterface $message): void
     {
         $retryCount = $message->getData()['retry_count'] ?? 0;

@@ -18,6 +18,7 @@ Modify arguments before the original method executes:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -58,6 +59,7 @@ Modify the return value after the original method executes:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -100,6 +102,7 @@ Control the entire method execution:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -110,6 +113,9 @@ use Psr\Log\LoggerInterface;
 
 class ProductRepositoryPlugin
 {
+    /**
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly LoggerInterface $logger
     ) {

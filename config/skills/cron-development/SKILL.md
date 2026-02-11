@@ -18,6 +18,7 @@ Cron jobs in Magento 2 execute scheduled tasks like indexing, email sending, and
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Cron;
@@ -27,6 +28,10 @@ use Vendor\Module\Api\ProcessorInterface;
 
 class ProcessData
 {
+    /**
+     * @param LoggerInterface $logger
+     * @param ProcessorInterface $processor
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ProcessorInterface $processor
@@ -34,8 +39,6 @@ class ProcessData
     }
 
     /**
-     * Execute cron job
-     *
      * @return void
      */
     public function execute(): void
@@ -161,6 +164,7 @@ class ProcessData
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Cron;
@@ -171,9 +175,14 @@ use Vendor\Module\Model\ResourceModel\Item\CollectionFactory;
 
 class CleanupOldRecords
 {
-    private const CONFIG_ENABLED = 'vendor_module/cleanup/enabled';
-    private const CONFIG_DAYS = 'vendor_module/cleanup/days_to_keep';
+    private const string CONFIG_ENABLED = 'vendor_module/cleanup/enabled';
+    private const string CONFIG_DAYS = 'vendor_module/cleanup/days_to_keep';
 
+    /**
+     * @param LoggerInterface $logger
+     * @param ScopeConfigInterface $scopeConfig
+     * @param CollectionFactory $collectionFactory
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ScopeConfigInterface $scopeConfig,
@@ -181,6 +190,9 @@ class CleanupOldRecords
     ) {
     }
 
+    /**
+     * @return void
+     */
     public function execute(): void
     {
         if (!$this->isEnabled()) {
@@ -205,16 +217,25 @@ class CleanupOldRecords
         }
     }
 
+    /**
+     * @return bool
+     */
     private function isEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(self::CONFIG_ENABLED);
     }
 
+    /**
+     * @return int
+     */
     private function getDaysToKeep(): int
     {
         return (int) $this->scopeConfig->getValue(self::CONFIG_DAYS) ?: 30;
     }
 
+    /**
+     * @return int
+     */
     private function cleanupOldRecords(): int
     {
         $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$this->getDaysToKeep()} days"));

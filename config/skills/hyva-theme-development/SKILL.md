@@ -25,6 +25,7 @@ Hyva is a modern Magento 2 frontend theme built on Alpine.js and Tailwind CSS, r
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;
@@ -139,6 +140,7 @@ All components in CSP theme must be registered via `Alpine.data()`:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Hyva\Theme\Model\ViewModelRegistry;
@@ -337,6 +339,7 @@ $compareEnabled = $viewModels->require(ProductCompare::class)->showInProductList
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\ViewModel;
@@ -347,12 +350,20 @@ use Magento\Framework\Api\SearchCriteriaBuilder;
 
 class FeaturedProducts implements ArgumentInterface
 {
+    /**
+     * @param ProductRepositoryInterface $productRepository
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     */
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
     }
 
+    /**
+     * @param int $limit
+     * @return array
+     */
     public function getFeaturedProducts(int $limit = 8): array
     {
         $searchCriteria = $this->searchCriteriaBuilder
@@ -364,6 +375,10 @@ class FeaturedProducts implements ArgumentInterface
         return $this->productRepository->getList($searchCriteria)->getItems();
     }
 
+    /**
+     * @param array $products
+     * @return string
+     */
     public function getProductsJsonConfig(array $products): string
     {
         $data = [];

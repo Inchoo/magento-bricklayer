@@ -85,6 +85,7 @@ app/code/Vendor/Module/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;
@@ -204,6 +205,7 @@ MARKDOWN;
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Index;
@@ -214,11 +216,17 @@ use Magento\Framework\View\Result\Page;
 
 class Index implements HttpGetActionInterface
 {
+    /**
+     * @param PageFactory $resultPageFactory
+     */
     public function __construct(
         private readonly PageFactory $resultPageFactory
     ) {
     }
 
+    /**
+     * @return Page
+     */
     public function execute(): Page
     {
         $resultPage = $this->resultPageFactory->create();
@@ -248,6 +256,7 @@ class Index implements HttpGetActionInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Adminhtml\Entity;
@@ -261,6 +270,10 @@ class Index extends Action
 {
     public const ADMIN_RESOURCE = 'Vendor_Module::manage';
 
+    /**
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     */
     public function __construct(
         Context $context,
         private readonly PageFactory $resultPageFactory
@@ -268,6 +281,9 @@ class Index extends Action
         parent::__construct($context);
     }
 
+    /**
+     * @return Page
+     */
     public function execute(): Page
     {
         $resultPage = $this->resultPageFactory->create();
@@ -284,6 +300,7 @@ class Index extends Action
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Controller\Ajax;
@@ -295,12 +312,19 @@ use Magento\Framework\Controller\Result\Json;
 
 class Process implements HttpPostActionInterface
 {
+    /**
+     * @param RequestInterface $request
+     * @param JsonFactory $jsonFactory
+     */
     public function __construct(
         private readonly RequestInterface $request,
         private readonly JsonFactory $jsonFactory
     ) {
     }
 
+    /**
+     * @return Json
+     */
     public function execute(): Json
     {
         $result = $this->jsonFactory->create();
@@ -393,6 +417,7 @@ MARKDOWN;
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api;
@@ -438,6 +463,7 @@ interface EntityRepositoryInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Api\Data;
@@ -458,7 +484,7 @@ interface EntityInterface
 
     /**
      * @param int $entityId
-     * @return $this
+     * @return self
      */
     public function setEntityId(int $entityId): self;
 
@@ -469,7 +495,7 @@ interface EntityInterface
 
     /**
      * @param string $name
-     * @return $this
+     * @return self
      */
     public function setName(string $name): self;
 
@@ -480,7 +506,7 @@ interface EntityInterface
 
     /**
      * @param bool $status
-     * @return $this
+     * @return self
      */
     public function setStatus(bool $status): self;
 }
@@ -508,6 +534,7 @@ MARKDOWN;
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -518,40 +545,71 @@ use Vendor\Module\Model\ResourceModel\Entity as EntityResource;
 
 class Entity extends AbstractModel implements EntityInterface
 {
-    protected $_eventPrefix = 'vendor_module_entity';
-    protected $_eventObject = 'entity';
+    /**
+     * @var string
+     */
+    protected string $_eventPrefix = 'vendor_module_entity';
 
+    /**
+     * @var string
+     */
+    protected string $_eventObject = 'entity';
+
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init(EntityResource::class);
     }
 
+    /**
+     * @return int|null
+     */
     public function getEntityId(): ?int
     {
         $id = $this->getData(self::ENTITY_ID);
         return $id !== null ? (int) $id : null;
     }
 
-    public function setEntityId($entityId): self
+    /**
+     * @param int $entityId
+     * @return self
+     */
+    public function setEntityId(int $entityId): self
     {
         return $this->setData(self::ENTITY_ID, $entityId);
     }
 
+    /**
+     * @return string
+     */
     public function getName(): string
     {
         return (string) $this->getData(self::NAME);
     }
 
+    /**
+     * @param string $name
+     * @return self
+     */
     public function setName(string $name): self
     {
         return $this->setData(self::NAME, $name);
     }
 
+    /**
+     * @return bool
+     */
     public function getStatus(): bool
     {
         return (bool) $this->getData(self::STATUS);
     }
 
+    /**
+     * @param bool $status
+     * @return self
+     */
     public function setStatus(bool $status): self
     {
         return $this->setData(self::STATUS, $status);
@@ -563,6 +621,7 @@ class Entity extends AbstractModel implements EntityInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\ResourceModel;
@@ -571,6 +630,9 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 class Entity extends AbstractDb
 {
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init('vendor_module_entity', 'entity_id');
@@ -582,6 +644,7 @@ class Entity extends AbstractDb
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model\ResourceModel\Entity;
@@ -592,10 +655,24 @@ use Vendor\Module\Model\ResourceModel\Entity as EntityResource;
 
 class Collection extends AbstractCollection
 {
-    protected $_idFieldName = 'entity_id';
-    protected $_eventPrefix = 'vendor_module_entity_collection';
-    protected $_eventObject = 'entity_collection';
+    /**
+     * @var string
+     */
+    protected string $_idFieldName = 'entity_id';
 
+    /**
+     * @var string
+     */
+    protected string $_eventPrefix = 'vendor_module_entity_collection';
+
+    /**
+     * @var string
+     */
+    protected string $_eventObject = 'entity_collection';
+
+    /**
+     * @return void
+     */
     protected function _construct(): void
     {
         $this->_init(Entity::class, EntityResource::class);

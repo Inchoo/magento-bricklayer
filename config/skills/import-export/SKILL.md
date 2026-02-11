@@ -57,6 +57,7 @@ app/code/Vendor/Import/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Import\Model\Import;
@@ -77,19 +78,46 @@ class CustomEntity extends AbstractEntity
     public const COL_STATUS = 'status';
     public const COL_DESCRIPTION = 'description';
 
-    protected $_permanentAttributes = [self::COL_NAME];
-    protected $validColumnNames = [
+    /**
+     * @var array
+     */
+    protected array $_permanentAttributes = [self::COL_NAME];
+
+    /**
+     * @var array
+     */
+    protected array $validColumnNames = [
         self::COL_ENTITY_ID,
         self::COL_NAME,
         self::COL_STATUS,
         self::COL_DESCRIPTION,
     ];
 
-    protected $needColumnCheck = true;
-    protected $logInHistory = true;
+    /**
+     * @var bool
+     */
+    protected bool $needColumnCheck = true;
 
+    /**
+     * @var bool
+     */
+    protected bool $logInHistory = true;
+
+    /**
+     * @var array
+     */
     private array $cachedEntities = [];
 
+    /**
+     * @param \Magento\Framework\Json\Helper\Data $jsonHelper
+     * @param \Magento\ImportExport\Helper\Data $importExportData
+     * @param Data $importData
+     * @param ResourceConnection $resource
+     * @param Helper $resourceHelper
+     * @param ProcessingErrorAggregatorInterface $errorAggregator
+     * @param \Vendor\Module\Model\EntityFactory $entityFactory
+     * @param \Vendor\Module\Api\EntityRepositoryInterface $entityRepository
+     */
     public function __construct(
         \Magento\Framework\Json\Helper\Data $jsonHelper,
         \Magento\ImportExport\Helper\Data $importExportData,
@@ -112,7 +140,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Get entity type code
+     * @return string
      */
     public function getEntityTypeCode(): string
     {
@@ -120,9 +148,11 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Validate data row
+     * @param array $rowData
+     * @param int $rowNum
+     * @return bool
      */
-    public function validateRow(array $rowData, $rowNum): bool
+    public function validateRow(array $rowData, int $rowNum): bool
     {
         if ($this->_validatedRows !== null && isset($this->_validatedRows[$rowNum])) {
             return !$this->getErrorAggregator()->isRowInvalid($rowNum);
@@ -161,7 +191,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Import data
+     * @return bool
      */
     protected function _importData(): bool
     {
@@ -182,7 +212,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Save entities (add/update)
+     * @return void
      */
     private function saveEntities(): void
     {
@@ -217,7 +247,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Delete entities
+     * @return void
      */
     private function deleteEntities(): void
     {
@@ -245,7 +275,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Replace entities (delete then insert)
+     * @return void
      */
     private function replaceEntities(): void
     {
@@ -255,7 +285,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Prepare data for insert
+     * @param array $rowData
+     * @return array
      */
     private function prepareDataForInsert(array $rowData): array
     {
@@ -269,7 +300,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Prepare data for update
+     * @param array $rowData
+     * @return array
      */
     private function prepareDataForUpdate(array $rowData): array
     {
@@ -291,7 +323,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Normalize status value
+     * @param string $status
+     * @return int
      */
     private function normalizeStatus(string $status): int
     {
@@ -299,7 +332,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Save new entities in batch
+     * @param array $entities
+     * @return void
      */
     private function saveNewEntities(array $entities): void
     {
@@ -310,7 +344,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Update existing entities
+     * @param array $entities
+     * @return void
      */
     private function updateEntities(array $entities): void
     {
@@ -327,7 +362,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Initialize existing entities cache
+     * @return void
      */
     private function initExistingEntities(): void
     {
@@ -338,7 +373,9 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Check for duplicate in current import
+     * @param string $name
+     * @param int $rowNum
+     * @return bool
      */
     private function checkDuplicate(string $name, int $rowNum): bool
     {
@@ -388,6 +425,7 @@ name,status,description
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Import\Model\Export;
@@ -399,8 +437,19 @@ class CustomEntity extends AbstractEntity
 {
     public const ENTITY_CODE = 'custom_entity';
 
-    protected $_permanentAttributes = ['entity_id', 'name'];
+    /**
+     * @var array
+     */
+    protected array $_permanentAttributes = ['entity_id', 'name'];
 
+    /**
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\ImportExport\Model\Export\Factory $collectionFactory
+     * @param \Magento\ImportExport\Model\ResourceModel\CollectionByPagesIteratorFactory $resourceColFactory
+     * @param ResourceConnection $resource
+     * @param array $data
+     */
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
@@ -413,7 +462,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Export data
+     * @return string
      */
     public function export(): string
     {
@@ -440,7 +489,7 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Get header columns
+     * @return array
      */
     protected function _getHeaderColumns(): array
     {
@@ -455,7 +504,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Prepare row for export
+     * @param array $row
+     * @return array
      */
     protected function _prepareRowForExport(array $row): array
     {
@@ -470,7 +520,8 @@ class CustomEntity extends AbstractEntity
     }
 
     /**
-     * Apply filters to select
+     * @param \Magento\Framework\DB\Select $select
+     * @return void
      */
     protected function _applyFiltersToSelect(\Magento\Framework\DB\Select $select): void
     {
@@ -491,11 +542,17 @@ class CustomEntity extends AbstractEntity
         }
     }
 
+    /**
+     * @return string
+     */
     public function getEntityTypeCode(): string
     {
         return self::ENTITY_CODE;
     }
 
+    /**
+     * @return \Magento\Framework\Data\Collection
+     */
     public function getAttributeCollection(): \Magento\Framework\Data\Collection
     {
         return new \Magento\Framework\Data\Collection();
@@ -507,6 +564,7 @@ class CustomEntity extends AbstractEntity
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Import\Model;
@@ -517,6 +575,11 @@ use Magento\Framework\Filesystem\Directory\ReadFactory;
 
 class Importer
 {
+    /**
+     * @param Import $import
+     * @param ReadFactory $readFactory
+     * @param \Psr\Log\LoggerInterface $logger
+     */
     public function __construct(
         private readonly Import $import,
         private readonly ReadFactory $readFactory,
@@ -524,6 +587,11 @@ class Importer
     ) {
     }
 
+    /**
+     * @param string $filePath
+     * @param string $behavior
+     * @return array
+     */
     public function importFromFile(string $filePath, string $behavior = Import::BEHAVIOR_APPEND): array
     {
         $directory = $this->readFactory->create(dirname($filePath));
@@ -562,7 +630,9 @@ class Importer
 
 ```php
 /**
- * Process import in chunks for memory efficiency
+ * @param string $filePath
+ * @param int $chunkSize
+ * @return void
  */
 public function importLargeFile(string $filePath, int $chunkSize = 5000): void
 {

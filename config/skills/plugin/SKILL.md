@@ -23,6 +23,7 @@ Modifies input arguments before the original method executes.
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -67,6 +68,7 @@ Modifies the return value after the original method executes.
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -118,6 +120,7 @@ Controls the entire method execution.
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Plugin;
@@ -128,6 +131,9 @@ use Psr\Log\LoggerInterface;
 
 class ProductSaveLoggerPlugin
 {
+    /**
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         private readonly LoggerInterface $logger
     ) {
@@ -297,6 +303,12 @@ Plugins **CANNOT** be used on:
 ### Validating Input
 
 ```php
+/**
+ * @param ProductRepositoryInterface $subject
+ * @param ProductInterface $product
+ * @param bool $saveOptions
+ * @return array
+ */
 public function beforeSave(
     ProductRepositoryInterface $subject,
     ProductInterface $product,
@@ -313,6 +325,11 @@ public function beforeSave(
 ### Adding Calculated Data
 
 ```php
+/**
+ * @param Product $subject
+ * @param float $result
+ * @return float
+ */
 public function afterGetPrice(
     Product $subject,
     float $result
@@ -326,6 +343,15 @@ public function afterGetPrice(
 ### Caching Results
 
 ```php
+/**
+ * @param ProductRepositoryInterface $subject
+ * @param callable $proceed
+ * @param string $sku
+ * @param bool $editMode
+ * @param int|null $storeId
+ * @param bool $forceReload
+ * @return ProductInterface
+ */
 public function aroundGet(
     ProductRepositoryInterface $subject,
     callable $proceed,

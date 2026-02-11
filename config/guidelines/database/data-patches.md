@@ -18,6 +18,7 @@ app/code/Vendor/Module/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -27,11 +28,17 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddCustomData implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $this->moduleDataSetup->getConnection()->startSetup();
@@ -43,11 +50,17 @@ class AddCustomData implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -61,6 +74,7 @@ class AddCustomData implements DataPatchInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -74,12 +88,19 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddCustomProductAttribute implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param EavSetupFactory $eavSetupFactory
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly EavSetupFactory $eavSetupFactory
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -107,11 +128,17 @@ class AddCustomProductAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -123,6 +150,7 @@ class AddCustomProductAttribute implements DataPatchInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -136,6 +164,11 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddCustomerAttribute implements DataPatchInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param CustomerSetupFactory $customerSetupFactory
+     * @param AttributeSetFactory $attributeSetFactory
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly CustomerSetupFactory $customerSetupFactory,
@@ -143,6 +176,9 @@ class AddCustomerAttribute implements DataPatchInterface
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $customerSetup = $this->customerSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -185,11 +221,17 @@ class AddCustomerAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -200,6 +242,9 @@ class AddCustomerAttribute implements DataPatchInterface
 ## Inserting Data
 
 ```php
+/**
+ * @return self
+ */
 public function apply(): self
 {
     $connection = $this->moduleDataSetup->getConnection();
@@ -221,6 +266,9 @@ public function apply(): self
 ## Updating Data
 
 ```php
+/**
+ * @return self
+ */
 public function apply(): self
 {
     $connection = $this->moduleDataSetup->getConnection();
@@ -241,6 +289,9 @@ public function apply(): self
 Control execution order with dependencies:
 
 ```php
+/**
+ * @return array
+ */
 public static function getDependencies(): array
 {
     return [
@@ -255,6 +306,9 @@ public static function getDependencies(): array
 Handle renamed patches:
 
 ```php
+/**
+ * @return array
+ */
 public function getAliases(): array
 {
     return [
@@ -267,6 +321,7 @@ public function getAliases(): array
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Data;
@@ -277,17 +332,26 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
 
 class ReversiblePatch implements DataPatchInterface, PatchRevertableInterface
 {
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         // Apply changes
         return $this;
     }
 
+    /**
+     * @return void
+     */
     public function revert(): void
     {
         // Revert changes
@@ -298,11 +362,17 @@ class ReversiblePatch implements DataPatchInterface, PatchRevertableInterface
         );
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];
@@ -319,6 +389,9 @@ use Magento\Framework\Setup\Patch\PatchVersionInterface;
 
 class VersionedPatch implements DataPatchInterface, PatchVersionInterface
 {
+    /**
+     * @return string
+     */
     public static function getVersion(): string
     {
         return '1.0.1';
@@ -334,6 +407,7 @@ For DDL operations, use Schema Patches:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Setup\Patch\Schema;
@@ -343,11 +417,17 @@ use Magento\Framework\Setup\SchemaSetupInterface;
 
 class AddColumn implements SchemaPatchInterface
 {
+    /**
+     * @param SchemaSetupInterface $schemaSetup
+     */
     public function __construct(
         private readonly SchemaSetupInterface $schemaSetup
     ) {
     }
 
+    /**
+     * @return self
+     */
     public function apply(): self
     {
         $this->schemaSetup->startSetup();
@@ -368,11 +448,17 @@ class AddColumn implements SchemaPatchInterface
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];

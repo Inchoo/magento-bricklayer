@@ -10,6 +10,7 @@ The `registration.php` file is located at the module root and is loaded by Compo
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 use Magento\Framework\Component\ComponentRegistrar;

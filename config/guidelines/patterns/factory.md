@@ -18,6 +18,7 @@ Magento generates factories automatically when you inject a class with `Factory`
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -27,11 +28,18 @@ use Vendor\Module\Api\Data\EntityInterface;
 
 class EntityService
 {
+    /**
+     * @param EntityFactory $entityFactory
+     */
     public function __construct(
         private readonly EntityFactory $entityFactory
     ) {
     }
 
+    /**
+     * @param array $data
+     * @return EntityInterface
+     */
     public function createEntity(array $data): EntityInterface
     {
         /** @var Entity $entity */
@@ -51,20 +59,35 @@ namespace Vendor\Module\Model;
 
 class EntityFactory
 {
-    protected $_objectManager;
-    protected $_instanceName;
+    /**
+     * @var \Magento\Framework\ObjectManagerInterface
+     */
+    protected \Magento\Framework\ObjectManagerInterface $objectManager;
 
+    /**
+     * @var string
+     */
+    protected string $instanceName;
+
+    /**
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
+     * @param string $instanceName
+     */
     public function __construct(
         \Magento\Framework\ObjectManagerInterface $objectManager,
-        $instanceName = \Vendor\Module\Model\Entity::class
+        string $instanceName = \Vendor\Module\Model\Entity::class
     ) {
-        $this->_objectManager = $objectManager;
-        $this->_instanceName = $instanceName;
+        $this->objectManager = $objectManager;
+        $this->instanceName = $instanceName;
     }
 
+    /**
+     * @param array $data
+     * @return Entity
+     */
     public function create(array $data = []): Entity
     {
-        return $this->_objectManager->create($this->_instanceName, $data);
+        return $this->objectManager->create($this->instanceName, $data);
     }
 }
 ```
@@ -121,6 +144,7 @@ For complex object creation logic:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -131,6 +155,11 @@ use Vendor\Module\Model\Validator\EntityValidator;
 
 class EntityFactory
 {
+    /**
+     * @param ObjectManagerInterface $objectManager
+     * @param EntityValidator $validator
+     * @param ConfigProvider $config
+     */
     public function __construct(
         private readonly ObjectManagerInterface $objectManager,
         private readonly EntityValidator $validator,
@@ -138,6 +167,10 @@ class EntityFactory
     ) {
     }
 
+    /**
+     * @param array $data
+     * @return EntityInterface
+     */
     public function create(array $data = []): EntityInterface
     {
         // Apply defaults
@@ -150,12 +183,20 @@ class EntityFactory
         return $this->objectManager->create(Entity::class, ['data' => $data]);
     }
 
+    /**
+     * @param array $apiData
+     * @return EntityInterface
+     */
     public function createFromApi(array $apiData): EntityInterface
     {
         $data = $this->transformApiData($apiData);
         return $this->create($data);
     }
 
+    /**
+     * @param array $apiData
+     * @return array
+     */
     private function transformApiData(array $apiData): array
     {
         // Transform external format to internal
@@ -173,32 +214,51 @@ For complex objects with many optional parameters:
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
 
 class EntityBuilder
 {
+    /**
+     * @var array
+     */
     private array $data = [];
 
+    /**
+     * @param string $name
+     * @return self
+     */
     public function setName(string $name): self
     {
         $this->data['name'] = $name;
         return $this;
     }
 
+    /**
+     * @param bool $status
+     * @return self
+     */
     public function setStatus(bool $status): self
     {
         $this->data['status'] = $status;
         return $this;
     }
 
+    /**
+     * @param string $description
+     * @return self
+     */
     public function setDescription(string $description): self
     {
         $this->data['description'] = $description;
         return $this;
     }
 
+    /**
+     * @return EntityInterface
+     */
     public function build(): EntityInterface
     {
         $entity = new Entity($this->data);

@@ -25,6 +25,7 @@ Adobe Commerce (formerly Magento Commerce) is the enterprise edition with additi
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Module\Model;
@@ -34,11 +35,18 @@ use Magento\Company\Api\CompanyRepositoryInterface;
 
 class CompanyService
 {
+    /**
+     * @param CompanyRepositoryInterface $companyRepository
+     */
     public function __construct(
         private readonly CompanyRepositoryInterface $companyRepository
     ) {
     }
 
+    /**
+     * @param int $customerId
+     * @return CompanyInterface|null
+     */
     public function getCompanyByCustomerId(int $customerId): ?CompanyInterface
     {
         // Get company for B2B customer
@@ -64,6 +72,11 @@ use Magento\SharedCatalog\Api\ProductManagementInterface;
 
 class SharedCatalogService
 {
+    /**
+     * @param int $sharedCatalogId
+     * @param array $skus
+     * @return void
+     */
     public function assignProductsToSharedCatalog(
         int $sharedCatalogId,
         array $skus
@@ -87,6 +100,12 @@ use Magento\RequisitionList\Api\Data\RequisitionListInterface;
 
 class RequisitionService
 {
+    /**
+     * @param int $customerId
+     * @param string $name
+     * @param string $description
+     * @return RequisitionListInterface
+     */
     public function createRequisitionList(
         int $customerId,
         string $name,
@@ -113,6 +132,12 @@ use Magento\Staging\Api\Data\UpdateInterface;
 
 class StagingService
 {
+    /**
+     * @param string $name
+     * @param string $startTime
+     * @param string|null $endTime
+     * @return UpdateInterface
+     */
     public function createScheduledUpdate(
         string $name,
         string $startTime,
@@ -129,6 +154,12 @@ class StagingService
         return $this->updateRepository->save($update);
     }
 
+    /**
+     * @param int $updateId
+     * @param string $sku
+     * @param array $changes
+     * @return void
+     */
     public function scheduleProductChange(
         int $updateId,
         string $sku,
@@ -157,6 +188,10 @@ use Magento\CustomerSegment\Model\ResourceModel\Segment\CollectionFactory;
 
 class SegmentService
 {
+    /**
+     * @param int $customerId
+     * @return array
+     */
     public function getCustomerSegments(int $customerId): array
     {
         $collection = $this->segmentCollectionFactory->create();
@@ -223,6 +258,11 @@ use Magento\LiveSearch\Api\SearchInterface;
 
 class LiveSearchService
 {
+    /**
+     * @param string $query
+     * @param int $pageSize
+     * @return array
+     */
     public function search(string $query, int $pageSize = 20): array
     {
         return $this->liveSearch->search([

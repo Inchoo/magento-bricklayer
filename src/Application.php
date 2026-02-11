@@ -33,9 +33,6 @@ class Application extends ConsoleApplication
      */
     public const VERSION = '1.0.0';
 
-    /**
-     * Constructor
-     */
     public function __construct()
     {
         parent::__construct(self::NAME, self::VERSION);
@@ -73,7 +70,9 @@ LOGO;
     }
 
     /**
-     * @inheritdoc
+     * @param InputInterface|null $input
+     * @param OutputInterface|null $output
+     * @return int
      */
     public function run(?InputInterface $input = null, ?OutputInterface $output = null): int
     {
@@ -81,7 +80,7 @@ LOGO;
     }
 
     /**
-     * @inheritdoc
+     * @return string
      */
     public function getLongVersion(): string
     {

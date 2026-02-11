@@ -35,7 +35,7 @@ class InstallCommand extends Command
     protected static $defaultDescription = 'Generate agent configuration files for AI tools integration';
 
     /**
-     * @inheritdoc
+     * @return void
      */
     protected function configure(): void
     {
@@ -85,7 +85,9 @@ HELP
     }
 
     /**
-     * @inheritdoc
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

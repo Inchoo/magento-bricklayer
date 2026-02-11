@@ -34,6 +34,7 @@ app/code/Vendor/Shipping/
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Shipping\Model\Carrier;
@@ -49,9 +50,24 @@ use Psr\Log\LoggerInterface;
 
 class CustomCarrier extends AbstractCarrier implements CarrierInterface
 {
-    protected $_code = 'customcarrier';
-    protected $_isFixed = false;
+    /**
+     * @var string
+     */
+    protected string $_code = 'customcarrier';
 
+    /**
+     * @var bool
+     */
+    protected bool $_isFixed = false;
+
+    /**
+     * @param ScopeConfigInterface $scopeConfig
+     * @param ErrorFactory $rateErrorFactory
+     * @param LoggerInterface $logger
+     * @param ResultFactory $rateResultFactory
+     * @param MethodFactory $rateMethodFactory
+     * @param array $data
+     */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ErrorFactory $rateErrorFactory,
@@ -64,7 +80,7 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Check if carrier is active
+     * @return bool
      */
     public function isActive(): bool
     {
@@ -72,7 +88,7 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Get allowed shipping methods
+     * @return array
      */
     public function getAllowedMethods(): array
     {
@@ -83,7 +99,8 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Collect shipping rates
+     * @param RateRequest $request
+     * @return \Magento\Shipping\Model\Rate\Result|bool
      */
     public function collectRates(RateRequest $request): \Magento\Shipping\Model\Rate\Result|bool
     {
@@ -106,7 +123,9 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Add standard shipping method
+     * @param \Magento\Shipping\Model\Rate\Result $result
+     * @param RateRequest $request
+     * @return void
      */
     private function addStandardMethod(
         \Magento\Shipping\Model\Rate\Result $result,
@@ -127,7 +146,9 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Add express shipping method
+     * @param \Magento\Shipping\Model\Rate\Result $result
+     * @param RateRequest $request
+     * @return void
      */
     private function addExpressMethod(
         \Magento\Shipping\Model\Rate\Result $result,
@@ -148,7 +169,8 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Calculate standard shipping rate
+     * @param RateRequest $request
+     * @return float
      */
     private function calculateStandardRate(RateRequest $request): float
     {
@@ -168,7 +190,8 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Calculate express shipping rate
+     * @param RateRequest $request
+     * @return float
      */
     private function calculateExpressRate(RateRequest $request): float
     {
@@ -176,7 +199,8 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Validate shipping request
+     * @param RateRequest $request
+     * @return bool
      */
     private function validateRequest(RateRequest $request): bool
     {
@@ -199,7 +223,7 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
     }
 
     /**
-     * Get error result
+     * @return \Magento\Shipping\Model\Rate\Result
      */
     private function getErrorResult(): \Magento\Shipping\Model\Rate\Result
     {
@@ -319,6 +343,7 @@ class CustomCarrier extends AbstractCarrier implements CarrierInterface
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace Vendor\Shipping\Model\Carrier;
@@ -329,10 +354,14 @@ use Magento\Framework\DataObject;
 
 class ApiCarrier extends AbstractCarrierOnline implements CarrierInterface
 {
-    protected $_code = 'apicarrier';
+    /**
+     * @var string
+     */
+    protected string $_code = 'apicarrier';
 
     /**
-     * Process shipment tracking request
+     * @param string $trackingNumber
+     * @return DataObject
      */
     public function getTracking(string $trackingNumber): DataObject
     {
@@ -354,7 +383,8 @@ class ApiCarrier extends AbstractCarrierOnline implements CarrierInterface
     }
 
     /**
-     * Request shipping labels from carrier API
+     * @param DataObject $request
+     * @return DataObject
      */
     protected function _doShipmentRequest(DataObject $request): DataObject
     {
@@ -379,7 +409,7 @@ class ApiCarrier extends AbstractCarrierOnline implements CarrierInterface
     }
 
     /**
-     * Check if shipping labels available
+     * @return bool
      */
     public function isShippingLabelsAvailable(): bool
     {
@@ -387,7 +417,8 @@ class ApiCarrier extends AbstractCarrierOnline implements CarrierInterface
     }
 
     /**
-     * Get container types
+     * @param DataObject|null $params
+     * @return array
      */
     public function getContainerTypes(?DataObject $params = null): array
     {
@@ -404,7 +435,11 @@ class ApiCarrier extends AbstractCarrierOnline implements CarrierInterface
 
 ```php
 /**
- * Add tracking to shipment
+ * @param int $shipmentId
+ * @param string $carrierCode
+ * @param string $title
+ * @param string $trackNumber
+ * @return void
  */
 public function addTrackingToShipment(
     int $shipmentId,
@@ -427,7 +462,8 @@ public function addTrackingToShipment(
 
 ```php
 /**
- * Get shipping origin based on stock source
+ * @param RateRequest $request
+ * @return array
  */
 public function getShippingOrigin(RateRequest $request): array
 {
