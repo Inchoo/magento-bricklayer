@@ -11,10 +11,12 @@ namespace Inchoo\MagentoBricklayer\Config;
 class ConfigValidator
 {
     private const KNOWN_TOOLS = [
+        // Introspection
         'application-info',
         'module-list',
         'module-structure',
         'store-configuration',
+        'validate-module',
         'database-schema',
         'database-query',
         'eav-attributes',
@@ -24,16 +26,12 @@ class ConfigValidator
         'di-configuration',
         'plugin-list',
         'preference-list',
-        'route-list',
-        'api-endpoints',
-        'graphql-schema',
         'event-list',
-        'cache-status',
-        'indexer-status',
-        'cron-list',
-        'log-reader',
-        'validate-code',
-        'code-runner',
+        'route-list',
+        'route-info',
+        'api-endpoints',
+        'url-rewrites',
+        // Catalog
         'product-get',
         'product-list',
         'product-create',
@@ -41,27 +39,72 @@ class ConfigValidator
         'product-delete',
         'product-stock-get',
         'product-stock-update',
-        'category-get',
+        'product-media-list',
+        'product-media-add',
+        'product-link-list',
+        'product-link-set',
         'category-tree',
+        'category-get',
         'category-create',
+        'category-update',
+        'category-delete',
+        'category-products',
+        'category-assign-products',
+        // Orders
         'order-get',
         'order-list',
+        'order-items',
+        'order-comments',
         'order-add-comment',
         'order-cancel',
         'order-hold',
         'order-unhold',
         'invoice-create',
+        'invoice-list',
         'shipment-create',
+        'shipment-list',
+        'shipment-track-add',
         'creditmemo-create',
+        'creditmemo-list',
+        // Customers
         'customer-get',
         'customer-list',
         'customer-create',
         'customer-update',
         'customer-delete',
-        'customer-address-create',
+        'customer-validate',
         'customer-groups-list',
         'customer-orders',
+        'customer-addresses',
+        'customer-address-create',
+        'customer-address-update',
+        'customer-address-delete',
+        // Database & Logs
+        'log-read',
+        'log-list',
+        'log-analyze',
+        'log-search',
+        'diagnose-error',
+        // GraphQL
+        'graphql-types',
+        'graphql-type-info',
+        'graphql-queries',
+        'graphql-mutations',
+        'graphql-resolvers',
+        // System
+        'cache-status',
+        'indexer-status',
+        'cron-list',
+        'cron-history',
+        'deploy-mode',
         'search-docs',
+        'code-runner',
+        'development-context',
+        // Code Generation
+        'generate-module',
+        'generate-model',
+        'generate-controller',
+        'generate-api',
     ];
 
     private const KNOWN_AGENTS = [
@@ -163,7 +206,7 @@ class ConfigValidator
             }
         }
 
-        if ($toolName === 'log-reader') {
+        if ($toolName === 'log-read') {
             if (isset($config['max_lines'])) {
                 if (!is_int($config['max_lines']) || $config['max_lines'] < 1) {
                     $this->errors[] = "Tool '$toolName' 'max_lines' must be a positive integer";

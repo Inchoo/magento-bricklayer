@@ -31,16 +31,51 @@ Always prefer using these tools over assumptions about the codebase.
 Before writing or generating code, call the `development-context` tool with the relevant
 task category to load coding guidelines and development patterns.
 
-| Example Category | Use Case |
-|------------------|----------|
-| `hyva-checkout` | Hyvä Checkout & Magewire development |
+| Category | Description |
+|----------|-------------|
+| **Hyvä Theme** | |
+| `hyva-theme` | Hyvä theme setup and Alpine.js CSP components |
+| `hyva-theme-advanced` | Hyvä ViewModels, module compatibility, and customization |
+| `hyva-ui-component` | Hyvä UI component CSS and design system |
+| `hyva-ui-component-js` | Hyvä UI component Alpine.js and interactivity |
+| `hyva-checkout` | Hyvä Checkout Magewire component development |
+| `hyva-checkout-config` | Hyvä Checkout XML configuration and layout |
+| `hyva-checkout-api` | Hyvä Checkout evaluation, form, and frontend APIs |
+| **Module Development** | |
+| `module` | Module scaffolding and structure |
+| `model` | Model, repository, and data layer development |
 | `plugin` | Plugin (interceptor) development |
+| `observer` | Event observer development |
+| `preference` | Class preference (rewrite) development |
 | `eav` | EAV attribute and entity development |
+| `data-patch` | Data and schema patch development |
+| **API & Integration** | |
 | `rest-api` | REST API endpoint development |
 | `graphql` | GraphQL schema and resolver development |
-| `model` | Model, repository, and data layer development |
-| `module` | Module scaffolding and structure |
-| `list` | See all 37 available categories |
+| `payment` | Payment method module setup and configuration |
+| `payment-gateway` | Payment gateway components (builders, handlers, validators) |
+| `payment-checkout` | Payment checkout integration and frontend |
+| `shipping` | Shipping carrier integration |
+| `message-queue` | Message queue and async processing |
+| `import` | Custom import entity development |
+| `export` | Custom export entity development |
+| **Frontend & Admin** | |
+| `frontend` | Frontend development (layout, templates, JS) |
+| `theme` | Theme structure, layout XML, and templates |
+| `theme-styling` | Theme LESS/CSS styling and JavaScript |
+| `checkout` | Checkout custom steps and layout processors |
+| `checkout-advanced` | Checkout config providers, mixins, and validation |
+| `adminhtml` | Admin panel development |
+| `ui-component` | Admin UI component grids |
+| `ui-component-form` | Admin UI component forms |
+| **System & Quality** | |
+| `cron` | Cron job development |
+| `indexer` | Custom indexer development |
+| `testing` | Unit, integration, and API testing |
+| `coding-standards` | PHP coding standards, syntax, formatting, and quality rules |
+| `security` | Security best practices and guidelines |
+| `performance` | Performance optimization guidelines |
+| `list` | See all categories with skill/guideline counts |
 
 ### Introspection Tools (Use First)
 
