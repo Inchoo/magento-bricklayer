@@ -443,6 +443,19 @@ class SearchTools
             ],
             'tools' => ['diagnose-error', 'log-analyze', 'log-read', 'cache-status', 'indexer-status'],
         ],
+        'code-runner' => [
+            'keywords' => ['code runner', 'execute', 'run code', 'tinker', 'repl', 'eval',
+                           'test code', 'php code', 'sandbox', 'object manager'],
+            'topics' => [
+                'Execute PHP code within the Magento application context',
+                'Test repository calls and inspect DI resolution',
+                'Helper functions: get(class), create(class, args), repo(class), config(path)',
+                'Read-only mode with automatic DB transaction rollback',
+                'Area emulation for frontend, adminhtml, webapi, graphql contexts',
+                'Execution metrics: time, memory, query count',
+            ],
+            'tools' => ['code-runner'],
+        ],
         'routing' => [
             'keywords' => ['route', 'url', 'rewrite', 'url rewrite', 'api endpoint', 'rest endpoint'],
             'topics' => [

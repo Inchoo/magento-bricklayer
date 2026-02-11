@@ -145,6 +145,8 @@ class ConfigLoader
             'tools' => [
                 'code-runner' => [
                     'enabled' => true,
+                    'allow_write' => false,
+                    'max_timeout' => 60,
                 ],
                 'database-query' => [
                     'enabled' => true,

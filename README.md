@@ -229,7 +229,7 @@ This is useful when container names vary between environments or are dynamically
 - `indexer-status` - Status of all indexers (valid/invalid/processing, mode)
 - `cron-list` - Configured cron jobs with schedule expressions
 - `cron-history` - Recent cron execution history with optional job code filtering
-- `code-runner` - Execute PHP code (disabled in production)
+- `code-runner` - Execute PHP code in Magento context with helper functions, area emulation, read-only mode, and metrics
 - `search-docs` - Semantic documentation search
 
 ### Log Tools
@@ -264,6 +264,35 @@ diagnose-error(index=0, source="exception", since="1h", pattern="")
 - `suggestions` - Actionable fixes with confidence levels (high/medium/low) and CLI commands
 
 The tool recognizes 15 common Magento error patterns including class-not-found, DI compilation errors, database issues, search engine failures, invalid templates/blocks, memory exhaustion, and session errors.
+
+### Code Runner Tool
+- `code-runner` - Execute PHP code within the Magento application context with helper functions, area emulation, transaction rollback, and execution metrics
+
+```
+code-runner(code, area="", allow_write=false, timeout=30)
+```
+
+**Parameters:**
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `code` | (required) | PHP code to execute (without `<?php` tags) |
+| `area` | `""` | Magento area for DI resolution: frontend, adminhtml, webapi_rest, graphql, crontab, global |
+| `allow_write` | `false` | When false, DB changes are rolled back after execution |
+| `timeout` | `30` | Maximum execution time in seconds |
+
+**Helper functions** available in executed code:
+- `$get(ClassName::class)` - Retrieve singleton from DI container
+- `$create(ClassName::class, ['arg' => val])` - Create new instance
+- `$repo(RepositoryInterface::class)` - Alias for `$get()`, semantic sugar for repositories
+- `$config('section/group/field')` - Read system configuration value
+
+**Response includes:**
+- `success`, `output`, `return`, `error` - Standard execution result
+- `read_only` - Whether DB changes were rolled back
+- `area` - Effective area code (if specified)
+- `metrics` - Execution time (ms), memory delta (MB), peak memory (MB), queries executed
+
+The tool validates code against 9 dangerous patterns (shell execution, file writes, superglobals, cURL, eval, header manipulation, global handler registration, long sleeps). Disabled in production mode and configurable via `.bricklayer.json`.
 
 ### Code Generation Tools
 - `generate-module` - Scaffold a new Magento 2 module with registration.php, module.xml, composer.json
@@ -323,7 +352,9 @@ Create `.bricklayer.json` in your Magento root:
 {
     "tools": {
         "code-runner": {
-            "enabled": false
+            "enabled": true,
+            "allow_write": false,
+            "max_timeout": 30
         },
         "database-query": {
             "enabled": true,
@@ -343,6 +374,8 @@ Environment variable overrides:
 ```bash
 BRICKLAYER_MAGENTO_ROOT=/path/to/magento    # Override Magento root detection
 BRICKLAYER_CODE_RUNNER_ENABLED=false        # Disable code-runner tool
+BRICKLAYER_CODE_RUNNER_ALLOW_WRITE=false    # Enforce read-only mode globally
+BRICKLAYER_CODE_RUNNER_MAX_TIMEOUT=30       # Maximum timeout in seconds
 BRICKLAYER_DATABASE_QUERY_MAX_ROWS=50       # Limit query results
 BRICKLAYER_DEBUG=1                          # Enable debug output
 ```
