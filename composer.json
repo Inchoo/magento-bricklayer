@@ -28,10 +28,10 @@
         "issues": "https://github.com/inchoo/magento-bricklayer/issues",
         "source": "https://github.com/inchoo/magento-bricklayer"
     },
-    "version": "1.1.0",
+    "version": "1.2.0",
     "require": {
-        "php": "^8.1",
-        "mcp/sdk": "^0.3",
+        "php": ">=8.1",
+        "mcp/sdk": ">=0.3",
         "symfony/console": "^5.4 || ^6.0 || ^7.0",
         "symfony/yaml": "^5.4 || ^6.0 || ^7.0",
         "psr/log": "^2.0 || ^3.0"

@@ -244,6 +244,54 @@ class SkillsResource
     }
 
     /**
+     * Returns Hyva theme development skill documentation.
+     *
+     * @return string Markdown content
+     */
+    #[McpResource(
+        uri: 'magento://skills/hyva-theme-development',
+        name: 'hyva_theme_development_skill',
+        description: 'Hyva theme development skill (Alpine.js, Tailwind CSS, CSP, ViewModels)',
+        mimeType: 'text/markdown'
+    )]
+    public function getHyvaThemeSkill(): string
+    {
+        return $this->loadSkill('hyva-theme-development');
+    }
+
+    /**
+     * Returns Hyva UI component development skill documentation.
+     *
+     * @return string Markdown content
+     */
+    #[McpResource(
+        uri: 'magento://skills/hyva-ui-component-development',
+        name: 'hyva_ui_component_skill',
+        description: 'Hyva UI component development skill (CSS layers, custom properties, Alpine.js patterns)',
+        mimeType: 'text/markdown'
+    )]
+    public function getHyvaUiComponentSkill(): string
+    {
+        return $this->loadSkill('hyva-ui-component-development');
+    }
+
+    /**
+     * Returns Hyva Checkout & Magewire development skill documentation.
+     *
+     * @return string Markdown content
+     */
+    #[McpResource(
+        uri: 'magento://skills/hyva-checkout-development',
+        name: 'hyva_checkout_skill',
+        description: 'Hyva Checkout & Magewire development skill (checkout steps, payment/shipping integration, evaluation API)',
+        mimeType: 'text/markdown'
+    )]
+    public function getHyvaCheckoutSkill(): string
+    {
+        return $this->loadSkill('hyva-checkout-development');
+    }
+
+    /**
      * Returns available skills list.
      *
      * @return string Markdown content with skills index
