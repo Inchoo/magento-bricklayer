@@ -427,8 +427,21 @@ class SearchTools
                 'List available log files with sizes',
                 'Analyze exception log for error patterns and frequency',
                 'Search for patterns across all log files',
+                'Diagnose errors with full context and fix suggestions',
             ],
-            'tools' => ['log-read', 'log-list', 'log-analyze', 'log-search'],
+            'tools' => ['log-read', 'log-list', 'log-analyze', 'log-search', 'diagnose-error'],
+        ],
+        'diagnostic' => [
+            'keywords' => ['diagnose', 'diagnosis', 'troubleshoot', 'debug error', 'fix error',
+                           'error analysis', 'stack trace', 'root cause', 'why error'],
+            'topics' => [
+                'Diagnose Magento errors with full context gathering',
+                'Parse exception logs with chained exception support',
+                'Correlate errors with module, DI, and environment context',
+                'Get actionable fix suggestions with confidence levels',
+                'Identify error patterns (class not found, DI, database, search, memory)',
+            ],
+            'tools' => ['diagnose-error', 'log-analyze', 'log-read', 'cache-status', 'indexer-status'],
         ],
         'routing' => [
             'keywords' => ['route', 'url', 'rewrite', 'url rewrite', 'api endpoint', 'rest endpoint'],

@@ -28,7 +28,7 @@
         "issues": "https://github.com/inchoo/magento-bricklayer/issues",
         "source": "https://github.com/inchoo/magento-bricklayer"
     },
-    "version": "1.4.1",
+    "version": "1.",
     "require": {
         "php": ">=8.1",
         "mcp/sdk": ">=0.3",

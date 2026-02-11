@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 85+ tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 86+ tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -57,8 +57,9 @@ The MCP server is automatically started by compatible agents. Your agent can now
 - Use `module-list` to see installed modules
 - Use `database-schema` to inspect table structures
 - Use `product-get`, `order-get`, `customer-get` for data access
+- Use `diagnose-error` to diagnose errors with full context and fix suggestions
 - Use `development-context` to load coding guidelines for your task
-- And 85+ more tools for comprehensive Magento development
+- And 86+ more tools for comprehensive Magento development
 
 ## Supported AI Agents
 
@@ -236,6 +237,33 @@ This is useful when container names vary between environments or are dynamically
 - `log-list` - List all available log files with sizes and modification times
 - `log-analyze` - Analyze exception log for error patterns and frequency
 - `log-search` - Search across all log files with pattern matching
+
+### Diagnostic Tools
+- `diagnose-error` - Diagnoses the most recent Magento error with full context, DI analysis, and actionable fix suggestions in a single call
+
+The `diagnose-error` tool orchestrates multiple introspection tools to produce a comprehensive diagnosis:
+
+```
+diagnose-error(index=0, source="exception", since="1h", pattern="")
+```
+
+**Parameters:**
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `index` | `0` | Which error to diagnose (0 = most recent) |
+| `source` | `exception` | Log file: exception, system, debug, cron |
+| `since` | `1h` | Time window: 5m, 1h, 24h, 7d |
+| `pattern` | `""` | Substring filter for error messages |
+
+**Response structure:**
+- `error` - Parsed exception with class, message, file, line, stack trace, and chained previous exception
+- `module_context` - Responsible module's name, version, enabled status, dependencies, and validation issues
+- `di_context` - DI preferences and plugins for the error class
+- `environment` - Deploy mode, disabled caches, invalid indexers, generated code age
+- `history` - Error frequency and top exception types in the time period
+- `suggestions` - Actionable fixes with confidence levels (high/medium/low) and CLI commands
+
+The tool recognizes 15 common Magento error patterns including class-not-found, DI compilation errors, database issues, search engine failures, invalid templates/blocks, memory exhaustion, and session errors.
 
 ### Code Generation Tools
 - `generate-module` - Scaffold a new Magento 2 module with registration.php, module.xml, composer.json
