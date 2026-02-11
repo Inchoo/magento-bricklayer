@@ -21,7 +21,7 @@ class GuidelinesCompiler
      * Generate guidelines content for an agent
      *
      * @param string $agent The agent name (claude-code, cursor, copilot, phpstorm, gemini)
-     * @param string $envType The environment type (native, docker-compose, ddev, warden)
+     * @param string $envType The environment type (native, docker-compose, ddev, hooli, warden)
      * @return string The guidelines content in Markdown format
      */
     public function compile(string $agent, string $envType = 'native'): string
@@ -54,7 +54,7 @@ task category to load coding guidelines and development patterns.
 | `graphql` | GraphQL schema and resolver development |
 | `model` | Model, repository, and data layer development |
 | `module` | Module scaffolding and structure |
-| `list` | See all 25 available categories |
+| `list` | See all 37 available categories |
 
 ### Introspection Tools (Use First)
 
@@ -294,6 +294,7 @@ MARKDOWN;
 
         $envLabel = match ($envType) {
             'ddev' => 'DDEV',
+            'hooli' => 'Hooli',
             'warden' => 'Warden',
             'docker-compose' => 'Docker Compose',
             'docker' => 'Docker',
@@ -316,6 +317,27 @@ Common commands after code changes:
 - `bin/magento cache:clean` - Clear cache
 - `bin/magento cache:flush` - Flush cache storage
 - `bin/magento indexer:reindex` - Rebuild indexes
+SECTION;
+        }
+
+        if ($envType === 'hooli') {
+            return <<<'SECTION'
+## Shell Commands
+
+This project runs in a **Hooli** environment. When running Magento CLI commands:
+
+```bash
+../hooli console --run "bin/magento <command>"
+```
+
+Common commands after code changes:
+- `../hooli console --run "bin/magento setup:upgrade"` - Run database migrations after adding/updating modules
+- `../hooli console --run "bin/magento setup:di:compile"` - Compile dependency injection (required after DI changes)
+- `../hooli console --run "bin/magento cache:clean"` - Clear cache
+- `../hooli console --run "bin/magento cache:flush"` - Flush cache storage
+- `../hooli console --run "bin/magento indexer:reindex"` - Rebuild indexes
+- `../hooli console --run "composer install"` - Install dependencies
+- `../hooli console --run "composer require <package>"` - Add new dependencies
 SECTION;
         }
 

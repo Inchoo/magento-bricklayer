@@ -127,6 +127,19 @@ class MagentoDetectorTest extends TestCase
         $this->assertEquals('ddev', $result);
     }
 
+    public function testGetEnvironmentTypeReturnsHooliWhenHooliExists(): void
+    {
+        // Hooli: Magento root is in a subdirectory, hooli executable is in parent
+        $hooliRoot = $this->tempDir;
+        $magentoRoot = $hooliRoot . '/html';
+        mkdir($magentoRoot, 0755, true);
+        file_put_contents($hooliRoot . '/hooli', '#!/bin/bash');
+        file_put_contents($hooliRoot . '/docker-compose.yml', 'services:');
+
+        $result = $this->detector->getEnvironmentType($magentoRoot);
+        $this->assertEquals('hooli', $result);
+    }
+
     public function testGetEnvironmentTypeReturnsDockerComposeWhenComposeExists(): void
     {
         file_put_contents($this->tempDir . '/docker-compose.yml', 'version: "3"');

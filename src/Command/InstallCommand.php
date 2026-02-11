@@ -262,7 +262,7 @@ HELP
      * @param string $projectRoot The project root directory
      * @param string $agent The agent name
      * @param bool $force Whether to overwrite existing files
-     * @param string $envType The environment type (native, docker-compose, ddev, warden)
+     * @param string $envType The environment type (native, docker-compose, ddev, hooli, warden)
      * @return array{created: bool, file: string}
      */
     private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array

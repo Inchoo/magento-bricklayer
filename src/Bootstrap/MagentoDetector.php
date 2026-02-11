@@ -200,13 +200,19 @@ class MagentoDetector
      * Get runtime environment type
      *
      * @param string $magentoRoot The Magento root directory
-     * @return string 'ddev', 'warden', 'docker-compose', 'docker', or 'native'
+     * @return string 'ddev', 'hooli', 'warden', 'docker-compose', 'docker', or 'native'
      */
     public function getEnvironmentType(string $magentoRoot): string
     {
         // Check for DDEV
         if (file_exists($magentoRoot . '/.ddev/config.yaml')) {
             return 'ddev';
+        }
+
+        // Check for Hooli (Magento root is in html/ subdirectory, hooli executable is in parent)
+        $parentDir = dirname($magentoRoot);
+        if (file_exists($parentDir . '/hooli') && file_exists($parentDir . '/docker-compose.yml')) {
+            return 'hooli';
         }
 
         // Check for Warden

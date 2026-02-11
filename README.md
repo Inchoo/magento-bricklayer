@@ -244,7 +244,7 @@ This is useful when container names vary between environments or are dynamically
 - `generate-api` - Create REST API endpoint with interface, implementation, and webapi.xml
 
 ### Development Context Tool
-- `development-context` - Load coding guidelines and development patterns for a task category (25 categories covering plugins, EAV, GraphQL, Hyvä, checkout, testing, and more). Use category `list` to see all available categories.
+- `development-context` - Load coding guidelines and development patterns for a task category (37 categories covering plugins, EAV, GraphQL, Hyvä, checkout, payment, testing, and more). Use category `list` to see all available categories.
 
 ## MCP Resources
 
@@ -265,24 +265,24 @@ Comprehensive Magento development guidelines compiled from 20+ markdown document
 Magento coding standards reference with PSR-12 compliance and best practices.
 
 ### Skills Resource
-17 development skills for common Magento tasks:
-- Checkout customization
+28 development skills for common Magento tasks:
+- Checkout customization (steps & layout processors, config providers & validation)
 - Cron job development
 - EAV attribute development
 - GraphQL API development
-- Hyva Checkout & Magewire development
-- Hyva theme development (Alpine.js, Tailwind CSS, CSP, ViewModels)
-- Hyva UI component development (CSS layers, custom properties, Alpine.js patterns)
-- Import/Export functionality
+- Hyvä Checkout (Magewire components, XML configuration, evaluation & form APIs)
+- Hyvä theme development (setup & Alpine.js CSP, ViewModels & compatibility)
+- Hyvä UI component development (CSS design system, Alpine.js interactivity)
+- Import/Export functionality (import entities, export & advanced processing)
 - Indexer development
 - Message queue implementation
-- Payment integration
+- Payment integration (module setup, gateway components, checkout integration)
 - Plugin development
 - REST API development
 - Shipping integration
 - Testing strategies
-- Theme development
-- UI component development
+- Theme development (structure & layout XML, LESS/CSS styling & JavaScript)
+- UI component development (admin grids, admin forms)
 
 ### Template & Reference Resources
 Code templates for common patterns and API/framework reference documentation.

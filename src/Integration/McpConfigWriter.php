@@ -28,7 +28,7 @@ class McpConfigWriter
     /**
      * Write MCP configuration file
      *
-     * @param string $envType The environment type (native, docker-compose, ddev, warden)
+     * @param string $envType The environment type (native, docker-compose, ddev, hooli, warden)
      * @return void
      */
     public function writeMcpConfig(string $envType = 'native'): void
@@ -55,6 +55,10 @@ class McpConfigWriter
             'ddev' => [
                 'command' => 'ddev',
                 'args' => ['exec', 'php', 'vendor/bin/bricklayer-mcp'],
+            ],
+            'hooli' => [
+                'command' => 'docker',
+                'args' => ['compose', '-f', '../docker-compose.yml', 'exec', '-T', 'apache-php', 'php', 'vendor/bin/bricklayer-mcp'],
             ],
             'warden' => [
                 'command' => 'warden',
@@ -169,6 +173,6 @@ class McpConfigWriter
      */
     public static function getAvailableEnvironmentTypes(): array
     {
-        return ['native', 'docker', 'docker-compose', 'ddev', 'warden'];
+        return ['native', 'docker', 'docker-compose', 'ddev', 'hooli', 'warden'];
     }
 }
