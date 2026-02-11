@@ -697,7 +697,6 @@ class CatalogTools
 
         try {
             $categoryLinkManagement = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryLinkManagementInterface::class);
-            $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
             $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
 
             // Verify category exists
@@ -754,23 +753,14 @@ class CatalogTools
 
         try {
             $categoryLinkManagement = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryLinkManagementInterface::class);
-            $productLinkFactory = MagentoBootstrap::get(\Magento\Catalog\Api\Data\CategoryProductLinkInterfaceFactory::class);
 
             $skuList = array_map('trim', explode(',', $skus));
-            $positionList = $positions !== '' ? array_map('intval', explode(',', $positions)) : [];
 
-            $assigned = 0;
-            foreach ($skuList as $index => $sku) {
-                $productLink = $productLinkFactory->create();
-                $productLink->setSku($sku)
-                    ->setCategoryId((string) $categoryId)
-                    ->setPosition($positionList[$index] ?? $index);
-
+            foreach ($skuList as $sku) {
                 $categoryLinkManagement->assignProductToCategories($sku, [$categoryId]);
-                $assigned++;
             }
 
-            return ['success' => true, 'category_id' => $categoryId, 'assigned_count' => $assigned];
+            return ['success' => true, 'category_id' => $categoryId, 'assigned_count' => count($skuList)];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

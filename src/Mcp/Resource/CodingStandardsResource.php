@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 use Mcp\Capability\Attribute\McpResource;
 
 /**
- * Coding Standards Resource
- *
  * Provides Magento coding standards documentation as an MCP resource.
  */
 class CodingStandardsResource

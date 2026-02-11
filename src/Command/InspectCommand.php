@@ -91,13 +91,8 @@ HELP
         $outputJson = $input->getOption('json');
         $noBootstrap = $input->getOption('no-bootstrap');
 
-        // Detect Magento root
         $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root');
-
-        if ($magentoRoot === null) {
-            $magentoRoot = $detector->detect();
-        }
+        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
 
         if ($magentoRoot === null) {
             if ($outputJson) {
@@ -175,10 +170,7 @@ HELP
             $enabledModules = array_keys($moduleList->getAll());
             $disabledModules = array_diff($allModules, $enabledModules);
 
-            // Count custom modules (not Magento_*)
-            $customModules = array_filter($enabledModules, function ($name) {
-                return !str_starts_with($name, 'Magento_');
-            });
+            $customModules = array_filter($enabledModules, fn($name) => !str_starts_with($name, 'Magento_'));
 
             $info['modules'] = [
                 'total' => count($allModules),

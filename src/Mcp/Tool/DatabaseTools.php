@@ -11,20 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Database Tools
- *
- * Provides MCP tools for inspecting Magento database schema.
- */
 class DatabaseTools
 {
-    /**
-     * Returns table structure with columns, indexes, and foreign keys.
-     *
-     * @param string $table Table name (optional, if empty lists all tables)
-     * @param string $pattern Table name pattern for filtering (e.g., "catalog_%")
-     * @return array<string, mixed> Schema information
-     */
     #[McpTool(
         name: 'database-schema',
         description: 'Returns database table structure with columns, indexes, and foreign keys'
@@ -39,12 +27,10 @@ class DatabaseTools
             $resource = MagentoBootstrap::get(\Magento\Framework\App\ResourceConnection::class);
             $connection = $resource->getConnection();
 
-            // If specific table requested
             if ($table !== '') {
                 return $this->getTableSchema($connection, $table);
             }
 
-            // List tables, optionally filtered
             $sql = "SHOW TABLES";
             if ($pattern !== '') {
                 $sql .= " LIKE " . $connection->quote($pattern);
@@ -61,13 +47,6 @@ class DatabaseTools
         }
     }
 
-    /**
-     * Executes a read-only SQL query (SELECT only).
-     *
-     * @param string $query The SQL SELECT query to execute
-     * @param int $limit Maximum number of rows to return
-     * @return array<string, mixed> Query results
-     */
     #[McpTool(
         name: 'database-query',
         description: 'Executes a read-only SQL SELECT query against the Magento database'
@@ -78,7 +57,6 @@ class DatabaseTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
-        // Security: Only allow SELECT queries
         $trimmedQuery = trim($query);
         if (!preg_match('/^SELECT\s/i', $trimmedQuery)) {
             return [
@@ -87,7 +65,6 @@ class DatabaseTools
             ];
         }
 
-        // Check for dangerous patterns
         $dangerous = [
             '/;\s*(?:INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|GRANT|REVOKE)/i',
             '/INTO\s+OUTFILE/i',
@@ -108,7 +85,6 @@ class DatabaseTools
             $resource = MagentoBootstrap::get(\Magento\Framework\App\ResourceConnection::class);
             $connection = $resource->getConnection();
 
-            // Add LIMIT if not present
             if (!preg_match('/\bLIMIT\s+\d+/i', $trimmedQuery)) {
                 $trimmedQuery = rtrim($trimmedQuery, ';') . " LIMIT $limit";
             }
@@ -131,16 +107,8 @@ class DatabaseTools
         }
     }
 
-    /**
-     * Get detailed schema for a specific table
-     *
-     * @param object $connection Database connection
-     * @param string $tableName Table name
-     * @return array<string, mixed>
-     */
     private function getTableSchema(object $connection, string $tableName): array
     {
-        // Get columns
         $columns = [];
         $columnsData = $connection->fetchAll("SHOW FULL COLUMNS FROM `$tableName`");
         foreach ($columnsData as $column) {
@@ -155,8 +123,6 @@ class DatabaseTools
             ];
         }
 
-        // Get indexes
-        $indexes = [];
         $indexData = $connection->fetchAll("SHOW INDEX FROM `$tableName`");
         $indexGroups = [];
         foreach ($indexData as $index) {
@@ -173,7 +139,6 @@ class DatabaseTools
         }
         $indexes = array_values($indexGroups);
 
-        // Get foreign keys
         $foreignKeys = [];
         try {
             $fkData = $connection->fetchAll(
@@ -198,10 +163,8 @@ class DatabaseTools
                 ];
             }
         } catch (\Throwable $e) {
-            // Foreign key info may not be available
         }
 
-        // Get table info
         $tableInfo = $connection->fetchRow("SHOW TABLE STATUS LIKE '$tableName'");
 
         return [

@@ -11,18 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Application Tools
- *
- * Provides MCP tools for inspecting Magento application information.
- */
 class ApplicationTools
 {
-    /**
-     * Returns Magento version, PHP version, deploy mode, and installation summary.
-     *
-     * @return array<string, mixed> Application information
-     */
     #[McpTool(
         name: 'application-info',
         description: 'Returns Magento version, PHP version, deploy mode, and installation summary'
@@ -37,13 +27,8 @@ class ApplicationTools
         }
 
         try {
-            // Product metadata
             $metadata = MagentoBootstrap::get(\Magento\Framework\App\ProductMetadataInterface::class);
-
-            // Deploy mode
             $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
-
-            // Module counts
             $moduleList = MagentoBootstrap::get(\Magento\Framework\Module\ModuleListInterface::class);
             $fullModuleList = MagentoBootstrap::get(\Magento\Framework\Module\FullModuleList::class);
 
@@ -51,14 +36,10 @@ class ApplicationTools
             $enabledModules = array_keys($moduleList->getAll());
             $customModules = array_filter($enabledModules, fn($name) => !str_starts_with($name, 'Magento_'));
 
-            // Store info
             $storeManager = MagentoBootstrap::get(\Magento\Store\Model\StoreManagerInterface::class);
-
-            // Cache info
             $cacheTypeList = MagentoBootstrap::get(\Magento\Framework\App\Cache\TypeListInterface::class);
             $cacheTypes = $cacheTypeList->getTypes();
 
-            // Database info
             $dbInfo = $this->getDatabaseInfo();
 
             return [
@@ -91,11 +72,6 @@ class ApplicationTools
         }
     }
 
-    /**
-     * Returns store/website/store view hierarchy and configuration.
-     *
-     * @return array<string, mixed> Store configuration
-     */
     #[McpTool(
         name: 'store-configuration',
         description: 'Returns store/website/store view hierarchy and configuration'
@@ -151,11 +127,6 @@ class ApplicationTools
         }
     }
 
-    /**
-     * Get database connection information
-     *
-     * @return array<string, mixed>
-     */
     private function getDatabaseInfo(): array
     {
         try {

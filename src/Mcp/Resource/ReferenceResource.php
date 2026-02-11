@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 use Mcp\Capability\Attribute\McpResource;
 
 /**
- * Reference Resource
- *
  * Provides Magento 2 reference documentation for events, layouts, DI patterns, and ACL.
  */
 class ReferenceResource

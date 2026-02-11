@@ -8,22 +8,8 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Guidelines;
 
-/**
- * Guidelines Compiler
- *
- * Generates guidelines content for AI coding agents.
- * This centralizes the guidelines generation logic used by both
- * InstallCommand and UpdateCommand.
- */
 class GuidelinesCompiler
 {
-    /**
-     * Generate guidelines content for an agent
-     *
-     * @param string $agent The agent name (claude-code, cursor, copilot, phpstorm, gemini)
-     * @param string $envType The environment type (native, docker-compose, ddev, hooli, warden)
-     * @return string The guidelines content in Markdown format
-     */
     public function compile(string $agent, string $envType = 'native'): string
     {
         $timestamp = date('Y-m-d H:i:s T');
@@ -258,12 +244,6 @@ $shellCommandsSection
 MARKDOWN;
     }
 
-    /**
-     * Get the filename for an agent's configuration file
-     *
-     * @param string $agent The agent name
-     * @return string The filename
-     */
     public function getFilename(string $agent): string
     {
         $fileMap = [
@@ -277,12 +257,6 @@ MARKDOWN;
         return $fileMap[$agent] ?? 'AGENTS.md';
     }
 
-    /**
-     * Get the shell commands section based on environment type
-     *
-     * @param string $envType The environment type
-     * @return string The shell commands section in Markdown format
-     */
     private function getShellCommandsSection(string $envType): string
     {
         $commandPrefix = match ($envType) {

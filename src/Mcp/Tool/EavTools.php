@@ -11,16 +11,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * EAV Tools
- *
- * Provides MCP tools for inspecting Magento's EAV system.
- */
 class EavTools
 {
-    /**
-     * Supported entity types
-     */
     private const SUPPORTED_ENTITY_TYPES = [
         'catalog_product',
         'catalog_category',
@@ -28,13 +20,6 @@ class EavTools
         'customer_address',
     ];
 
-    /**
-     * Returns EAV attributes for a specified entity type.
-     *
-     * @param string $entityType The EAV entity type code (catalog_product, catalog_category, customer, customer_address)
-     * @param bool $userDefinedOnly If true, returns only user-defined (custom) attributes
-     * @return array<string, mixed> The list of attributes with metadata
-     */
     #[McpTool(
         name: 'eav-attributes',
         description: 'Returns EAV attributes for a specified entity type (catalog_product, catalog_category, customer, customer_address)'
@@ -99,11 +84,6 @@ class EavTools
         }
     }
 
-    /**
-     * Returns all EAV entity types registered in the system.
-     *
-     * @return array<string, mixed> List of entity types with metadata
-     */
     #[McpTool(
         name: 'eav-entity-types',
         description: 'Returns all supported EAV entity types registered in the Magento system'
@@ -129,7 +109,6 @@ class EavTools
                         'entity_table' => $entityType->getEntityTable(),
                     ];
                 } catch (\Throwable $e) {
-                    // Entity type not available, skip
                 }
             }
 

@@ -38,31 +38,23 @@ class DevelopmentTools
             $cacheTypes = $cacheTypeList->getTypes();
 
             $types = [];
-            $enabledCount = 0;
-            $disabledCount = 0;
-
             foreach ($cacheTypes as $type) {
-                $isEnabled = (bool) $type->getStatus();
                 $types[] = [
                     'id' => $type->getId(),
                     'label' => $type->getCacheType(),
                     'description' => $type->getDescription(),
-                    'status' => $isEnabled ? 'enabled' : 'disabled',
+                    'status' => $type->getStatus() ? 'enabled' : 'disabled',
                     'tags' => $type->getTags(),
                 ];
-
-                if ($isEnabled) {
-                    $enabledCount++;
-                } else {
-                    $disabledCount++;
-                }
             }
+
+            $enabledCount = count(array_filter($types, fn($t) => $t['status'] === 'enabled'));
 
             return [
                 'summary' => [
                     'total' => count($types),
                     'enabled' => $enabledCount,
-                    'disabled' => $disabledCount,
+                    'disabled' => count($types) - $enabledCount,
                 ],
                 'types' => $types,
             ];
@@ -91,16 +83,9 @@ class DevelopmentTools
             $collection = $indexerCollection->create();
 
             $indexers = [];
-            $invalidCount = 0;
-
             foreach ($collection as $indexer) {
                 $state = $indexer->getState();
                 $status = $state->getStatus();
-                $isInvalid = $status === \Magento\Framework\Indexer\StateInterface::STATUS_INVALID;
-
-                if ($isInvalid) {
-                    $invalidCount++;
-                }
 
                 $indexers[] = [
                     'indexer_id' => $indexer->getId(),
@@ -113,6 +98,11 @@ class DevelopmentTools
                     'updated' => $state->getUpdated(),
                 ];
             }
+
+            $invalidCount = count(array_filter(
+                $indexers,
+                fn($i) => $i['status'] === \Magento\Framework\Indexer\StateInterface::STATUS_INVALID
+            ));
 
             return [
                 'summary' => [
@@ -323,12 +313,14 @@ class DevelopmentTools
             }
 
             // Check PHP files for strict types
-            $phpFiles = glob($path . '/**/*.php', GLOB_BRACE) ?: [];
-            $phpFiles = array_merge($phpFiles, glob($path . '/*.php', GLOB_BRACE) ?: []);
+            $phpFiles = array_merge(
+                glob($path . '/*.php') ?: [],
+                glob($path . '/**/*.php') ?: []
+            );
             $missingStrictTypes = 0;
             foreach ($phpFiles as $file) {
                 $content = file_get_contents($file);
-                if ($content !== false && strpos($content, 'declare(strict_types=1)') === false) {
+                if ($content !== false && !str_contains($content, 'declare(strict_types=1)')) {
                     $missingStrictTypes++;
                 }
             }

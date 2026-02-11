@@ -9,43 +9,25 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic;
 
 /**
- * Multi-line Magento exception log parser.
- *
- * Magento exception logs use Monolog format where a single error can span
- * multiple lines — the header line contains the timestamp and level, followed
- * by JSON-encoded exception context with chained exceptions and stack traces.
- *
- * This parser groups raw lines into blocks, extracts structured exception data,
+ * Parses multi-line Magento exception/error logs into structured data.
+ * Supports both Monolog format and raw PHP error output (e.g., from var/report files
+ * or non-Monolog log entries). Groups raw lines into blocks, extracts exception chains,
  * and applies time/pattern filters.
  */
 class ExceptionParser
 {
-    /**
-     * Monolog timestamp pattern — marks the start of a new log block.
-     */
     private const TIMESTAMP_PATTERN = '/^\[\d{4}-/';
-
-    /**
-     * Monolog header pattern — extracts timestamp, channel, level, and message.
-     */
     private const HEADER_PATTERN = '/^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(\w+)\.(\w+):\s*(.*)$/';
-
-    /**
-     * Exception chain pattern — matches "ClassName(code: N): message at /path:LINE"
-     */
     private const EXCEPTION_CHAIN_PATTERN = '/([A-Za-z\\\\]+(?:Exception|Error))\(code:\s*(\d+)\):\s*(.*?)\s+at\s+([^\s:]+):(\d+)/';
-
-    /**
-     * Stack trace frame pattern — matches "#N /path(LINE): call"
-     */
     private const STACK_FRAME_PATTERN = '/^#(\d+)\s+(.+?)\((\d+)\):\s*(.*)$/';
 
     /**
-     * Parse raw log lines into structured exception entries.
-     *
-     * Groups multi-line entries, extracts exception chains from JSON context,
-     * parses stack trace frames, and applies time/pattern filters.
-     *
+     * Pattern for raw PHP error lines that can start a new block.
+     * Matches: "PHP Fatal error:", "TypeError:", "ValueError:", "Magento\...\Exception:", etc.
+     */
+    private const RAW_ERROR_PATTERN = '/^(?:PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:|[\w\\\\]+(?:Exception|Error)\s*:)/';
+
+    /**
      * @param array<string> $rawLines Raw lines from tail-read of log file
      * @param string $since Relative time filter ('5m', '1h', '24h', '7d')
      * @param string $pattern Optional message substring filter
@@ -53,10 +35,8 @@ class ExceptionParser
      */
     public function parse(array $rawLines, string $since = '1h', string $pattern = ''): array
     {
-        // Stage 1: Group lines into blocks
         $blocks = $this->groupIntoBlocks($rawLines);
 
-        // Stage 2: Extract exception data from each block
         $entries = [];
         foreach ($blocks as $block) {
             $entry = $this->extractExceptionData($block);
@@ -65,12 +45,10 @@ class ExceptionParser
             }
         }
 
-        // Stage 3: Filter by time and pattern
         $cutoff = $this->calculateCutoff($since);
         $filtered = [];
 
         foreach ($entries as $entry) {
-            // Apply time filter
             if ($cutoff !== null && isset($entry['timestamp'])) {
                 $entryTime = strtotime($entry['timestamp']);
                 if ($entryTime !== false && $entryTime < $cutoff) {
@@ -78,7 +56,6 @@ class ExceptionParser
                 }
             }
 
-            // Apply pattern filter
             if ($pattern !== '' && stripos($entry['raw'] ?? '', $pattern) === false) {
                 continue;
             }
@@ -86,26 +63,86 @@ class ExceptionParser
             $filtered[] = $entry;
         }
 
-        // Return newest first
         return array_reverse($filtered);
     }
 
     /**
-     * Group raw lines into logical blocks.
+     * Parse structured error data from a Magento var/report JSON file.
      *
-     * A new block starts when a line matches the Monolog timestamp pattern.
-     * All subsequent lines without a timestamp belong to the current block.
-     *
-     * @param array<string> $lines
-     * @return array<array<string>>
+     * @param array<string, mixed> $reportData Decoded JSON from a report file
+     * @param string $reportId The report file name/ID
+     * @return array<string, mixed>|null Structured error data or null if invalid
      */
+    public function parseReportFile(array $reportData, string $reportId): ?array
+    {
+        if (empty($reportData)) {
+            return null;
+        }
+
+        $message = $reportData[0] ?? '';
+        $trace = $reportData[1] ?? '';
+        $url = $reportData['url'] ?? null;
+        $scriptName = $reportData['script_name'] ?? null;
+        $reportTime = $reportData['report_time'] ?? null;
+
+        if ($message === '') {
+            return null;
+        }
+
+        $entry = [
+            'timestamp' => $reportTime,
+            'channel' => 'report',
+            'level' => 'CRITICAL',
+            'message' => '',
+            'class' => null,
+            'code' => null,
+            'file' => null,
+            'line' => null,
+            'stack_trace' => [],
+            'previous' => null,
+            'raw' => is_string($trace) ? $message . "\n" . $trace : $message,
+            'source' => 'var/report',
+            'report_id' => $reportId,
+            'url' => $url,
+            'script_name' => $scriptName,
+        ];
+
+        // Extract class and message from the error string
+        // Format: "ClassName: message in /file:line"
+        if (preg_match('/^([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $message, $m)) {
+            $entry['class'] = $m[1];
+            $entry['message'] = $m[2];
+            $this->applyFileAndLine($entry, $m[3] ?? '', $m[4] ?? '');
+        } else {
+            $entry['message'] = $message;
+        }
+
+        // Parse stack trace from the trace string
+        if (is_string($trace) && $trace !== '') {
+            $traceLines = explode("\n", $trace);
+            foreach ($traceLines as $traceLine) {
+                $traceLine = trim($traceLine);
+                if (preg_match(self::STACK_FRAME_PATTERN, $traceLine, $match)) {
+                    $entry['stack_trace'][] = [
+                        'index' => (int) $match[1],
+                        'file' => $match[2],
+                        'line' => (int) $match[3],
+                        'call' => $match[4],
+                    ];
+                }
+            }
+        }
+
+        return $entry;
+    }
+
     private function groupIntoBlocks(array $lines): array
     {
         $blocks = [];
         $currentBlock = [];
 
         foreach ($lines as $line) {
-            if (preg_match(self::TIMESTAMP_PATTERN, $line)) {
+            if ($this->isBlockStarter($line)) {
                 if (!empty($currentBlock)) {
                     $blocks[] = $currentBlock;
                 }
@@ -113,7 +150,6 @@ class ExceptionParser
             } elseif (!empty($currentBlock)) {
                 $currentBlock[] = $line;
             }
-            // Lines before any timestamp are discarded (partial reads)
         }
 
         if (!empty($currentBlock)) {
@@ -124,11 +160,15 @@ class ExceptionParser
     }
 
     /**
-     * Extract structured exception data from a block of lines.
-     *
-     * @param array<string> $block
-     * @return array<string, mixed>|null
+     * Determine if a line starts a new log block.
+     * Recognizes both Monolog timestamp format and raw PHP error output.
      */
+    private function isBlockStarter(string $line): bool
+    {
+        return preg_match(self::TIMESTAMP_PATTERN, $line) === 1
+            || preg_match(self::RAW_ERROR_PATTERN, $line) === 1;
+    }
+
     private function extractExceptionData(array $block): ?array
     {
         if (empty($block)) {
@@ -138,11 +178,29 @@ class ExceptionParser
         $firstLine = $block[0];
         $raw = implode("\n", $block);
 
-        // Parse Monolog header
-        if (!preg_match(self::HEADER_PATTERN, $firstLine, $headerMatches)) {
-            return null;
+        // Try Monolog format first
+        if (preg_match(self::HEADER_PATTERN, $firstLine, $headerMatches)) {
+            return $this->extractMonologEntry($headerMatches, $block, $raw);
         }
 
+        // Try raw PHP error format
+        if (preg_match(self::RAW_ERROR_PATTERN, $firstLine)) {
+            return $this->extractRawErrorEntry($block, $raw);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract structured data from a Monolog-formatted log block.
+     *
+     * @param array<string> $headerMatches Regex matches from HEADER_PATTERN
+     * @param array<string> $block All lines in the block
+     * @param string $raw Joined block content
+     * @return array<string, mixed>
+     */
+    private function extractMonologEntry(array $headerMatches, array $block, string $raw): array
+    {
         $entry = [
             'timestamp' => $headerMatches[1],
             'channel' => $headerMatches[2],
@@ -157,17 +215,10 @@ class ExceptionParser
             'raw' => $raw,
         ];
 
-        // The message part may contain inline JSON context
         $messagePart = $headerMatches[4];
-
-        // Try to find JSON context in the full block text
-        $fullText = $raw;
-
-        // Extract exception chain from JSON context: {"exception":"[object] (...)"}
-        $exceptions = $this->extractExceptionChain($fullText);
+        $exceptions = $this->extractExceptionChain($raw);
 
         if (!empty($exceptions)) {
-            // First exception in chain is the primary
             $primary = $exceptions[0];
             $entry['class'] = $primary['class'];
             $entry['code'] = $primary['code'];
@@ -175,37 +226,99 @@ class ExceptionParser
             $entry['file'] = $primary['file'];
             $entry['line'] = $primary['line'];
 
-            // Second exception is the previous/cause
             if (isset($exceptions[1])) {
                 $entry['previous'] = $exceptions[1];
             }
         } else {
-            // No JSON context found — use the raw message
-            // Strip trailing JSON artifacts like {} []
             $cleanMessage = preg_replace('/\s*\{[^}]*\}\s*\[\]\s*$/', '', $messagePart);
             $entry['message'] = trim($cleanMessage ?? $messagePart);
 
-            // Try to extract exception class from message
             if (preg_match('/^([\w\\\\]+(?:Exception|Error)):\s*(.*)/', $entry['message'], $m)) {
                 $entry['class'] = $m[1];
                 $entry['message'] = $m[2];
             }
         }
 
-        // Parse stack trace frames from the block
         $entry['stack_trace'] = $this->extractStackTrace($block);
 
         return $entry;
     }
 
     /**
-     * Extract exception chain from the full block text.
+     * Extract structured data from a raw PHP error block (non-Monolog format).
      *
-     * Looks for the JSON context pattern and parses each exception entry.
+     * Handles formats like:
+     * - "PHP Fatal error: Uncaught TypeError: ... in /path/file.php:123"
+     * - "TypeError: Return value must be ... in /path/file.php:123"
      *
-     * @param string $text
-     * @return array<array<string, mixed>>
+     * @param array<string> $block All lines in the block
+     * @param string $raw Joined block content
+     * @return array<string, mixed>
      */
+    private function extractRawErrorEntry(array $block, string $raw): array
+    {
+        $firstLine = $block[0];
+
+        $entry = [
+            'timestamp' => null,
+            'channel' => 'php',
+            'level' => 'ERROR',
+            'message' => '',
+            'class' => null,
+            'code' => null,
+            'file' => null,
+            'line' => null,
+            'stack_trace' => [],
+            'previous' => null,
+            'raw' => $raw,
+        ];
+
+        // Try "PHP Fatal error: Uncaught ExceptionClass: message in /file:line"
+        if (preg_match('/^PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:\s*(?:Uncaught\s+)?([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?/', $firstLine, $m)) {
+            $entry['level'] = 'CRITICAL';
+            $entry['class'] = $m[1];
+            $entry['message'] = trim($m[2]);
+            $this->applyFileAndLine($entry, $m[3] ?? '', $m[4] ?? '');
+        } elseif (preg_match('/^([\w\\\\]+(?:Exception|Error))\s*:\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $firstLine, $m)) {
+            // Try "ExceptionClass: message in /file:line"
+            $entry['class'] = $m[1];
+            $entry['message'] = trim($m[2]);
+            $this->applyFileAndLine($entry, $m[3] ?? '', $m[4] ?? '');
+        } else {
+            $entry['message'] = $firstLine;
+        }
+
+        // Extract exception chains from the full raw text
+        $exceptions = $this->extractExceptionChain($raw);
+        if (!empty($exceptions) && $entry['class'] === null) {
+            $primary = $exceptions[0];
+            $entry['class'] = $primary['class'];
+            $entry['code'] = $primary['code'];
+            $entry['message'] = $primary['message'];
+            $entry['file'] = $primary['file'];
+            $entry['line'] = $primary['line'];
+        }
+
+        $entry['stack_trace'] = $this->extractStackTrace($block);
+
+        return $entry;
+    }
+
+    /**
+     * Set file and line on an entry from regex match groups, ignoring empty values.
+     *
+     * @param array<string, mixed> $entry
+     */
+    private function applyFileAndLine(array &$entry, string $file, string $line): void
+    {
+        if ($file !== '') {
+            $entry['file'] = $file;
+        }
+        if ($line !== '') {
+            $entry['line'] = (int) $line;
+        }
+    }
+
     private function extractExceptionChain(string $text): array
     {
         $exceptions = [];
@@ -225,12 +338,6 @@ class ExceptionParser
         return $exceptions;
     }
 
-    /**
-     * Extract stack trace frames from block lines.
-     *
-     * @param array<string> $block
-     * @return array<array<string, mixed>>
-     */
     private function extractStackTrace(array $block): array
     {
         $frames = [];
@@ -250,12 +357,6 @@ class ExceptionParser
         return $frames;
     }
 
-    /**
-     * Calculate the Unix timestamp cutoff from a relative time string.
-     *
-     * @param string $since Relative time like '5m', '1h', '24h', '7d'
-     * @return int|null Unix timestamp cutoff, or null if unparseable
-     */
     private function calculateCutoff(string $since): ?int
     {
         if (!preg_match('/^(\d+)([mhd])$/', $since, $m)) {

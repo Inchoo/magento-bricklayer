@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * Order Prompts
- *
  * Provides MCP prompts for order processing operations.
  */
 class OrderPrompts

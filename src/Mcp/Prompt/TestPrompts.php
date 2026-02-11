@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * Test Creation Prompts
- *
  * Provides MCP prompts for creating Magento tests.
  */
 class TestPrompts

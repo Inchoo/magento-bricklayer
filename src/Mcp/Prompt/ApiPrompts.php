@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * API Development Prompts
- *
  * Provides MCP prompts for creating Magento REST and GraphQL APIs.
  */
 class ApiPrompts

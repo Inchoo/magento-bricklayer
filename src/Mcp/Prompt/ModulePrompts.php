@@ -11,8 +11,6 @@ namespace Inchoo\MagentoBricklayer\Mcp\Prompt;
 use Mcp\Capability\Attribute\McpPrompt;
 
 /**
- * Module Creation Prompts
- *
  * Provides MCP prompts for creating Magento modules and components.
  */
 class ModulePrompts

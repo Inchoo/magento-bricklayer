@@ -10,18 +10,8 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 
 use Mcp\Capability\Attribute\McpResource;
 
-/**
- * Template Resource
- *
- * Provides code templates for common Magento 2 structures.
- */
 class TemplateResource
 {
-    /**
-     * Returns module structure template.
-     *
-     * @return string Markdown content with module template
-     */
     #[McpResource(
         uri: 'magento://templates/module',
         name: 'module_template',
@@ -169,11 +159,6 @@ ComponentRegistrar::register(
 MARKDOWN;
     }
 
-    /**
-     * Returns controller template.
-     *
-     * @return string Markdown content with controller template
-     */
     #[McpResource(
         uri: 'magento://templates/controller',
         name: 'controller_template',
@@ -359,11 +344,6 @@ class Process implements HttpPostActionInterface
 MARKDOWN;
     }
 
-    /**
-     * Returns API endpoint template.
-     *
-     * @return string Markdown content with API template
-     */
     #[McpResource(
         uri: 'magento://templates/api',
         name: 'api_template',
@@ -514,11 +494,6 @@ interface EntityInterface
 MARKDOWN;
     }
 
-    /**
-     * Returns model template.
-     *
-     * @return string Markdown content with model template
-     */
     #[McpResource(
         uri: 'magento://templates/model',
         name: 'model_template',

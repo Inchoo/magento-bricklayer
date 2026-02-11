@@ -13,18 +13,8 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Mcp\Capability\Attribute\McpTool;
 
-/**
- * Code Runner Tools
- *
- * Provides PHP code execution capabilities within Magento context.
- * Uses PsySH for safe, sandboxed code execution with helper functions,
- * area emulation, transaction rollback, and execution metrics.
- */
 class CodeRunnerTools
 {
-    /**
-     * Dangerous patterns that should not be allowed
-     */
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
             => 'Shell execution functions are not allowed',
@@ -46,22 +36,6 @@ class CodeRunnerTools
             => 'Long sleep calls are not allowed (use timeout parameter instead)',
     ];
 
-    /**
-     * Executes PHP code within the Magento application context.
-     *
-     * Use this to test repository calls, inspect DI resolution, debug data,
-     * query EAV attributes, or verify fix hypotheses.
-     *
-     * Available helpers: get(class), create(class, args), repo(class), config(path).
-     * Default mode is read-only (DB changes are rolled back).
-     * Disabled in production.
-     *
-     * @param string $code PHP code to execute (without <?php tags)
-     * @param string $area Magento area for DI resolution (frontend, adminhtml, webapi_rest, graphql, crontab, global). Empty = use current.
-     * @param bool $allow_write When false (default), DB changes are rolled back after execution
-     * @param int $timeout Maximum execution time in seconds
-     * @return array<string, mixed> Execution result with output, return value, metrics, and any errors
-     */
     #[McpTool(
         name: 'code-runner',
         description: 'Executes PHP code within the Magento application context. '
@@ -77,7 +51,6 @@ class CodeRunnerTools
         bool $allow_write = false,
         int $timeout = 30
     ): array {
-        // 1. Bootstrap check
         if (!MagentoBootstrap::isInitialized()) {
             return [
                 'success' => false,
@@ -85,7 +58,6 @@ class CodeRunnerTools
             ];
         }
 
-        // 2. Production mode guard
         try {
             $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
             $mode = $state->getMode();
@@ -101,7 +73,6 @@ class CodeRunnerTools
             $mode = 'unknown';
         }
 
-        // 3. Config-level kill switch and write policy enforcement
         try {
             $configLoader = new ConfigLoader();
             if (!$configLoader->isToolEnabled('code-runner')) {
@@ -112,10 +83,10 @@ class CodeRunnerTools
                 $allow_write = false;
             }
         } catch (\Throwable $e) {
-            // Config loading failed — proceed with defaults
+        } catch (\Throwable $e) {
+            // proceed with defaults
         }
 
-        // 4. Code validation
         $validationError = $this->validateCode($code);
         if ($validationError !== null) {
             return [
@@ -125,7 +96,6 @@ class CodeRunnerTools
             ];
         }
 
-        // 5. Area emulation
         if ($area !== '') {
             $areaEmulator = new AreaEmulator();
             if (!$areaEmulator->isValidArea($area)) {
@@ -141,25 +111,21 @@ class CodeRunnerTools
             $areaEmulator->setArea($area);
         }
 
-        // 6. Timeout enforcement
         $maxTimeout = $this->getMaxTimeout();
         $effectiveTimeout = min($timeout, $maxTimeout);
         $previousLimit = (int) ini_get('max_execution_time');
         set_time_limit($effectiveTimeout);
 
-        // 7. Metrics start
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $startQueries = $this->getQueryCount();
 
-        // 8. Execute with transaction wrapping
         try {
             $result = $this->executeWithTransaction($code, $mode, $allow_write);
         } finally {
             set_time_limit($previousLimit);
         }
 
-        // 9. Metrics end
         $result['metrics'] = [
             'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
             'memory_delta_mb' => round((memory_get_usage(true) - $startMemory) / 1024 / 1024, 2),
@@ -167,7 +133,6 @@ class CodeRunnerTools
             'queries_executed' => $this->getQueryCount() - $startQueries,
         ];
 
-        // 10. Add area info to response
         if ($area !== '') {
             $result['area'] = $area;
         }
@@ -175,14 +140,6 @@ class CodeRunnerTools
         return $result;
     }
 
-    /**
-     * Execute code with optional transaction wrapping for read-only mode.
-     *
-     * @param string $code
-     * @param string $mode
-     * @param bool $allowWrite
-     * @return array<string, mixed>
-     */
     private function executeWithTransaction(string $code, string $mode, bool $allowWrite): array
     {
         $connection = null;
@@ -235,17 +192,9 @@ class CodeRunnerTools
         return $result;
     }
 
-    /**
-     * Execute code using PsySH
-     *
-     * @param string $code
-     * @param string $mode
-     * @return array<string, mixed>
-     */
     private function executeWithPsySH(string $code, string $mode): array
     {
         try {
-            // Configure PsySH for non-interactive execution
             $config = new \Psy\Configuration([
                 'updateCheck' => 'never',
                 'usePcntl' => false,
@@ -254,10 +203,8 @@ class CodeRunnerTools
 
             $shell = new \Psy\Shell($config);
 
-            // Set up scope variables with helper functions
             $shell->setScopeVariables($this->buildScopeVariables());
 
-            // Capture output
             ob_start();
             $error = null;
             $returnValue = null;
@@ -294,26 +241,17 @@ class CodeRunnerTools
         }
     }
 
-    /**
-     * Simple execution fallback without PsySH
-     *
-     * @param string $code
-     * @param string $mode
-     * @return array<string, mixed>
-     */
     private function executeSimple(string $code, string $mode): array
     {
         try {
             $vars = $this->buildScopeVariables();
             extract($vars);
 
-            // Capture output
             ob_start();
             $error = null;
             $returnValue = null;
 
             try {
-                // Wrap code to capture the return value — inject all helpers
                 $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config) { '
                     . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config);';
                 $returnValue = eval($wrappedCode);
@@ -348,11 +286,6 @@ class CodeRunnerTools
         }
     }
 
-    /**
-     * Build scope variables with helper functions for code execution.
-     *
-     * @return array<string, mixed>
-     */
     private function buildScopeVariables(): array
     {
         $objectManager = MagentoBootstrap::getObjectManager();
@@ -394,12 +327,6 @@ class CodeRunnerTools
         ];
     }
 
-    /**
-     * Validate code for dangerous operations
-     *
-     * @param string $code
-     * @return string|null Error message if validation fails, null if valid
-     */
     private function validateCode(string $code): ?string
     {
         foreach (self::DANGEROUS_PATTERNS as $pattern => $message) {
@@ -411,9 +338,6 @@ class CodeRunnerTools
         return null;
     }
 
-    /**
-     * Get maximum timeout from configuration.
-     */
     private function getMaxTimeout(): int
     {
         try {
@@ -424,9 +348,6 @@ class CodeRunnerTools
         }
     }
 
-    /**
-     * Get current DB query count for metrics.
-     */
     private function getQueryCount(): int
     {
         try {
@@ -446,12 +367,6 @@ class CodeRunnerTools
         }
     }
 
-    /**
-     * Format return value for JSON serialization
-     *
-     * @param mixed $value
-     * @return mixed
-     */
     private function formatReturnValue(mixed $value): mixed
     {
         if ($value === null || is_scalar($value)) {
@@ -469,13 +384,6 @@ class CodeRunnerTools
         return (string) $value;
     }
 
-    /**
-     * Format array for output
-     *
-     * @param array<mixed> $array
-     * @param int $depth
-     * @return array<mixed>
-     */
     private function formatArray(array $array, int $depth = 0): array
     {
         if ($depth > 3) {
@@ -503,17 +411,10 @@ class CodeRunnerTools
         return $result;
     }
 
-    /**
-     * Format object for output
-     *
-     * @param object $object
-     * @return array<string, mixed>
-     */
     private function formatObject(object $object): array
     {
         $className = get_class($object);
 
-        // Handle Magento DataObject and models
         if ($object instanceof \Magento\Framework\DataObject) {
             return [
                 '__class__' => $className,
@@ -521,7 +422,6 @@ class CodeRunnerTools
             ];
         }
 
-        // Handle collections
         if ($object instanceof \Magento\Framework\Data\Collection) {
             $items = [];
             $count = 0;
@@ -539,7 +439,6 @@ class CodeRunnerTools
             ];
         }
 
-        // Handle search results
         if ($object instanceof \Magento\Framework\Api\SearchResultsInterface) {
             return [
                 '__class__' => $className,
@@ -548,7 +447,6 @@ class CodeRunnerTools
             ];
         }
 
-        // Handle ExtensionAttributesInterface — show available getter methods
         if (str_contains($className, 'ExtensionAttributes')) {
             $methods = [];
             $reflection = new \ReflectionClass($object);
@@ -569,7 +467,6 @@ class CodeRunnerTools
             ];
         }
 
-        // Handle StockItemInterface
         if ($object instanceof \Magento\CatalogInventory\Api\Data\StockItemInterface) {
             return [
                 '__class__' => $className,
@@ -580,13 +477,11 @@ class CodeRunnerTools
             ];
         }
 
-        // Handle AbstractExtensibleObject — getData() + extension attributes
         if (method_exists($object, 'getData') && method_exists($object, 'getExtensionAttributes')) {
             $data = ['__class__' => $className];
             try {
                 $data['data'] = $this->formatArray((array) $object->getData());
             } catch (\Throwable $e) {
-                // getData() may fail
             }
             try {
                 $ext = $object->getExtensionAttributes();
@@ -594,12 +489,10 @@ class CodeRunnerTools
                     $data['extension_attributes'] = $this->formatObject($ext);
                 }
             } catch (\Throwable $e) {
-                // Extension attributes may fail
             }
             return $data;
         }
 
-        // Generic object
         return [
             '__class__' => $className,
         ];

@@ -301,6 +301,44 @@ class DiagnosticTools
                 ],
             ],
         ],
+        [
+            'match' => '/TypeError.*[Rr]eturn value|[Rr]eturn value must be of type/',
+            'category' => 'type',
+            'relevant_caches' => [],
+            'suggestions' => [
+                [
+                    'action' => 'Check the di.xml preference for the return type interface',
+                    'reason' => 'A repository or service method returns a concrete class that does not implement the expected interface',
+                    'command' => null,
+                    'confidence' => 'high',
+                ],
+                [
+                    'action' => 'Clear generated code and recompile DI',
+                    'reason' => 'Generated interceptors or proxies may have stale return type information',
+                    'command' => 'rm -rf generated/code generated/metadata && bin/magento setup:di:compile',
+                    'confidence' => 'medium',
+                ],
+            ],
+        ],
+        [
+            'match' => '/TypeError|ValueError|ArgumentCountError|ArithmeticError|DivisionByZeroError|UnhandledMatchError/',
+            'category' => 'type',
+            'relevant_caches' => [],
+            'suggestions' => [
+                [
+                    'action' => 'Review the code at the reported file and line for type mismatches',
+                    'reason' => 'PHP Error subclasses indicate strict type violations or invalid arguments',
+                    'command' => null,
+                    'confidence' => 'high',
+                ],
+                [
+                    'action' => 'Clear generated code and recompile DI',
+                    'reason' => 'Stale generated code may cause type mismatches',
+                    'command' => 'rm -rf generated/code generated/metadata && bin/magento setup:di:compile',
+                    'confidence' => 'medium',
+                ],
+            ],
+        ],
     ];
 
     private LogTools $logTools;
@@ -325,6 +363,11 @@ class DiagnosticTools
      *
      * Parses the exception log, identifies the responsible module, gathers DI and environment
      * context, matches against known error patterns, and returns actionable suggestions.
+     *
+     * When no errors are found in the primary log source, automatically checks:
+     * 1. system.log as an alternate log source (if primary was exception.log)
+     * 2. var/report/ files for errors that Magento logged outside of Monolog
+     *    (e.g., \Error subclasses like TypeError in developer mode)
      *
      * @param int $index Which error to diagnose (0 = most recent, 1 = second most recent, etc.)
      * @param string $source Log file to read (exception, system, debug, cron)
@@ -352,26 +395,59 @@ class DiagnosticTools
             $logFile = $this->resolveLogFile($source);
             $logPath = $magentoRoot . '/' . $logFile;
 
-            if (!file_exists($logPath)) {
-                return [
-                    'found' => false,
-                    'message' => "Log file not found: $logFile",
-                    'searched' => $source,
-                    'since' => $since,
-                ];
+            $exceptions = [];
+            $searchedSources = [$source];
+
+            if (file_exists($logPath)) {
+                $rawLines = $this->readLastLines($logPath, 5000);
+                $exceptions = $this->exceptionParser->parse($rawLines, $since, $pattern);
             }
 
-            $rawLines = $this->readLastLines($logPath, 5000);
-            $exceptions = $this->exceptionParser->parse($rawLines, $since, $pattern);
+            // FALLBACK — try additional sources when the primary log has no match at $index.
+            // system.log is only tried when the primary source is exception.log.
+            // var/report catches errors that Magento's Bootstrap::terminate() handles
+            // without logging (e.g., TypeError and other \Error subclasses in developer mode).
+            $fallbackSources = $source === 'exception'
+                ? ['system' => self::LOG_FILES['system'], 'var/report' => null]
+                : ['var/report' => null];
+
+            foreach ($fallbackSources as $fallbackName => $fallbackFile) {
+                if (!empty($exceptions) && isset($exceptions[$index])) {
+                    break;
+                }
+
+                if ($fallbackFile !== null) {
+                    $fallbackPath = $magentoRoot . '/' . $fallbackFile;
+                    if (!file_exists($fallbackPath)) {
+                        continue;
+                    }
+                    $fallbackLines = $this->readLastLines($fallbackPath, 5000);
+                    $additional = $this->exceptionParser->parse($fallbackLines, $since, $pattern);
+                } else {
+                    $additional = $this->scanReportFiles($magentoRoot, $since, $pattern);
+                }
+
+                if (empty($additional)) {
+                    continue;
+                }
+
+                $searchedSources[] = $fallbackName;
+                $exceptions = array_merge($exceptions, $additional);
+                $this->sortByTimestampDescending($exceptions);
+            }
 
             if (empty($exceptions) || !isset($exceptions[$index])) {
                 return [
                     'found' => false,
                     'message' => 'No matching errors found',
-                    'searched' => $source,
+                    'searched' => $searchedSources,
                     'since' => $since,
                     'pattern' => $pattern ?: null,
                     'total_found' => count($exceptions),
+                    'note' => $source === 'exception'
+                        ? 'In developer mode, PHP \Error subclasses (TypeError, ValueError, etc.) '
+                          . 'are displayed but not logged. Check the browser response or var/report/ for details.'
+                        : null,
                 ];
             }
 
@@ -428,18 +504,28 @@ class DiagnosticTools
             $suggestions = $this->buildSuggestions($matched, $environment, $moduleContext, $diContext);
 
             // 8. ASSEMBLE RESPONSE
+            $errorResult = [
+                'message' => $error['message'] ?? '',
+                'class' => $error['class'] ?? null,
+                'code' => $error['code'] ?? null,
+                'file' => $error['file'] ?? null,
+                'line' => $error['line'] ?? null,
+                'timestamp' => $error['timestamp'] ?? null,
+                'level' => $error['level'] ?? null,
+                'stack_trace' => array_slice($error['stack_trace'] ?? [], 0, 10),
+                'previous' => $error['previous'] ?? null,
+            ];
+
+            // Include source metadata for report-sourced errors
+            foreach (['source', 'report_id', 'url'] as $metaKey) {
+                if (isset($error[$metaKey])) {
+                    $errorResult[$metaKey] = $error[$metaKey];
+                }
+            }
+
             return [
-                'error' => [
-                    'message' => $error['message'] ?? '',
-                    'class' => $error['class'] ?? null,
-                    'code' => $error['code'] ?? null,
-                    'file' => $error['file'] ?? null,
-                    'line' => $error['line'] ?? null,
-                    'timestamp' => $error['timestamp'] ?? null,
-                    'level' => $error['level'] ?? null,
-                    'stack_trace' => array_slice($error['stack_trace'] ?? [], 0, 10),
-                    'previous' => $error['previous'] ?? null,
-                ],
+                'error' => $errorResult,
+                'searched' => $searchedSources,
                 'module_context' => $moduleContext,
                 'di_context' => $diContext,
                 'environment' => $environment,
@@ -562,10 +648,13 @@ class DiagnosticTools
      */
     private function extractDisabledCaches(array $cacheResult): array
     {
-        return array_values(array_map(
-            fn($t) => $t['id'],
-            array_filter($cacheResult['types'] ?? [], fn($t) => $t['status'] === 'disabled')
-        ));
+        $disabled = [];
+        foreach ($cacheResult['types'] ?? [] as $type) {
+            if ($type['status'] === 'disabled') {
+                $disabled[] = $type['id'];
+            }
+        }
+        return $disabled;
     }
 
     /**
@@ -576,10 +665,13 @@ class DiagnosticTools
      */
     private function extractInvalidIndexers(array $indexerResult): array
     {
-        return array_values(array_map(
-            fn($i) => $i['indexer_id'],
-            array_filter($indexerResult['indexers'] ?? [], fn($i) => $i['status'] === 'invalid')
-        ));
+        $invalid = [];
+        foreach ($indexerResult['indexers'] ?? [] as $indexer) {
+            if ($indexer['status'] === 'invalid') {
+                $invalid[] = $indexer['indexer_id'];
+            }
+        }
+        return $invalid;
     }
 
     /**
@@ -620,7 +712,7 @@ class DiagnosticTools
     private function countMatchingErrors(array $analysis, array $error): int
     {
         $errorClass = $error['class'] ?? '';
-        if ($errorClass === '' || $errorClass === null) {
+        if ($errorClass === '') {
             return 0;
         }
 
@@ -684,22 +776,25 @@ class DiagnosticTools
         }
 
         // Add module-specific suggestions
-        if ($module !== null && ($module['found'] ?? true) === false) {
-            array_unshift($enriched, [
-                'action' => "Module {$module['module_name']} not found in the system",
-                'reason' => 'The module referenced by this error is not installed',
-                'command' => null,
-                'confidence' => 'high',
-            ]);
-        }
+        if ($module !== null) {
+            $moduleFound = $module['found'] ?? true;
+            $moduleName = $module['module_name'];
 
-        if ($module !== null && isset($module['enabled']) && !$module['enabled'] && ($module['found'] ?? true) !== false) {
-            array_unshift($enriched, [
-                'action' => "Enable module: bin/magento module:enable {$module['module_name']}",
-                'reason' => 'The module is installed but disabled',
-                'command' => "bin/magento module:enable {$module['module_name']}",
-                'confidence' => 'high',
-            ]);
+            if ($moduleFound === false) {
+                array_unshift($enriched, [
+                    'action' => "Module {$moduleName} not found in the system",
+                    'reason' => 'The module referenced by this error is not installed',
+                    'command' => null,
+                    'confidence' => 'high',
+                ]);
+            } elseif (!($module['enabled'] ?? true)) {
+                array_unshift($enriched, [
+                    'action' => "Enable module: bin/magento module:enable {$moduleName}",
+                    'reason' => 'The module is installed but disabled',
+                    'command' => "bin/magento module:enable {$moduleName}",
+                    'confidence' => 'high',
+                ]);
+            }
         }
 
         // Add DI-specific suggestions
@@ -734,5 +829,105 @@ class DiagnosticTools
         }
 
         return $enriched;
+    }
+
+    /**
+     * Scan var/report/ directory for recent error report files.
+     *
+     * Magento writes JSON report files to var/report/ for errors that occur during
+     * request processing. These are particularly useful for catching errors that
+     * Magento's Bootstrap::terminate() handles without logging (e.g., TypeError
+     * and other \Error subclasses in developer mode).
+     *
+     * @param string $magentoRoot Magento root directory
+     * @param string $since Relative time filter
+     * @param string $pattern Optional message filter
+     * @return array<array<string, mixed>> Parsed error entries from report files
+     */
+    private function scanReportFiles(string $magentoRoot, string $since, string $pattern): array
+    {
+        $reportDir = $magentoRoot . '/var/report';
+        if (!is_dir($reportDir)) {
+            return [];
+        }
+
+        $cutoff = $this->calculateReportCutoff($since);
+        $entries = [];
+
+        $files = scandir($reportDir, SCANDIR_SORT_DESCENDING);
+        if ($files === false) {
+            return [];
+        }
+
+        $count = 0;
+        foreach ($files as $file) {
+            $filePath = $reportDir . '/' . $file;
+            if ($file === '.' || $file === '..' || !is_file($filePath)) {
+                continue;
+            }
+
+            $mtime = filemtime($filePath);
+            if ($cutoff !== null && $mtime !== false && $mtime < $cutoff) {
+                continue;
+            }
+
+            $content = file_get_contents($filePath);
+            $reportData = $content !== false ? json_decode($content, true) : null;
+            if (!is_array($reportData)) {
+                continue;
+            }
+
+            $entry = $this->exceptionParser->parseReportFile($reportData, $file);
+            if ($entry === null) {
+                continue;
+            }
+
+            if ($pattern !== '' && stripos($entry['raw'] ?? '', $pattern) === false) {
+                continue;
+            }
+
+            $entry['timestamp'] ??= ($mtime !== false ? date('Y-m-d\TH:i:sP', $mtime) : null);
+            $entries[] = $entry;
+
+            if (++$count >= 50) {
+                break;
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Calculate cutoff timestamp from a relative time string.
+     */
+    private function calculateReportCutoff(string $since): ?int
+    {
+        if (!preg_match('/^(\d+)([mhd])$/', $since, $m)) {
+            return null;
+        }
+
+        $value = (int) $m[1];
+        $seconds = match ($m[2]) {
+            'm' => $value * 60,
+            'h' => $value * 3600,
+            'd' => $value * 86400,
+            default => 3600,
+        };
+
+        return time() - $seconds;
+    }
+
+    /**
+     * Sort exception entries by timestamp descending (newest first), in place.
+     *
+     * @param array<array<string, mixed>> $exceptions
+     */
+    private function sortByTimestampDescending(array &$exceptions): void
+    {
+        usort($exceptions, function (array $a, array $b): int {
+            $timeA = strtotime($a['timestamp'] ?? '0');
+            $timeB = strtotime($b['timestamp'] ?? '0');
+            return $timeB <=> $timeA;
+        });
     }
 }
