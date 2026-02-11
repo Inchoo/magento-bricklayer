@@ -35,24 +35,21 @@ class RoutingTools
         }
 
         try {
-            $routeConfig = MagentoBootstrap::get(\Magento\Framework\App\Route\ConfigInterface::class);
+            $reader = MagentoBootstrap::get(\Magento\Framework\App\Route\Config\Reader::class);
 
             $routes = [];
+            $routers = $reader->read($area);
 
-            // Get routes for the specified area
-            $routerConfig = $routeConfig->getRoutes($area);
-
-            foreach ($routerConfig as $routeId => $routeData) {
-                $modules = is_array($routeData) && isset($routeData['modules'])
-                    ? $routeData['modules']
-                    : (is_array($routeData) ? $routeData : []);
-
-                $routes[] = [
-                    'route_id' => $routeId,
-                    'front_name' => $routeId,
-                    'modules' => $modules,
-                    'area' => $area,
-                ];
+            foreach ($routers as $routerId => $routerData) {
+                foreach ($routerData['routes'] ?? [] as $routeId => $routeData) {
+                    $routes[] = [
+                        'route_id' => $routeId,
+                        'front_name' => $routeData['frontName'] ?? $routeId,
+                        'modules' => $routeData['modules'] ?? [],
+                        'area' => $area,
+                        'router' => $routerId,
+                    ];
+                }
             }
 
             // Sort by route_id
