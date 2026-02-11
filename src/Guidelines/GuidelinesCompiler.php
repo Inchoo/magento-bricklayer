@@ -172,6 +172,7 @@ Before generating or modifying code, use these tools to understand context:
 | `cron-history` | View recent cron job execution history |
 | `deploy-mode` | View current deploy mode |
 | `code-runner` | Execute PHP code in Magento context (disabled in production) |
+| `diagnose-error` | Diagnose recent Magento errors with full context, DI analysis, and fix suggestions |
 | `search-docs` | Search Magento documentation for topics and guidance |
 
 ### Code Generation Tools
