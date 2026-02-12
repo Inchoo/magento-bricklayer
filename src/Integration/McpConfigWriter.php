@@ -35,27 +35,90 @@ class McpConfigWriter
                 'command' => 'ddev',
                 'args' => ['exec', 'php', 'vendor/bin/bricklayer-mcp'],
             ],
-            'hooli' => [
-                'command' => 'docker',
-                'args' => ['compose', '-f', '../docker-compose.yml', 'exec', '-T', 'apache-php', 'php', 'vendor/bin/bricklayer-mcp'],
-            ],
+            'hooli' => $this->buildDockerComposeConfig('../docker-compose.yml', 'apache-php'),
             'warden' => [
                 'command' => 'warden',
                 'args' => ['shell', '-c', 'php vendor/bin/bricklayer-mcp'],
             ],
-            'docker-compose' => [
-                'command' => 'docker',
-                'args' => ['compose', 'exec', '-T', $this->detectPhpService(), 'php', 'vendor/bin/bricklayer-mcp'],
-            ],
-            'docker' => [
-                'command' => 'docker',
-                'args' => ['exec', '-i', $this->detectContainerName(), 'php', 'vendor/bin/bricklayer-mcp'],
-            ],
+            'docker-compose' => $this->buildDockerComposeConfig(null, $this->detectPhpService()),
+            'docker' => $this->buildDockerExecConfig($this->detectContainerName()),
             default => [
                 'command' => 'php',
                 'args' => ['vendor/bin/bricklayer-mcp'],
             ],
         };
+    }
+
+    /** @return array<string, mixed> */
+    private function buildDockerComposeConfig(?string $composeFile, string $service): array
+    {
+        $args = ['compose'];
+        if ($composeFile !== null) {
+            array_push($args, '-f', $composeFile);
+        }
+        $args[] = 'exec';
+        $args[] = '-T';
+
+        $user = $this->detectContainerUser();
+        if ($user !== null) {
+            array_push($args, '-u', $user);
+        }
+
+        array_push($args, $service, 'php', 'vendor/bin/bricklayer-mcp');
+
+        return ['command' => 'docker', 'args' => $args];
+    }
+
+    /** @return array<string, mixed> */
+    private function buildDockerExecConfig(string $container): array
+    {
+        $args = ['exec', '-i'];
+
+        $user = $this->detectContainerUser();
+        if ($user !== null) {
+            array_push($args, '-u', $user);
+        }
+
+        array_push($args, $container, 'php', 'vendor/bin/bricklayer-mcp');
+
+        return ['command' => 'docker', 'args' => $args];
+    }
+
+    /**
+     * Detect the non-root user that should run the MCP server inside the container.
+     *
+     * Resolution order:
+     * 1. BRICKLAYER_CONTAINER_USER env var (explicit override)
+     * 2. Owner of composer.json (the user who installed Magento)
+     * 3. Hooli .env APACHE_USER value
+     */
+    private function detectContainerUser(): ?string
+    {
+        $envUser = getenv('BRICKLAYER_CONTAINER_USER');
+        if ($envUser !== false && $envUser !== '') {
+            return $envUser;
+        }
+
+        $markerFile = $this->projectRoot . '/composer.json';
+        if (file_exists($markerFile) && function_exists('posix_getpwuid')) {
+            $ownerUid = fileowner($markerFile);
+            if ($ownerUid !== false && $ownerUid !== 0) {
+                $ownerInfo = posix_getpwuid($ownerUid);
+                if ($ownerInfo !== false) {
+                    return $ownerInfo['name'];
+                }
+            }
+        }
+
+        $parentEnv = dirname($this->projectRoot) . '/.env';
+        if (file_exists($parentEnv)) {
+            $content = file_get_contents($parentEnv);
+            if ($content !== false && preg_match('/^APACHE_USER=(.+)$/m', $content, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     private function detectPhpService(): string

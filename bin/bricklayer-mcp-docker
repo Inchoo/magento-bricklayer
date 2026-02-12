@@ -36,7 +36,22 @@ MAGENTO_ROOT="${MAGENTO_ROOT:-/var/www/html}"
 # Find the container
 CONTAINER=$(find_php_container)
 
+# Detect the non-root user that owns the Magento files inside the container.
+# Allows explicit override via BRICKLAYER_CONTAINER_USER env var.
+CONTAINER_USER="${BRICKLAYER_CONTAINER_USER:-}"
+if [[ -z "$CONTAINER_USER" ]]; then
+    CONTAINER_USER=$(docker exec "$CONTAINER" stat -c '%U' "$MAGENTO_ROOT/composer.json" 2>/dev/null || true)
+    if [[ "$CONTAINER_USER" == "root" ]]; then
+        CONTAINER_USER=""
+    fi
+fi
+
+USER_FLAG=()
+if [[ -n "$CONTAINER_USER" ]]; then
+    USER_FLAG=(-u "$CONTAINER_USER")
+fi
+
 # Execute the MCP server inside the container
 # -i flag enables interactive mode for stdin/stdout communication
 # -w sets the working directory to Magento root
-exec docker exec -i -w "$MAGENTO_ROOT" "$CONTAINER" php vendor/bin/bricklayer-mcp
+exec docker exec -i "${USER_FLAG[@]}" -w "$MAGENTO_ROOT" "$CONTAINER" php vendor/bin/bricklayer-mcp
