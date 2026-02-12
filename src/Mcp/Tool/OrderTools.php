@@ -143,7 +143,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-cancel',
-        description: 'Cancels an order'
+        description: 'Cancels an order',
+        meta: ['prerequisite' => 'Order must be cancellable']
     )]
     public function cancelOrder(int $orderId): array
     {
@@ -167,7 +168,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-hold',
-        description: 'Places an order on hold'
+        description: 'Places an order on hold',
+        meta: ['prerequisite' => 'Order must be holdable']
     )]
     public function holdOrder(int $orderId): array
     {
@@ -191,7 +193,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-unhold',
-        description: 'Releases an order from hold'
+        description: 'Releases an order from hold',
+        meta: ['prerequisite' => 'Order must be on hold']
     )]
     public function unholdOrder(int $orderId): array
     {
@@ -215,7 +218,8 @@ class OrderTools
 
     #[McpTool(
         name: 'invoice-create',
-        description: 'Creates an invoice for an order'
+        description: 'Creates an invoice for an order',
+        meta: ['prerequisite' => 'Order must be uninvoiced']
     )]
     public function createInvoice(int $orderId, bool $capture = true, bool $notify = true): array
     {
@@ -240,7 +244,8 @@ class OrderTools
 
     #[McpTool(
         name: 'shipment-create',
-        description: 'Creates a shipment for an order'
+        description: 'Creates a shipment for an order',
+        meta: ['prerequisite' => 'Order must be invoiced (usually)']
     )]
     public function createShipment(int $orderId, bool $notify = true): array
     {
@@ -264,7 +269,8 @@ class OrderTools
 
     #[McpTool(
         name: 'creditmemo-create',
-        description: 'Creates a credit memo (refund) for an order'
+        description: 'Creates a credit memo (refund) for an order',
+        meta: ['prerequisite' => 'Order must have invoice']
     )]
     public function createCreditMemo(int $orderId, bool $notify = true): array
     {
@@ -490,7 +496,8 @@ class OrderTools
 
     #[McpTool(
         name: 'shipment-track-add',
-        description: 'Adds tracking information to a shipment'
+        description: 'Adds tracking information to a shipment',
+        meta: ['prerequisite' => 'Shipment must exist']
     )]
     public function addShipmentTrack(
         int $shipmentId,
