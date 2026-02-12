@@ -12,6 +12,7 @@ use Inchoo\MagentoBricklayer\Command\InspectCommand;
 use Inchoo\MagentoBricklayer\Command\InstallCommand;
 use Inchoo\MagentoBricklayer\Command\McpServerCommand;
 use Inchoo\MagentoBricklayer\Command\UpdateCommand;
+use Inchoo\MagentoBricklayer\Command\VerifyCommand;
 use Symfony\Component\Console\Application as ConsoleApplication;
 
 class Application extends ConsoleApplication
@@ -31,6 +32,7 @@ class Application extends ConsoleApplication
         $this->add(new McpServerCommand());
         $this->add(new InspectCommand());
         $this->add(new UpdateCommand());
+        $this->add(new VerifyCommand());
     }
 
     public static function getLogo(): string

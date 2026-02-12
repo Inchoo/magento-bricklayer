@@ -210,13 +210,21 @@ class CustomerTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
+        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
+
         try {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', true);
+
             $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
             $customerRepository->deleteById($customerId);
 
             return ['success' => true, 'message' => "Customer $customerId deleted"];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        } finally {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', false);
         }
     }
 

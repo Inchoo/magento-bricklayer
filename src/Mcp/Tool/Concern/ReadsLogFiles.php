@@ -64,6 +64,29 @@ trait ReadsLogFiles
         ];
     }
 
+    /**
+     * Calculate a Unix timestamp cutoff from a relative time string.
+     *
+     * @param string $since Relative time ('5m', '1h', '24h', '7d')
+     * @return int|null Cutoff timestamp, or null if format is invalid
+     */
+    protected function calculateTimeCutoff(string $since): ?int
+    {
+        if (!preg_match('/^(\d+)([mhd])$/', $since, $m)) {
+            return null;
+        }
+
+        $value = (int) $m[1];
+        $seconds = match ($m[2]) {
+            'm' => $value * 60,
+            'h' => $value * 3600,
+            'd' => $value * 86400,
+            default => 3600,
+        };
+
+        return time() - $seconds;
+    }
+
     protected function formatFileSize(int $bytes): string
     {
         $units = ['B', 'KB', 'MB', 'GB'];

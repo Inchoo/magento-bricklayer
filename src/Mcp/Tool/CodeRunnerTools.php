@@ -41,7 +41,9 @@ class CodeRunnerTools
         description: 'Executes PHP code within the Magento application context. '
             . 'Use this to test repository calls, inspect DI resolution, debug data, '
             . 'query EAV attributes, or verify fix hypotheses. '
-            . 'Available helpers: get(class), create(class, args), repo(class), config(path). '
+            . 'Available helpers: get(class), create(class, args), repo(class), config(path) '
+            . '— also available as $get, $create, $repo, $config variables. '
+            . 'Additional variables: $di, $om, $objectManager (ObjectManager instance). '
             . 'Default mode is read-only (DB changes are rolled back). '
             . 'Disabled in production.'
     )]
@@ -82,7 +84,6 @@ class CodeRunnerTools
             if ($allow_write && !$configAllowWrite) {
                 $allow_write = false;
             }
-        } catch (\Throwable $e) {
         } catch (\Throwable $e) {
             // proceed with defaults
         }
@@ -252,8 +253,16 @@ class CodeRunnerTools
             $returnValue = null;
 
             try {
+                $preamble = '$GLOBALS["_bricklayer_helpers"] = compact("get", "create", "repo", "config");'
+                    . 'if (!function_exists("get")) {'
+                    . '  function get(string $class) { return ($GLOBALS["_bricklayer_helpers"]["get"])($class); }'
+                    . '  function create(string $class, array $args = []) { return ($GLOBALS["_bricklayer_helpers"]["create"])($class, $args); }'
+                    . '  function repo(string $class) { return ($GLOBALS["_bricklayer_helpers"]["repo"])($class); }'
+                    . '  function config(string $path, string $scopeType = "default", int $scopeId = 0) { return ($GLOBALS["_bricklayer_helpers"]["config"])($path, $scopeType, $scopeId); }'
+                    . '}';
+
                 $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config) { '
-                    . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config);';
+                    . $preamble . ' ' . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config);';
                 $returnValue = eval($wrappedCode);
                 $returnValue = $this->formatReturnValue($returnValue);
             } catch (\Throwable $e) {
@@ -360,8 +369,8 @@ class CodeRunnerTools
                 return $connection->getQueryCount();
             }
 
-            $result = $connection->fetchOne("SHOW SESSION STATUS LIKE 'Queries'");
-            return $result ? (int) $result : 0;
+            $result = $connection->fetchRow("SHOW SESSION STATUS LIKE 'Queries'");
+            return $result ? (int) ($result['Value'] ?? 0) : 0;
         } catch (\Throwable $e) {
             return 0;
         }

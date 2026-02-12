@@ -274,7 +274,7 @@ class ExceptionParser
         ];
 
         // Try "PHP Fatal error: Uncaught ExceptionClass: message in /file:line"
-        if (preg_match('/^PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:\s*(?:Uncaught\s+)?([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?/', $firstLine, $m)) {
+        if (preg_match('/^PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:\s*(?:Uncaught\s+)?([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $firstLine, $m)) {
             $entry['level'] = 'CRITICAL';
             $entry['class'] = $m[1];
             $entry['message'] = trim($m[2]);
@@ -326,7 +326,7 @@ class ExceptionParser
         if (preg_match_all(self::EXCEPTION_CHAIN_PATTERN, $text, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $exceptions[] = [
-                    'class' => $match[1],
+                    'class' => str_replace('\\\\', '\\', $match[1]),
                     'code' => (int) $match[2],
                     'message' => trim($match[3]),
                     'file' => $match[4],
