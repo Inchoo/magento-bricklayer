@@ -251,6 +251,9 @@ HELP
             }
         }
 
+        // Create documentation index
+        $this->createDocIndex($magentoRoot, $io);
+
         // Display results
         foreach ($createdFiles as $file) {
             $io->text("  <info>\u{2713}</info> Created $file");
@@ -288,15 +291,30 @@ HELP
         return Command::SUCCESS;
     }
 
-    /**
-     * Generate agent-specific configuration file
-     *
-     * @param string $projectRoot The project root directory
-     * @param string $agent The agent name
-     * @param bool $force Whether to overwrite existing files
-     * @param string $envType The environment type (native, docker-compose, ddev, hooli, warden)
-     * @return array{created: bool, file: string}
-     */
+    private function createDocIndex(string $magentoRoot, SymfonyStyle $io): void
+    {
+        $indexPath = $magentoRoot . '/.bricklayer/docs-index';
+
+        try {
+            if (!is_dir($indexPath)) {
+                mkdir($indexPath, 0755, true);
+            }
+
+            $indexFile = $indexPath . '/index.json';
+            $indexData = [
+                'version' => '1.0.0',
+                'updated_at' => date('c'),
+                'documents' => 0,
+                'status' => 'placeholder',
+            ];
+
+            file_put_contents($indexFile, json_encode($indexData, JSON_PRETTY_PRINT));
+            $io->text("  <info>\u{2713}</info> Created .bricklayer/docs-index/index.json");
+        } catch (\Throwable $e) {
+            $io->text("  <comment>\u{2717}</comment> Failed to create doc index: " . $e->getMessage());
+        }
+    }
+
     private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array
     {
         $compiler = new GuidelinesCompiler();

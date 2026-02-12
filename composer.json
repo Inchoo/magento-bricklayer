@@ -23,7 +23,7 @@
             "homepage": "https://inchoo.net"
         }
     ],
-    "version": "1.8.1",
+    "version": "1.8.3",
     "require": {
         "php": ">=8.1",
         "mcp/sdk": ">=0.3",
@@ -56,12 +56,6 @@
         "optimize-autoloader": true
     },
     "scripts": {
-        "post-install-cmd": [
-            "Inchoo\\MagentoBricklayer\\Composer\\ScriptHandler::createDocIndex"
-        ],
-        "post-update-cmd": [
-            "Inchoo\\MagentoBricklayer\\Composer\\ScriptHandler::createDocIndex"
-        ],
         "test": "phpunit",
         "test-coverage": "phpunit --coverage-html build/coverage",
         "phpstan": "phpstan analyse src tests --level=8",
