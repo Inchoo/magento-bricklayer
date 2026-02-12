@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 86+ tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 86 tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -44,10 +44,9 @@ Run from your Magento project root:
 vendor/bin/bricklayer install
 ```
 
-This generates configuration files for your AI agents:
-- `.mcp.json` - MCP server configuration
-- `CLAUDE.md` - Guidelines for Claude Code
-- `.cursorrules` - Guidelines for Cursor
+This prompts you to select which AI agents to configure and generates:
+- `.mcp.json` - MCP server configuration (always created)
+- Agent-specific guideline files based on your selection (e.g. `CLAUDE.md`, `.cursorrules`)
 
 ### 2. Start Using with Your AI Agent
 
@@ -59,17 +58,17 @@ The MCP server is automatically started by compatible agents. Your agent can now
 - Use `product-get`, `order-get`, `customer-get` for data access
 - Use `diagnose-error` to diagnose errors with full context and fix suggestions
 - Use `development-context` to load coding guidelines for your task
-- And 86+ more tools for comprehensive Magento development
+- And many more tools for comprehensive Magento development
 
 ## Supported AI Agents
 
-| Agent | Configuration File | Status |
-|-------|-------------------|--------|
-| Claude Code | `.mcp.json` | Fully Supported |
+| Agent | Configuration Files | Status |
+|-------|---------------------|--------|
+| Claude Code | `.mcp.json` + `CLAUDE.md` | Fully Supported |
 | Cursor | `.mcp.json` + `.cursorrules` | Fully Supported |
-| GitHub Copilot | `.github/copilot-instructions.md` | Supported |
-| JetBrains AI (PhpStorm) | `.idea/mcp.json` | Supported |
-| Gemini CLI | `.mcp.json` | Supported |
+| GitHub Copilot | `.mcp.json` + `.github/copilot-instructions.md` | Supported |
+| JetBrains AI (PhpStorm) | `.mcp.json` + `.junie/guidelines.md` | Supported |
+| Gemini CLI | `.mcp.json` + `AGENTS.md` | Supported |
 
 ## Available Commands
 
@@ -107,11 +106,16 @@ Options:
 - `--no-bootstrap` - Skip full Magento bootstrap (faster, limited info)
 
 ### update
-Updates the documentation index.
+Regenerates agent configuration files (CLAUDE.md, .cursorrules, etc.) and documentation index.
 
 ```bash
-vendor/bin/bricklayer update
+vendor/bin/bricklayer update [options]
 ```
+
+Options:
+- `--config-only` - Only regenerate configuration files (CLAUDE.md, .cursorrules, etc.)
+- `--docs-only` - Only update documentation index
+- `--magento-root=PATH` - Specify Magento root directory
 
 ## Docker / Container Environments
 
@@ -305,24 +309,25 @@ The tool validates code against 9 dangerous patterns (shell execution, file writ
 
 ## MCP Resources
 
-Bricklayer provides several MCP resources that AI agents can access for context:
+Bricklayer provides MCP resources that AI agents can access for context. Guidelines and skills are auto-discovered from the filesystem — adding new files makes them available as resources automatically (see [Extending Bricklayer](#extending-bricklayer)).
 
 ### Guidelines Resource
-Comprehensive Magento development guidelines compiled from 20+ markdown documents covering:
-- Architecture patterns (plugins, observers, preferences, factories, repositories)
-- Coding standards (PSR-12, type hinting, strict types)
+30 Magento development guidelines accessed via URI template `magento://guidelines/{category}/{name}`, covering:
+- Architecture patterns (plugins, observers, preferences, factories, repositories, service contracts)
+- Coding standards (syntax & formatting, quality & best practices)
 - Database patterns (declarative schema, EAV, data patches, indexers)
-- Security best practices
-- Testing strategies
+- Security, performance, and testing
 - Frontend development (layout XML, templates, JavaScript)
 - Area-specific guidance (adminhtml, frontend, webapi, graphql)
-- Ecosystem guidelines (Adobe Commerce, Hyva, Mage-OS)
+- Ecosystem guidelines (Adobe Commerce, Hyvä, Mage-OS)
+
+Use `magento://guidelines/index` for a complete listing.
 
 ### Coding Standards Resource
-Magento coding standards reference with PSR-12 compliance and best practices.
+Magento coding standards reference with PSR-12 compliance and architecture guidelines (`magento://standards/coding`, `magento://standards/architecture`).
 
 ### Skills Resource
-28 development skills for common Magento tasks:
+27 development skills accessed via URI template `magento://skills/{name}`, covering:
 - Checkout customization (steps & layout processors, config providers & validation)
 - Cron job development
 - EAV attribute development
@@ -341,8 +346,10 @@ Magento coding standards reference with PSR-12 compliance and best practices.
 - Theme development (structure & layout XML, LESS/CSS styling & JavaScript)
 - UI component development (admin grids, admin forms)
 
+Use `magento://skills/index` for a complete listing.
+
 ### Template & Reference Resources
-Code templates for common patterns and API/framework reference documentation.
+Code templates for common patterns (`magento://templates/module`, `magento://templates/controller`, `magento://templates/api`, `magento://templates/model`) and reference documentation (`magento://reference/events`, `magento://reference/layouts`, `magento://reference/di-patterns`, `magento://reference/acl`).
 
 ## Configuration
 
@@ -388,6 +395,58 @@ Bricklayer is implemented as a standalone Composer library rather than a Magento
 - **Full Magento access** - Uses ObjectManager for complete framework integration
 - **Easy installation** - Just `composer require`, ready to use
 - **Clean removal** - Just `composer remove`, no database cleanup
+
+## Extending Bricklayer
+
+Bricklayer uses auto-discovery for tools, guidelines, skills, and categories. Adding new capabilities requires editing only the source file — documentation (CLAUDE.md, .cursorrules, etc.) and MCP resource indexes are regenerated automatically when you run `vendor/bin/bricklayer update --config-only`.
+
+### Add a tool to an existing class
+
+Add a public method with `#[McpTool]` to any class in `src/Mcp/Tool/`:
+
+```php
+#[McpTool(name: 'product-archive', description: 'Archives a product by SKU')]
+public function archiveProduct(string $sku): array { ... }
+```
+
+The tool is auto-detected via reflection and appears in the correct documentation section based on its class.
+
+### Add a new tool class
+
+Create a new file in `src/Mcp/Tool/`, e.g. `CmsTools.php`. Any class with `#[McpTool]` methods is picked up automatically and gets its own documentation section (class name `CmsTools` becomes heading "Cms Tools").
+
+To customize the section title, column headers, or ordering, add an entry to `ToolScanner::GROUP_CONFIG`. This is optional — it works without it.
+
+### Add a guideline
+
+Drop a markdown file into `config/guidelines/{category}/{name}.md`. It becomes available as MCP resource `magento://guidelines/{category}/{name}` and appears in the guidelines index automatically.
+
+### Add a skill
+
+Create a directory `config/skills/{name}/` with a `SKILL.md` file inside. It becomes available as MCP resource `magento://skills/{name}` and appears in the skills index automatically.
+
+### Add a development-context category
+
+Add one entry to `ContextTools::CATEGORY_MAP`:
+
+```php
+'cms' => [
+    'skills' => [],
+    'guidelines' => ['areas/cms'],
+    'description' => 'CMS page and block development',
+    'group' => 'Frontend & Admin',
+],
+```
+
+The `group` key determines which heading it falls under in the generated documentation. Available groups: Hyvä Theme, Module Development, API & Integration, Frontend & Admin, System & Quality — or add a new one.
+
+### Regenerate documentation
+
+After making changes, regenerate agent configuration files:
+
+```bash
+vendor/bin/bricklayer update --config-only
+```
 
 ## Security
 
