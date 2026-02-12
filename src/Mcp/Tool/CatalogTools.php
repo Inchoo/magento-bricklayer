@@ -347,7 +347,12 @@ class CatalogTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
+        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
+
         try {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', true);
+
             $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
             $productRepository->deleteById($sku);
 
@@ -356,6 +361,9 @@ class CatalogTools
             return ['success' => false, 'error' => "Product not found: $sku"];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        } finally {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', false);
         }
     }
 
@@ -665,7 +673,12 @@ class CatalogTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
+        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
+
         try {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', true);
+
             $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
             $categoryRepository->deleteByIdentifier($categoryId);
 
@@ -674,6 +687,9 @@ class CatalogTools
             return ['success' => false, 'error' => "Category not found: $categoryId"];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        } finally {
+            $registry->unregister('isSecureArea');
+            $registry->register('isSecureArea', false);
         }
     }
 

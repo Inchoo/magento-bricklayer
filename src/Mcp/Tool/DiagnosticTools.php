@@ -851,7 +851,7 @@ class DiagnosticTools
             return [];
         }
 
-        $cutoff = $this->calculateReportCutoff($since);
+        $cutoff = $this->calculateTimeCutoff($since);
         $entries = [];
 
         $files = scandir($reportDir, SCANDIR_SORT_DESCENDING);
@@ -895,26 +895,6 @@ class DiagnosticTools
         }
 
         return $entries;
-    }
-
-    /**
-     * Calculate cutoff timestamp from a relative time string.
-     */
-    private function calculateReportCutoff(string $since): ?int
-    {
-        if (!preg_match('/^(\d+)([mhd])$/', $since, $m)) {
-            return null;
-        }
-
-        $value = (int) $m[1];
-        $seconds = match ($m[2]) {
-            'm' => $value * 60,
-            'h' => $value * 3600,
-            'd' => $value * 86400,
-            default => 3600,
-        };
-
-        return time() - $seconds;
     }
 
     /**

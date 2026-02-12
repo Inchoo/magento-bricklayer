@@ -24,8 +24,7 @@ class GraphqlTools
         }
 
         try {
-            $schemaGenerator = MagentoBootstrap::get(\Magento\Framework\GraphQl\Schema\SchemaGeneratorInterface::class);
-            $schema = $schemaGenerator->generate();
+            $schema = $this->generateSchema();
             $typeMap = $schema->getTypeMap();
 
             $types = [];
@@ -46,7 +45,7 @@ class GraphqlTools
                 $typeInfo = [
                     'name' => $name,
                     'kind' => $typeKind,
-                    'description' => method_exists($type, 'getDescription') ? $type->getDescription() : null,
+                    'description' => method_exists($type, 'description') ? $type->description() : ($type->description ?? null),
                 ];
 
                 if (method_exists($type, 'getFields')) {
@@ -80,8 +79,7 @@ class GraphqlTools
         }
 
         try {
-            $schemaGenerator = MagentoBootstrap::get(\Magento\Framework\GraphQl\Schema\SchemaGeneratorInterface::class);
-            $schema = $schemaGenerator->generate();
+            $schema = $this->generateSchema();
 
             $type = $schema->getType($typeName);
             if ($type === null) {
@@ -100,17 +98,17 @@ class GraphqlTools
                     $fieldInfo = [
                         'name' => $fieldName,
                         'type' => (string) $field->getType(),
-                        'description' => $field->getDescription(),
+                        'description' => $field->description ?? null,
                     ];
 
-                    $args = $field->getArgs();
+                    $args = $field->args ?? [];
                     if (!empty($args)) {
                         $fieldInfo['arguments'] = [];
-                        foreach ($args as $argName => $arg) {
+                        foreach ($args as $arg) {
                             $fieldInfo['arguments'][] = [
-                                'name' => $argName,
+                                'name' => $arg->name,
                                 'type' => (string) $arg->getType(),
-                                'default_value' => $arg->defaultValueExists() ? $arg->getDefaultValue() : null,
+                                'default_value' => $arg->defaultValueExists() ? $arg->defaultValue : null,
                             ];
                         }
                     }
@@ -157,8 +155,7 @@ class GraphqlTools
         }
 
         try {
-            $schemaGenerator = MagentoBootstrap::get(\Magento\Framework\GraphQl\Schema\SchemaGeneratorInterface::class);
-            $schema = $schemaGenerator->generate();
+            $schema = $this->generateSchema();
 
             $queryType = $schema->getQueryType();
             if ($queryType === null) {
@@ -168,18 +165,18 @@ class GraphqlTools
             $queries = [];
             foreach ($queryType->getFields() as $fieldName => $field) {
                 $args = [];
-                foreach ($field->getArgs() as $argName => $arg) {
+                foreach ($field->args ?? [] as $arg) {
                     $args[] = [
-                        'name' => $argName,
+                        'name' => $arg->name,
                         'type' => (string) $arg->getType(),
-                        'default_value' => $arg->defaultValueExists() ? $arg->getDefaultValue() : null,
+                        'default_value' => $arg->defaultValueExists() ? $arg->defaultValue : null,
                     ];
                 }
 
                 $queries[] = [
                     'name' => $fieldName,
                     'return_type' => (string) $field->getType(),
-                    'description' => $field->getDescription(),
+                    'description' => $field->description ?? null,
                     'arguments' => $args,
                 ];
             }
@@ -206,8 +203,7 @@ class GraphqlTools
         }
 
         try {
-            $schemaGenerator = MagentoBootstrap::get(\Magento\Framework\GraphQl\Schema\SchemaGeneratorInterface::class);
-            $schema = $schemaGenerator->generate();
+            $schema = $this->generateSchema();
 
             $mutationType = $schema->getMutationType();
             if ($mutationType === null) {
@@ -217,9 +213,9 @@ class GraphqlTools
             $mutations = [];
             foreach ($mutationType->getFields() as $fieldName => $field) {
                 $args = [];
-                foreach ($field->getArgs() as $argName => $arg) {
+                foreach ($field->args ?? [] as $arg) {
                     $args[] = [
-                        'name' => $argName,
+                        'name' => $arg->name,
                         'type' => (string) $arg->getType(),
                     ];
                 }
@@ -227,7 +223,7 @@ class GraphqlTools
                 $mutations[] = [
                     'name' => $fieldName,
                     'return_type' => (string) $field->getType(),
-                    'description' => $field->getDescription(),
+                    'description' => $field->description ?? null,
                     'arguments' => $args,
                 ];
             }
@@ -263,6 +259,27 @@ class GraphqlTools
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Generates the GraphQL schema with graphql area DI configuration loaded.
+     *
+     * @return \GraphQL\Type\Schema
+     */
+    private function generateSchema(): \GraphQL\Type\Schema
+    {
+        $objectManager = MagentoBootstrap::getObjectManager();
+
+        $configLoader = $objectManager->get(
+            \Magento\Framework\ObjectManager\ConfigLoaderInterface::class
+        );
+        $objectManager->configure($configLoader->load('graphql'));
+
+        $schemaGenerator = $objectManager->get(
+            \Magento\Framework\GraphQl\Schema\SchemaGeneratorInterface::class
+        );
+
+        return $schemaGenerator->generate();
     }
 
     private function getTypeKind(object $type): string
