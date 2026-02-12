@@ -53,6 +53,12 @@ class InstallCommand extends Command
                 'Agents to configure (claude-code, cursor, copilot, phpstorm, gemini)'
             )
             ->addOption(
+                'env',
+                'e',
+                InputOption::VALUE_OPTIONAL,
+                'Environment type (native, docker, docker-compose, ddev, hooli, warden)'
+            )
+            ->addOption(
                 'force',
                 'f',
                 InputOption::VALUE_NONE,
@@ -63,7 +69,8 @@ The <info>%command.name%</info> command generates configuration files for AI cod
 
   <info>%command.full_name%</info>
 
-When run without options, you will be prompted to select which agents to configure.
+When run without options, you will be prompted to select the environment type and
+which agents to configure.
 
 Available agents:
   - <comment>claude-code</comment> - Creates CLAUDE.md
@@ -72,10 +79,10 @@ Available agents:
   - <comment>phpstorm</comment> - Creates .junie/guidelines.md
   - <comment>gemini</comment> - Creates AGENTS.md
 
-You can also specify agents directly via command line:
+You can also specify options directly via command line:
 
-  <info>%command.full_name% --agents=claude-code</info>
-  <info>%command.full_name% --agents=claude-code --agents=cursor</info>
+  <info>%command.full_name% --env=hooli --agents=claude-code</info>
+  <info>%command.full_name% --env=ddev --agents=claude-code --agents=cursor</info>
 
 Use the <comment>--force</comment> option to overwrite existing files:
 
@@ -108,17 +115,47 @@ HELP
             return Command::FAILURE;
         }
 
-        // Display detected environment
+        // Display detected Magento info
         $version = $detector->getVersion($magentoRoot) ?? 'unknown';
         $edition = ucfirst($detector->getEdition($magentoRoot));
-        $envType = $detector->getEnvironmentType($magentoRoot);
+        $detectedEnvType = $detector->getEnvironmentType($magentoRoot);
 
         $io->text([
-            sprintf('Detected environment: <info>%s</info>', ucfirst($envType)),
             sprintf('Detected Magento: <info>%s</info> (%s Edition)', $version, $edition),
             sprintf('Project root: <info>%s</info>', $magentoRoot),
             '',
         ]);
+
+        // Determine environment type
+        $envType = $input->getOption('env');
+
+        if ($envType === null) {
+            $availableEnvTypes = [
+                'native' => 'Native (no containers)',
+                'ddev' => 'DDEV',
+                'hooli' => 'Hooli',
+                'warden' => 'Warden',
+                'docker-compose' => 'Docker Compose',
+                'docker' => 'Docker',
+            ];
+
+            $choices = array_values($availableEnvTypes);
+            $defaultLabel = $availableEnvTypes[$detectedEnvType] ?? $availableEnvTypes['native'];
+            $defaultIndex = array_search($defaultLabel, $choices, true);
+
+            $selectedLabel = $io->choice(
+                'Select your environment type',
+                $choices,
+                $defaultIndex !== false ? $defaultIndex : 0
+            );
+
+            $labelToKey = array_flip($availableEnvTypes);
+            $envType = $labelToKey[$selectedLabel];
+            $io->newLine();
+        }
+
+        $io->text(sprintf('Environment: <info>%s</info>', ucfirst($envType)));
+        $io->newLine();
 
         // Get agents to configure
         $agents = $input->getOption('agents');
