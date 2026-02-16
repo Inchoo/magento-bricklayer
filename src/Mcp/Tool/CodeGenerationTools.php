@@ -17,7 +17,7 @@ class CodeGenerationTools
         name: 'generate-module',
         description: 'Scaffolds a new Magento 2 module with required files'
     )]
-    public function generateModule(string $vendor, string $module, string $version = '1.0.0'): array
+    public function generateModule(string $vendor, string $module, string $version = '1.0.0', bool $dry_run = false): array
     {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module names are required'];
@@ -66,12 +66,21 @@ XML;
         ];
         $files['composer.json'] = json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
+        $basePath = "app/code/{$vendor}/{$module}";
+        $written = false;
+        if (!$dry_run) {
+            $written = $this->writeFiles($basePath, $files);
+        }
+
         return [
             'success' => true,
             'module_name' => $moduleName,
-            'path' => "app/code/{$vendor}/{$module}",
-            'files' => $files,
-            'instructions' => "Create these files in app/code/{$vendor}/{$module}/, then run: bin/magento setup:upgrade",
+            'path' => $basePath,
+            'files' => $dry_run ? $files : array_keys($files),
+            'written' => $written,
+            'instructions' => $written
+                ? "Files created in {$basePath}/. Run: bin/magento setup:upgrade"
+                : "Create these files in {$basePath}/, then run: bin/magento setup:upgrade",
         ];
     }
 
@@ -84,7 +93,8 @@ XML;
         string $module,
         string $entity,
         string $table,
-        string $fields = ''
+        string $fields = '',
+        bool $dry_run = false
     ): array {
         if ($vendor === '' || $module === '' || $entity === '' || $table === '') {
             return ['error' => true, 'message' => 'Vendor, module, entity, and table are required'];
@@ -93,29 +103,30 @@ XML;
         $moduleName = "{$vendor}_{$module}";
         $namespace = "{$vendor}\\{$module}";
         $entityLower = strtolower($entity);
-        $fieldList = $fields !== '' ? array_map('trim', explode(',', $fields)) : [];
+        $parsedFields = $this->parseFields($fields);
 
         $files = [];
         $gettersSetters = '';
-        foreach ($fieldList as $field) {
-            $methodName = str_replace('_', '', ucwords($field, '_'));
+        foreach ($parsedFields as $f) {
+            $methodName = str_replace('_', '', ucwords($f['name'], '_'));
+            $phpType = $f['php_type'];
             $gettersSetters .= <<<PHP
 
     /**
-     * @return string|null
+     * @return {$phpType}|null
      */
-    public function get{$methodName}(): ?string
+    public function get{$methodName}(): ?{$phpType}
     {
-        return \$this->getData('{$field}');
+        return \$this->getData('{$f['name']}');
     }
 
     /**
-     * @param string \$value
+     * @param {$phpType} \$value
      * @return self
      */
-    public function set{$methodName}(string \$value): self
+    public function set{$methodName}({$phpType} \$value): self
     {
-        return \$this->setData('{$field}', \$value);
+        return \$this->setData('{$f['name']}', \$value);
     }
 PHP;
         }
@@ -192,13 +203,24 @@ class Collection extends AbstractCollection
 }
 PHP;
 
+        $files['etc/db_schema.xml'] = $this->buildDbSchema($table, $parsedFields);
+
+        $basePath = "app/code/{$vendor}/{$module}";
+        $written = false;
+        if (!$dry_run) {
+            $written = $this->writeFiles($basePath, $files);
+        }
+
         return [
             'success' => true,
             'module_name' => $moduleName,
             'entity' => $entity,
             'table' => $table,
-            'files' => $files,
-            'instructions' => "Create these files in app/code/{$vendor}/{$module}/",
+            'files' => $dry_run ? $files : array_keys($files),
+            'written' => $written,
+            'instructions' => $written
+                ? "Files created in {$basePath}/. Run: bin/magento setup:upgrade"
+                : "Create these files in {$basePath}/, then run: bin/magento setup:upgrade",
         ];
     }
 
@@ -211,7 +233,8 @@ PHP;
         string $module,
         string $area = 'frontend',
         string $route = 'custom',
-        string $action = 'index'
+        string $action = 'index',
+        bool $dry_run = false
     ): array {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module are required'];
@@ -317,6 +340,12 @@ XML;
 </div>
 PHTML;
 
+        $basePath = "app/code/{$vendor}/{$module}";
+        $written = false;
+        if (!$dry_run) {
+            $written = $this->writeFiles($basePath, $files);
+        }
+
         return [
             'success' => true,
             'module_name' => $moduleName,
@@ -324,8 +353,11 @@ PHTML;
             'route' => $route,
             'action' => $action,
             'url' => $area === 'adminhtml' ? "admin/{$routeLower}/{$action}/index" : "{$routeLower}/{$action}/index",
-            'files' => $files,
-            'instructions' => "Create these files in app/code/{$vendor}/{$module}/, then run: bin/magento cache:clean",
+            'files' => $dry_run ? $files : array_keys($files),
+            'written' => $written,
+            'instructions' => $written
+                ? "Files created in {$basePath}/. Run: bin/magento cache:clean"
+                : "Create these files in {$basePath}/, then run: bin/magento cache:clean",
         ];
     }
 
@@ -338,7 +370,8 @@ PHTML;
         string $module,
         string $resource,
         string $method = 'GET',
-        string $path = ''
+        string $path = '',
+        bool $dry_run = false
     ): array {
         if ($vendor === '' || $module === '' || $resource === '') {
             return ['error' => true, 'message' => 'Vendor, module, and resource are required'];
@@ -491,6 +524,12 @@ XML;
 </routes>
 XML;
 
+        $basePath = "app/code/{$vendor}/{$module}";
+        $written = false;
+        if (!$dry_run) {
+            $written = $this->writeFiles($basePath, $files);
+        }
+
         return [
             'success' => true,
             'module_name' => $moduleName,
@@ -501,8 +540,138 @@ XML;
                 "POST {$path}" => 'save',
                 "DELETE {$path}/:id" => 'deleteById',
             ],
-            'files' => $files,
-            'instructions' => "Create these files in app/code/{$vendor}/{$module}/, then run: bin/magento setup:di:compile",
+            'files' => $dry_run ? $files : array_keys($files),
+            'written' => $written,
+            'instructions' => $written
+                ? "Files created in {$basePath}/. Run: bin/magento setup:di:compile"
+                : "Create these files in {$basePath}/, then run: bin/magento setup:di:compile",
         ];
+    }
+
+    /**
+     * Write generated files to disk under the Magento root.
+     *
+     * @param string $basePath Relative path from Magento root (e.g. "app/code/Vendor/Module")
+     * @param array<string, string> $files Map of relative file path => content
+     * @return bool True if all files were written successfully
+     */
+    private function writeFiles(string $basePath, array $files): bool
+    {
+        $root = MagentoBootstrap::isInitialized()
+            ? (defined('BP') ? BP : getcwd())
+            : getcwd();
+
+        $absoluteBase = rtrim($root, '/') . '/' . $basePath;
+
+        foreach ($files as $relativePath => $content) {
+            $fullPath = $absoluteBase . '/' . $relativePath;
+            $dir = dirname($fullPath);
+
+            if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+                return false;
+            }
+
+            if (file_put_contents($fullPath, $content) === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function buildDbSchema(string $table, array $parsedFields): string
+    {
+        $columns = '        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false"'
+            . ' identity="true" comment="Entity ID"/>';
+
+        foreach ($parsedFields as $f) {
+            $name = $f['name'];
+            $xsi = $f['xsi_type'];
+            $nullable = $f['nullable'] ? 'true' : 'false';
+            $attrs = " name=\"{$name}\" nullable=\"{$nullable}\"";
+
+            $extra = match ($xsi) {
+                'varchar' => ' length="255"',
+                'decimal' => ' scale="4" precision="12"',
+                'text', 'blob' => '',
+                'int', 'smallint', 'bigint' => ' unsigned="false"',
+                'timestamp' => ' default="CURRENT_TIMESTAMP"',
+                default => '',
+            };
+
+            $comment = ucwords(str_replace('_', ' ', $name));
+            $columns .= "\n        <column xsi:type=\"{$xsi}\"{$attrs}{$extra} comment=\"{$comment}\"/>";
+        }
+
+        return <<<XML
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="{$table}" resource="default" engine="innodb" comment="{$table}">
+{$columns}
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+</schema>
+XML;
+    }
+
+    private const TYPE_MAP = [
+        'int' => ['php' => 'int', 'xsi' => 'int', 'unsigned' => false, 'nullable' => true],
+        'integer' => ['php' => 'int', 'xsi' => 'int', 'unsigned' => false, 'nullable' => true],
+        'smallint' => ['php' => 'int', 'xsi' => 'smallint', 'unsigned' => false, 'nullable' => true],
+        'bigint' => ['php' => 'int', 'xsi' => 'bigint', 'unsigned' => false, 'nullable' => true],
+        'float' => ['php' => 'float', 'xsi' => 'decimal', 'unsigned' => false, 'nullable' => true],
+        'decimal' => ['php' => 'float', 'xsi' => 'decimal', 'unsigned' => false, 'nullable' => true],
+        'bool' => ['php' => 'bool', 'xsi' => 'boolean', 'unsigned' => false, 'nullable' => false],
+        'boolean' => ['php' => 'bool', 'xsi' => 'boolean', 'unsigned' => false, 'nullable' => false],
+        'varchar' => ['php' => 'string', 'xsi' => 'varchar', 'unsigned' => false, 'nullable' => true],
+        'text' => ['php' => 'string', 'xsi' => 'text', 'unsigned' => false, 'nullable' => true],
+        'timestamp' => ['php' => 'string', 'xsi' => 'timestamp', 'unsigned' => false, 'nullable' => true],
+        'datetime' => ['php' => 'string', 'xsi' => 'datetime', 'unsigned' => false, 'nullable' => true],
+        'date' => ['php' => 'string', 'xsi' => 'date', 'unsigned' => false, 'nullable' => true],
+        'blob' => ['php' => 'string', 'xsi' => 'blob', 'unsigned' => false, 'nullable' => true],
+    ];
+
+    /**
+     * Parse field definitions from comma-separated string.
+     *
+     * Supports formats: "name", "name:type", plain column names.
+     *
+     * @return array<array{name: string, type: string, php_type: string, xsi_type: string}>
+     */
+    private function parseFields(string $fields): array
+    {
+        if ($fields === '') {
+            return [];
+        }
+
+        $parsed = [];
+        foreach (array_map('trim', explode(',', $fields)) as $entry) {
+            if ($entry === '') {
+                continue;
+            }
+
+            if (str_contains($entry, ':')) {
+                [$name, $type] = explode(':', $entry, 2);
+                $name = trim($name);
+                $type = strtolower(trim($type));
+            } else {
+                $name = $entry;
+                $type = 'varchar';
+            }
+
+            $mapped = self::TYPE_MAP[$type] ?? self::TYPE_MAP['varchar'];
+            $parsed[] = [
+                'name' => $name,
+                'type' => $type,
+                'php_type' => $mapped['php'],
+                'xsi_type' => $mapped['xsi'],
+                'nullable' => $mapped['nullable'],
+            ];
+        }
+
+        return $parsed;
     }
 }

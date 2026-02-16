@@ -377,16 +377,21 @@ class DiagnosticTools
      */
     #[McpTool(
         name: 'diagnose-error',
-        description: 'Diagnoses the most recent Magento error with full context, DI analysis, and fix suggestions'
+        description: 'Diagnoses the most recent Magento error with context and fix suggestions. Use verbosity (minimal/standard/detailed) to control detail level.'
     )]
     public function diagnoseError(
         int $index = 0,
         string $source = 'exception',
         string $since = '1h',
-        string $pattern = ''
+        string $pattern = '',
+        string $verbosity = 'standard'
     ): array {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
+        }
+
+        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
+            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
         }
 
         try {
@@ -523,15 +528,48 @@ class DiagnosticTools
                 }
             }
 
-            return [
+            // Truncate raw stack trace if present and over 1000 chars
+            if (isset($error['raw']) && strlen($error['raw']) > 1000) {
+                $truncated = $this->truncateText($error['raw'], 1000);
+                $errorResult['raw'] = $truncated['text'];
+                $errorResult['raw_truncated'] = true;
+                $errorResult['raw_original_length'] = $truncated['original_length'];
+            } elseif (isset($error['raw'])) {
+                $errorResult['raw'] = $error['raw'];
+            }
+
+            $diagnosis = [
+                'found' => true,
                 'error' => $errorResult,
                 'searched' => $searchedSources,
+                'category' => $matched['category'] ?? null,
                 'module_context' => $moduleContext,
                 'di_context' => $diContext,
                 'environment' => $environment,
                 'history' => $history,
                 'suggestions' => $suggestions,
             ];
+
+            if ($verbosity === 'minimal') {
+                return [
+                    'found' => true,
+                    'verbosity' => 'minimal',
+                    'exception' => [
+                        'class' => $diagnosis['error']['class'] ?? null,
+                        'message' => $diagnosis['error']['message'] ?? null,
+                    ],
+                    'category' => $diagnosis['category'] ?? null,
+                    'suggestions' => array_slice($diagnosis['suggestions'] ?? [], 0, 1),
+                ];
+            }
+
+            if ($verbosity === 'detailed') {
+                $diagnosis['verbosity'] = 'detailed';
+                return $diagnosis;
+            }
+
+            $diagnosis['verbosity'] = 'standard';
+            return $diagnosis;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }

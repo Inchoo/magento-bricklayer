@@ -37,13 +37,14 @@ class LogTools
      * @param string $logType Log type (system, exception, debug, cron)
      * @param int $lines Number of lines to read
      * @param string $filter Filter entries containing this text
+     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
      * @return array<string, mixed> Log entries
      */
     #[McpTool(
         name: 'log-read',
-        description: 'Reads recent entries from Magento log files (system, exception, debug, cron)'
+        description: 'Reads recent entries from Magento log files. Set max_entry_length to truncate long entries (0 = no limit).'
     )]
-    public function readLog(string $logType = 'system', int $lines = 100, string $filter = ''): array
+    public function readLog(string $logType = 'system', int $lines = 100, string $filter = '', int $max_entry_length = 0): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -90,6 +91,19 @@ class LogTools
 
             // Limit to requested number
             $parsedEntries = array_slice($parsedEntries, -$lines);
+
+            // Apply truncation if max_entry_length is set
+            if ($max_entry_length > 0) {
+                foreach ($parsedEntries as &$entry) {
+                    if (isset($entry['message']) && strlen($entry['message']) > $max_entry_length) {
+                        $truncated = $this->truncateText($entry['message'], $max_entry_length);
+                        $entry['message'] = $truncated['text'];
+                        $entry['truncated'] = true;
+                        $entry['original_length'] = $truncated['original_length'];
+                    }
+                }
+                unset($entry);
+            }
 
             return [
                 'log_type' => $logType,
@@ -261,13 +275,14 @@ class LogTools
      *
      * @param string $query Search query
      * @param int $maxResults Maximum results per file
+     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
      * @return array<string, mixed> Search results
      */
     #[McpTool(
         name: 'log-search',
-        description: 'Searches for a pattern across all Magento log files'
+        description: 'Searches for a pattern across all Magento log files. Set max_entry_length to truncate long entries.'
     )]
-    public function searchLogs(string $query, int $maxResults = 50): array
+    public function searchLogs(string $query, int $maxResults = 50, int $max_entry_length = 0): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -300,10 +315,25 @@ class LogTools
                 }
 
                 if (!empty($matches)) {
+                    $limitedMatches = array_slice($matches, -$maxResults);
+
+                    // Apply truncation if max_entry_length is set
+                    if ($max_entry_length > 0) {
+                        foreach ($limitedMatches as &$match) {
+                            if (isset($match['message']) && strlen($match['message']) > $max_entry_length) {
+                                $truncated = $this->truncateText($match['message'], $max_entry_length);
+                                $match['message'] = $truncated['text'];
+                                $match['truncated'] = true;
+                                $match['original_length'] = $truncated['original_length'];
+                            }
+                        }
+                        unset($match);
+                    }
+
                     $results[$type] = [
                         'file' => $relativePath,
                         'match_count' => count($matches),
-                        'matches' => array_slice($matches, -$maxResults),
+                        'matches' => $limitedMatches,
                     ];
                 }
             }

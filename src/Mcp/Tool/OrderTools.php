@@ -15,9 +15,9 @@ class OrderTools
 {
     #[McpTool(
         name: 'order-get',
-        description: 'Retrieves order data by increment ID'
+        description: 'Retrieves order data by increment ID. Use fields to limit response.'
     )]
-    public function getOrder(string $incrementId): array
+    public function getOrder(string $incrementId, string $fields = ''): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -42,7 +42,7 @@ class OrderTools
             }
 
             $order = reset($orders);
-            return $this->formatOrderData($order, true);
+            return $this->formatOrderData($order, true, $fields);
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }
@@ -50,14 +50,16 @@ class OrderTools
 
     #[McpTool(
         name: 'order-list',
-        description: 'Lists orders with pagination, sorting, and optional status filter'
+        description: 'Lists orders with pagination, sorting, and optional status filter. Use fields to limit columns. Set count_only=true to get total count without data.'
     )]
     public function listOrders(
         int $pageSize = 20,
         int $currentPage = 1,
         string $status = '',
         string $sortField = 'created_at',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
+        bool $count_only = false,
+        string $fields = ''
     ): array {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -81,9 +83,16 @@ class OrderTools
 
             $result = $orderRepository->getList($searchCriteria);
 
+            if ($count_only) {
+                return [
+                    'total' => $result->getTotalCount(),
+                    'count_only' => true,
+                ];
+            }
+
             $orders = [];
             foreach ($result->getItems() as $order) {
-                $orders[] = $this->formatOrderData($order, false);
+                $orders[] = $this->formatOrderData($order, false, $fields);
             }
 
             return [
@@ -594,7 +603,7 @@ class OrderTools
         }
     }
 
-    private function formatOrderData(object $order, bool $includeItems): array
+    private function formatOrderData(object $order, bool $includeItems, string $fields = ''): array
     {
         $data = [
             'entity_id' => (int) $order->getEntityId(),
@@ -632,6 +641,16 @@ class OrderTools
             $data['items'] = $items;
         }
 
-        return $data;
+        return $this->filterFields($data, $fields);
+    }
+
+    private function filterFields(array $data, string $fields): array
+    {
+        if ($fields === '') {
+            return $data;
+        }
+
+        $requested = array_map('trim', explode(',', $fields));
+        return array_intersect_key($data, array_flip($requested));
     }
 }

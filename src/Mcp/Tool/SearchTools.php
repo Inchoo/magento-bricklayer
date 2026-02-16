@@ -12,6 +12,23 @@ use Mcp\Capability\Attribute\McpTool;
 
 class SearchTools
 {
+    private const TOOL_GROUPS = [
+        'introspection' => ['ApplicationTools', 'ConfigurationTools', 'ModuleTools', 'EavTools', 'RoutingTools'],
+        'catalog' => ['CatalogTools'],
+        'orders' => ['OrderTools'],
+        'customers' => ['CustomerTools'],
+        'database' => ['DatabaseTools'],
+        'logs' => ['LogTools'],
+        'diagnostic' => ['DiagnosticTools'],
+        'graphql' => ['GraphqlTools'],
+        'development' => ['DevelopmentTools', 'CodeRunnerTools', 'SearchTools', 'BatchTools'],
+        'code-generation' => ['CodeGenerationTools'],
+        'context' => ['ContextTools'],
+    ];
+
+    /** @var array<int, array{name: string, description: string, class: string, group: string, parameters: array}>|null */
+    private static ?array $toolCache = null;
+
     private const DOCUMENTATION_INDEX = [
 
         'module' => [
@@ -528,6 +545,145 @@ class SearchTools
             'results' => $results,
             'guidance' => $guidance,
         ];
+    }
+
+    #[McpTool(
+        name: 'search-tools',
+        description: 'Search available MCP tools by keyword or group. Use detail parameter to control response size: names, summary, or full.'
+    )]
+    public function searchTools(
+        string $query = '',
+        string $group = '',
+        string $detail = 'summary'
+    ): array {
+        if (!in_array($detail, ['names', 'summary', 'full'], true)) {
+            return ['error' => true, 'message' => 'detail must be one of: names, summary, full'];
+        }
+
+        $allTools = $this->scanAllTools();
+
+        // Filter by group
+        if ($group !== '') {
+            if (!isset(self::TOOL_GROUPS[$group])) {
+                return [
+                    'error' => true,
+                    'message' => sprintf(
+                        'Unknown group "%s". Available: %s',
+                        $group,
+                        implode(', ', array_keys(self::TOOL_GROUPS))
+                    ),
+                ];
+            }
+            $allowedClasses = self::TOOL_GROUPS[$group];
+            $allTools = array_filter($allTools, fn($t) => in_array($t['class'], $allowedClasses, true));
+        }
+
+        // Filter by query
+        if ($query !== '') {
+            $queryLower = strtolower($query);
+            $allTools = array_filter($allTools, function ($tool) use ($queryLower) {
+                return str_contains(strtolower($tool['name']), $queryLower)
+                    || str_contains(strtolower($tool['description']), $queryLower);
+            });
+        }
+
+        // Format based on detail level
+        $tools = array_values(array_map(function ($tool) use ($detail) {
+            return match ($detail) {
+                'names' => [
+                    'name' => $tool['name'],
+                    'group' => $tool['group'],
+                ],
+                'summary' => [
+                    'name' => $tool['name'],
+                    'group' => $tool['group'],
+                    'description' => $tool['description'],
+                ],
+                'full' => [
+                    'name' => $tool['name'],
+                    'group' => $tool['group'],
+                    'description' => $tool['description'],
+                    'parameters' => $tool['parameters'],
+                ],
+            };
+        }, $allTools));
+
+        return [
+            'query' => $query ?: null,
+            'group' => $group ?: null,
+            'detail' => $detail,
+            'total' => count($tools),
+            'available_groups' => array_keys(self::TOOL_GROUPS),
+            'tools' => $tools,
+        ];
+    }
+
+    private function scanAllTools(): array
+    {
+        if (self::$toolCache !== null) {
+            return self::$toolCache;
+        }
+
+        $toolDir = dirname(__DIR__) . '/Tool';
+        $namespace = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\';
+
+        // Build reverse map: className → group
+        $classToGroup = [];
+        foreach (self::TOOL_GROUPS as $groupName => $classes) {
+            foreach ($classes as $className) {
+                $classToGroup[$className] = $groupName;
+            }
+        }
+
+        $tools = [];
+
+        foreach (glob($toolDir . '/*.php') as $file) {
+            $className = pathinfo($file, PATHINFO_FILENAME);
+            $fqcn = $namespace . $className;
+
+            if (!class_exists($fqcn)) {
+                continue;
+            }
+
+            $ref = new \ReflectionClass($fqcn);
+            $group = $classToGroup[$className] ?? 'other';
+
+            foreach ($ref->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+                $attrs = $method->getAttributes(\Mcp\Capability\Attribute\McpTool::class);
+                if (empty($attrs)) {
+                    continue;
+                }
+
+                $attr = $attrs[0]->newInstance();
+                $parameters = [];
+
+                foreach ($method->getParameters() as $param) {
+                    $type = $param->getType();
+                    $paramInfo = [
+                        'name' => $param->getName(),
+                        'type' => $type ? $type->getName() : 'mixed',
+                        'required' => !$param->isOptional(),
+                    ];
+                    if ($param->isOptional() && $param->isDefaultValueAvailable()) {
+                        $paramInfo['default'] = $param->getDefaultValue();
+                    }
+                    $parameters[] = $paramInfo;
+                }
+
+                $tools[] = [
+                    'name' => $attr->name ?? $method->getName(),
+                    'description' => $attr->description ?? '',
+                    'class' => $className,
+                    'group' => $group,
+                    'parameters' => $parameters,
+                ];
+            }
+        }
+
+        usort($tools, fn($a, $b) => strcmp($a['name'], $b['name']));
+        self::$toolCache = $tools;
+
+        return $tools;
     }
 
     private function generateGuidance(string $query, array $results): string

@@ -99,4 +99,35 @@ trait ReadsLogFiles
 
         return round($bytes, 2) . ' ' . $units[$unitIndex];
     }
+
+    /**
+     * Truncate a string to a maximum length, preserving beginning and end.
+     *
+     * @param string $text The text to truncate
+     * @param int $maxLength Maximum allowed length
+     * @return array{text: string, truncated: bool, original_length: int}
+     */
+    protected function truncateText(string $text, int $maxLength): array
+    {
+        $originalLength = strlen($text);
+
+        if ($originalLength <= $maxLength) {
+            return [
+                'text' => $text,
+                'truncated' => false,
+                'original_length' => $originalLength,
+            ];
+        }
+
+        // Show first 70% and last 20% of allowed length, with separator
+        $headLength = (int) ($maxLength * 0.7);
+        $tailLength = (int) ($maxLength * 0.2);
+        $separator = "\n... [truncated — {$originalLength} chars total] ...\n";
+
+        return [
+            'text' => substr($text, 0, $headLength) . $separator . substr($text, -$tailLength),
+            'truncated' => true,
+            'original_length' => $originalLength,
+        ];
+    }
 }

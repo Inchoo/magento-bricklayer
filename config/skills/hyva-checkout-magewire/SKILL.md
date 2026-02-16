@@ -216,9 +216,9 @@ class ShippingComponent extends Component
     // Declare listeners: event name => method name
 
     /**
-     * @var array
+     * @var array<string, string>
      */
-    protected array $listeners = [
+    protected $listeners = [
         'shipping_address_saved' => 'refresh',
         'coupon_code_applied' => 'refresh',
     ];

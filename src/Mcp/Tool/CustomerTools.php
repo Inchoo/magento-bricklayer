@@ -26,9 +26,9 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-get',
-        description: 'Retrieves customer data by email address'
+        description: 'Retrieves customer data by email address. Use fields to limit response.'
     )]
-    public function getCustomer(string $email): array
+    public function getCustomer(string $email, string $fields = ''): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -42,7 +42,7 @@ class CustomerTools
             $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
             $customer = $customerRepository->get($email);
 
-            return $this->formatCustomerData($customer, true);
+            return $this->formatCustomerData($customer, true, $fields);
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             return ['error' => true, 'message' => "Customer not found: $email"];
         } catch (\Throwable $e) {
@@ -61,13 +61,15 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-list',
-        description: 'Lists customers with pagination and sorting'
+        description: 'Lists customers with pagination and sorting. Use fields to limit columns. Set count_only=true to get total count without data.'
     )]
     public function listCustomers(
         int $pageSize = 20,
         int $currentPage = 1,
         string $sortField = 'entity_id',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
+        bool $count_only = false,
+        string $fields = ''
     ): array {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -87,9 +89,16 @@ class CustomerTools
 
             $result = $customerRepository->getList($searchCriteria);
 
+            if ($count_only) {
+                return [
+                    'total' => $result->getTotalCount(),
+                    'count_only' => true,
+                ];
+            }
+
             $customers = [];
             foreach ($result->getItems() as $customer) {
-                $customers[] = $this->formatCustomerData($customer, false);
+                $customers[] = $this->formatCustomerData($customer, false, $fields);
             }
 
             return [
@@ -601,7 +610,7 @@ class CustomerTools
      * @param bool $includeAddresses
      * @return array<string, mixed>
      */
-    private function formatCustomerData(object $customer, bool $includeAddresses): array
+    private function formatCustomerData(object $customer, bool $includeAddresses, string $fields = ''): array
     {
         $data = [
             'id' => (int) $customer->getId(),
@@ -634,6 +643,16 @@ class CustomerTools
             $data['addresses'] = $addresses;
         }
 
-        return $data;
+        return $this->filterFields($data, $fields);
+    }
+
+    private function filterFields(array $data, string $fields): array
+    {
+        if ($fields === '') {
+            return $data;
+        }
+
+        $requested = array_map('trim', explode(',', $fields));
+        return array_intersect_key($data, array_flip($requested));
     }
 }

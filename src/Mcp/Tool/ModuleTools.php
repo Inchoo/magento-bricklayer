@@ -15,12 +15,16 @@ class ModuleTools
 {
     #[McpTool(
         name: 'module-list',
-        description: 'Lists all installed Magento modules with version, status, and vendor'
+        description: 'Lists all installed Magento modules. Use verbosity (minimal/standard/detailed) to control response size. Set count_only=true to get total count without data.'
     )]
-    public function listModules(bool $enabledOnly = false, string $vendor = ''): array
+    public function listModules(bool $enabledOnly = false, string $vendor = '', bool $count_only = false, string $verbosity = 'standard'): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
+        }
+
+        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
+            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
         }
 
         try {
@@ -54,14 +58,45 @@ class ModuleTools
                 } catch (\Throwable $e) {
                 }
 
-                $modules[] = [
-                    'name' => $name,
-                    'vendor' => $moduleVendor,
-                    'module' => $moduleName,
-                    'enabled' => $isEnabled,
-                    'version' => $version,
-                    'path' => $path,
-                    'is_magento' => $moduleVendor === 'Magento',
+                $moduleData = match ($verbosity) {
+                    'minimal' => [
+                        'name' => $name,
+                        'enabled' => $isEnabled,
+                    ],
+                    'detailed' => [
+                        'name' => $name,
+                        'vendor' => $moduleVendor,
+                        'module' => $moduleName,
+                        'enabled' => $isEnabled,
+                        'version' => $version,
+                        'path' => $path,
+                        'is_magento' => $moduleVendor === 'Magento',
+                        'has_etc' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/etc'),
+                        'has_setup' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Setup'),
+                        'has_api' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Api'),
+                    ],
+                    default => [
+                        'name' => $name,
+                        'vendor' => $moduleVendor,
+                        'module' => $moduleName,
+                        'enabled' => $isEnabled,
+                        'version' => $version,
+                        'path' => $path,
+                        'is_magento' => $moduleVendor === 'Magento',
+                    ],
+                };
+
+                $modules[] = $moduleData;
+            }
+
+            if ($count_only) {
+                return [
+                    'total' => count($modules),
+                    'count_only' => true,
+                    'filter' => array_filter([
+                        'enabled_only' => $enabledOnly ?: null,
+                        'vendor' => $vendor ?: null,
+                    ]),
                 ];
             }
 
