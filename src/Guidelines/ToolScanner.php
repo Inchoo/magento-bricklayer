@@ -68,7 +68,7 @@ class ToolScanner
         'System & Development Tools' => [
             'columns' => ['Tool', 'Purpose'],
             'order' => 7,
-            'classes' => ['DevelopmentTools', 'CodeRunnerTools', 'DiagnosticTools', 'SearchTools'],
+            'classes' => ['DevelopmentTools', 'CodeRunnerTools', 'DiagnosticTools', 'SearchTools', 'BatchTools'],
         ],
         'Code Generation Tools' => [
             'columns' => ['Tool', 'Output'],

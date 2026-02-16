@@ -15,6 +15,9 @@ use Mcp\Capability\Attribute\McpTool;
 
 class CodeRunnerTools
 {
+    /** @var array<int, array{label: string, value: mixed}> */
+    private array $logBuffer = [];
+
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
             => 'Shell execution functions are not allowed',
@@ -38,14 +41,9 @@ class CodeRunnerTools
 
     #[McpTool(
         name: 'code-runner',
-        description: 'Executes PHP code within the Magento application context. '
-            . 'Use this to test repository calls, inspect DI resolution, debug data, '
-            . 'query EAV attributes, or verify fix hypotheses. '
-            . 'Available helpers: get(class), create(class, args), repo(class), config(path) '
-            . '— also available as $get, $create, $repo, $config variables. '
-            . 'Additional variables: $di, $om, $objectManager (ObjectManager instance). '
-            . 'Default mode is read-only (DB changes are rolled back). '
-            . 'Disabled in production.'
+        description: 'Executes PHP in Magento context. Preferred for multi-step operations — one call replaces many tool calls. '
+            . 'Helpers: get(class), create(class), repo(class), config(path). '
+            . 'Read-only by default. Disabled in production. Call code-runner-help for docs.'
     )]
     public function execute(
         string $code,
@@ -120,6 +118,7 @@ class CodeRunnerTools
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $startQueries = $this->getQueryCount();
+        $this->logBuffer = [];
 
         try {
             $result = $this->executeWithTransaction($code, $mode, $allow_write);
@@ -139,6 +138,62 @@ class CodeRunnerTools
         }
 
         return $result;
+    }
+
+    #[McpTool(
+        name: 'code-runner-help',
+        description: 'Returns detailed code-runner usage guide with helpers, variables, areas, and examples'
+    )]
+    public function getHelp(): array
+    {
+        return [
+            'helpers' => [
+                'get(string $class)' => 'Get a singleton instance (same as $om->get())',
+                'create(string $class, array $args = [])' => 'Create a new instance (same as $om->create())',
+                'repo(string $class)' => 'Get a repository instance (alias for get())',
+                'config(string $path, string $scope = "default", int $scopeId = 0)' => 'Read system config value',
+                'query(string $sql, array $binds = [])' => 'Execute a read-only SELECT query. Returns array of rows.',
+                'runLog(mixed $value, string $label = "")' => 'Capture a value to return to the agent in the "log" key of the response.',
+            ],
+            'variables' => [
+                '$om, $di, $objectManager' => 'ObjectManager instance',
+                '$get, $create, $repo, $config' => 'Closure versions of the helper functions',
+            ],
+            'areas' => [
+                'frontend' => 'Frontend store context',
+                'adminhtml' => 'Admin panel context',
+                'webapi_rest' => 'REST API context',
+                'webapi_soap' => 'SOAP API context',
+                'graphql' => 'GraphQL context',
+                'crontab' => 'Cron job context',
+                '' => 'Default — no area emulation (default)',
+            ],
+            'parameters' => [
+                'code (string, required)' => 'PHP code to execute. Do not include <?php tags.',
+                'area (string, optional)' => 'Magento area to emulate. Empty for default.',
+                'allow_write (bool, default false)' => 'When false, DB changes are rolled back automatically.',
+                'timeout (int, default 30)' => 'Max execution time in seconds.',
+            ],
+            'examples' => [
+                'Batch product lookup' => '$repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);'
+                    . "\n" . '$results = []; foreach (["SKU1","SKU2"] as $s) { $p = $repo->get($s); $results[$s] = $p->getName(); }'
+                    . "\n" . 'return $results;',
+                'Count orders by status' => '$resource = get(\Magento\Framework\App\ResourceConnection::class);'
+                    . "\n" . '$conn = $resource->getConnection();'
+                    . "\n" . 'return $conn->fetchAll("SELECT status, COUNT(*) as cnt FROM sales_order GROUP BY status");',
+                'Check config value' => 'return config("general/locale/code");',
+                'Inspect DI preference' => 'return get_class(get(\Magento\Catalog\Api\ProductRepositoryInterface::class));',
+                'Log multiple results' => 'runLog(config("general/locale/code"), "locale");'
+                    . "\n" . 'runLog(query("SELECT COUNT(*) as cnt FROM catalog_product_entity"), "product count");'
+                    . "\n" . '// Both values appear in the "log" key of the response',
+            ],
+            'safety' => [
+                'read_only_mode' => 'By default, a DB transaction wraps execution and is rolled back. Set allow_write=true to persist.',
+                'blocked_functions' => 'exec, shell_exec, system, passthru, eval, unlink, file_put_contents, exit, die, header',
+                'production' => 'code-runner is completely disabled in production deploy mode.',
+                'timeout' => 'Default 30s, max configurable via tools.code-runner.max_timeout in config.',
+            ],
+        ];
     }
 
     private function executeWithTransaction(string $code, string $mode, bool $allowWrite): array
@@ -225,7 +280,7 @@ class CodeRunnerTools
 
             $output = ob_get_clean();
 
-            return [
+            $result = [
                 'success' => $error === null,
                 'output' => $output ?: null,
                 'return' => $returnValue,
@@ -233,6 +288,12 @@ class CodeRunnerTools
                 'mode' => $mode,
                 'runtime' => 'psysh',
             ];
+
+            if (!empty($this->logBuffer)) {
+                $result['log'] = $this->logBuffer;
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'success' => false,
@@ -253,16 +314,18 @@ class CodeRunnerTools
             $returnValue = null;
 
             try {
-                $preamble = '$GLOBALS["_bricklayer_helpers"] = compact("get", "create", "repo", "config");'
+                $preamble = '$GLOBALS["_bricklayer_helpers"] = compact("get", "create", "repo", "config", "query", "runLog");'
                     . 'if (!function_exists("get")) {'
                     . '  function get(string $class) { return ($GLOBALS["_bricklayer_helpers"]["get"])($class); }'
                     . '  function create(string $class, array $args = []) { return ($GLOBALS["_bricklayer_helpers"]["create"])($class, $args); }'
                     . '  function repo(string $class) { return ($GLOBALS["_bricklayer_helpers"]["repo"])($class); }'
                     . '  function config(string $path, string $scopeType = "default", int $scopeId = 0) { return ($GLOBALS["_bricklayer_helpers"]["config"])($path, $scopeType, $scopeId); }'
+                    . '  function query(string $sql, array $binds = []) { return ($GLOBALS["_bricklayer_helpers"]["query"])($sql, $binds); }'
+                    . '  function runLog($value, string $label = \'\') { ($GLOBALS["_bricklayer_helpers"]["runLog"])($value, $label); }'
                     . '}';
 
-                $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config) { '
-                    . $preamble . ' ' . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config);';
+                $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog) { '
+                    . $preamble . ' ' . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog);';
                 $returnValue = eval($wrappedCode);
                 $returnValue = $this->formatReturnValue($returnValue);
             } catch (\Throwable $e) {
@@ -277,7 +340,7 @@ class CodeRunnerTools
 
             $output = ob_get_clean();
 
-            return [
+            $result = [
                 'success' => $error === null,
                 'output' => $output ?: null,
                 'return' => $returnValue,
@@ -286,6 +349,12 @@ class CodeRunnerTools
                 'runtime' => 'eval',
                 'warning' => 'PsySH not available, using basic eval fallback',
             ];
+
+            if (!empty($this->logBuffer)) {
+                $result['log'] = $this->logBuffer;
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'success' => false,
@@ -297,6 +366,8 @@ class CodeRunnerTools
 
     private function buildScopeVariables(): array
     {
+        $this->logBuffer = [];
+
         $objectManager = MagentoBootstrap::getObjectManager();
 
         $get = function (string $class) use ($objectManager) {
@@ -325,6 +396,22 @@ class CodeRunnerTools
             return $scopeConfig->getValue($path, $scope, $scopeId);
         };
 
+        $query = function (string $sql, array $binds = []) use ($objectManager): array {
+            if (!preg_match('/^\s*SELECT\s/i', $sql)) {
+                throw new \RuntimeException('query() helper only supports SELECT statements');
+            }
+            $resource = $objectManager->get(\Magento\Framework\App\ResourceConnection::class);
+            $connection = $resource->getConnection();
+            return $connection->fetchAll($sql, $binds);
+        };
+
+        $runLog = function (mixed $value, string $label = '') {
+            $this->logBuffer[] = [
+                'label' => $label,
+                'value' => $this->formatReturnValue($value),
+            ];
+        };
+
         return [
             'di' => $objectManager,
             'om' => $objectManager,
@@ -333,6 +420,8 @@ class CodeRunnerTools
             'create' => $create,
             'repo' => $repo,
             'config' => $config,
+            'query' => $query,
+            'runLog' => $runLog,
         ];
     }
 

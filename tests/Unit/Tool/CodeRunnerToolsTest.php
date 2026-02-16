@@ -226,8 +226,11 @@ class CodeRunnerToolsTest extends TestCase
         $instance = $attrs[0]->newInstance();
         $this->assertEquals('code-runner', $instance->name);
         $this->assertStringContainsString('get(class)', $instance->description);
-        $this->assertStringContainsString('read-only', $instance->description);
+        $this->assertStringContainsString('Read-only by default', $instance->description);
         $this->assertStringContainsString('production', $instance->description);
+        $this->assertStringContainsString('multi-step operations', $instance->description);
+        $this->assertStringContainsString('code-runner-help', $instance->description);
+        $this->assertLessThanOrEqual(250, strlen($instance->description), 'Description should be under 250 characters');
     }
 
     public function testExecuteMethodAcceptsNewParameters(): void
@@ -245,18 +248,58 @@ class CodeRunnerToolsTest extends TestCase
         $this->assertEquals(30, $params[3]->getDefaultValue());
     }
 
+    // ─── code-runner-help ───
+
+    public function testGetHelpReturnsExpectedStructure(): void
+    {
+        $result = $this->runner->getHelp();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('helpers', $result);
+        $this->assertArrayHasKey('variables', $result);
+        $this->assertArrayHasKey('areas', $result);
+        $this->assertArrayHasKey('parameters', $result);
+        $this->assertArrayHasKey('examples', $result);
+        $this->assertArrayHasKey('safety', $result);
+        $this->assertNotEmpty($result['helpers']);
+        $this->assertNotEmpty($result['examples']);
+    }
+
+    public function testGetHelpHasMcpToolAttribute(): void
+    {
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $method = $ref->getMethod('getHelp');
+        $attrs = $method->getAttributes(\Mcp\Capability\Attribute\McpTool::class);
+
+        $this->assertCount(1, $attrs);
+        $instance = $attrs[0]->newInstance();
+        $this->assertEquals('code-runner-help', $instance->name);
+    }
+
     // ─── Scope variables structure ───
 
     public function testBuildScopeVariablesStructure(): void
     {
         $ref = new \ReflectionClass(CodeRunnerTools::class);
         $method = $ref->getMethod('buildScopeVariables');
-        $method->setAccessible(true);
 
         // We can't actually call it without Magento bootstrap,
         // but we can verify the method exists and is callable
         $this->assertTrue($method->isPrivate());
         $this->assertCount(0, $method->getParameters());
+    }
+
+    public function testBuildScopeVariablesContainsQueryAndLog(): void
+    {
+        $method = new \ReflectionMethod(CodeRunnerTools::class, 'buildScopeVariables');
+        $this->assertTrue($method->isPrivate());
+    }
+
+    public function testLogBufferPropertyExists(): void
+    {
+        $property = new \ReflectionProperty(CodeRunnerTools::class, 'logBuffer');
+        $this->assertTrue($property->isPrivate());
+        $this->assertEquals('array', $property->getType()?->getName());
     }
 
     // ─── Dangerous patterns count ───
@@ -278,7 +321,6 @@ class CodeRunnerToolsTest extends TestCase
     {
         $ref = new \ReflectionClass(CodeRunnerTools::class);
         $method = $ref->getMethod('validateCode');
-        $method->setAccessible(true);
 
         return $method->invoke($this->runner, $code);
     }

@@ -22,9 +22,9 @@ class EavTools
 
     #[McpTool(
         name: 'eav-attributes',
-        description: 'Returns EAV attributes for a specified entity type (catalog_product, catalog_category, customer, customer_address)'
+        description: 'Returns EAV attributes for a specified entity type. Use verbosity (minimal/standard/detailed) to control response size.'
     )]
-    public function getEavAttributes(string $entityType, bool $userDefinedOnly = false): array
+    public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -39,6 +39,10 @@ class EavTools
                     implode(', ', self::SUPPORTED_ENTITY_TYPES)
                 ),
             ];
+        }
+
+        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
+            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
         }
 
         try {
@@ -58,19 +62,42 @@ class EavTools
 
             $attributes = [];
             foreach ($attributeList->getItems() as $attribute) {
-                $attributes[] = [
-                    'attribute_id' => (int) $attribute->getAttributeId(),
-                    'attribute_code' => $attribute->getAttributeCode(),
-                    'frontend_label' => $attribute->getDefaultFrontendLabel(),
-                    'backend_type' => $attribute->getBackendType(),
-                    'frontend_input' => $attribute->getFrontendInput(),
-                    'backend_model' => $attribute->getBackendModel(),
-                    'source_model' => $attribute->getSourceModel(),
-                    'is_required' => (bool) $attribute->getIsRequired(),
-                    'is_user_defined' => (bool) $attribute->getIsUserDefined(),
-                    'is_unique' => (bool) $attribute->getIsUnique(),
-                    'default_value' => $attribute->getDefaultValue(),
-                ];
+                $attrData = match ($verbosity) {
+                    'minimal' => [
+                        'attribute_code' => $attribute->getAttributeCode(),
+                        'frontend_input' => $attribute->getFrontendInput(),
+                    ],
+                    'detailed' => [
+                        'attribute_id' => (int) $attribute->getAttributeId(),
+                        'attribute_code' => $attribute->getAttributeCode(),
+                        'frontend_label' => $attribute->getDefaultFrontendLabel(),
+                        'backend_type' => $attribute->getBackendType(),
+                        'frontend_input' => $attribute->getFrontendInput(),
+                        'backend_model' => $attribute->getBackendModel(),
+                        'source_model' => $attribute->getSourceModel(),
+                        'is_required' => (bool) $attribute->getIsRequired(),
+                        'is_user_defined' => (bool) $attribute->getIsUserDefined(),
+                        'is_unique' => (bool) $attribute->getIsUnique(),
+                        'default_value' => $attribute->getDefaultValue(),
+                        'note' => method_exists($attribute, 'getNote') ? $attribute->getNote() : null,
+                        'sort_order' => method_exists($attribute, 'getSortOrder') ? (int) $attribute->getSortOrder() : null,
+                    ],
+                    default => [
+                        'attribute_id' => (int) $attribute->getAttributeId(),
+                        'attribute_code' => $attribute->getAttributeCode(),
+                        'frontend_label' => $attribute->getDefaultFrontendLabel(),
+                        'backend_type' => $attribute->getBackendType(),
+                        'frontend_input' => $attribute->getFrontendInput(),
+                        'backend_model' => $attribute->getBackendModel(),
+                        'source_model' => $attribute->getSourceModel(),
+                        'is_required' => (bool) $attribute->getIsRequired(),
+                        'is_user_defined' => (bool) $attribute->getIsUserDefined(),
+                        'is_unique' => (bool) $attribute->getIsUnique(),
+                        'default_value' => $attribute->getDefaultValue(),
+                    ],
+                };
+
+                $attributes[] = $attrData;
             }
 
             return [

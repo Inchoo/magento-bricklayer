@@ -22,8 +22,9 @@ class ExceptionParserTest extends TestCase
 
     public function testSingleLineCriticalWithInlineJsonContext(): void
     {
+        $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            '[2026-02-11T10:23:45.123456+00:00] main.CRITICAL: Exception message here {"exception":"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Exception message here at /var/www/html/vendor/magento/framework/View/Layout.php:345)"} []',
+            "[$timestamp] main.CRITICAL: Exception message here {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Exception message here at /var/www/html/vendor/magento/framework/View/Layout.php:345)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');
@@ -40,8 +41,9 @@ class ExceptionParserTest extends TestCase
 
     public function testMultiLineExceptionSpanningFiveLines(): void
     {
+        $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            '[2026-02-11T10:23:45.123456+00:00] main.CRITICAL: Exception message here',
+            "[$timestamp] main.CRITICAL: Exception message here",
             '{"exception":"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0):',
             'Exception message here at /var/www/html/vendor/magento/framework/View/Layout.php:345)',
             '#0 /var/www/html/vendor/magento/framework/App/Http.php(116): Magento\\Framework\\View\\Layout->render()',
@@ -67,8 +69,9 @@ class ExceptionParserTest extends TestCase
 
     public function testChainedExceptions(): void
     {
+        $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            '[2026-02-11T10:23:45.123456+00:00] main.CRITICAL: Outer exception {"exception":"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Magento\\\\Framework\\\\Exception\\\\RuntimeException(code: 0): Inner cause at /var/www/html/app/code/Vendor/Module/Block/Custom.php:28)"} []',
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Magento\\\\Framework\\\\Exception\\\\RuntimeException(code: 0): Inner cause at /var/www/html/app/code/Vendor/Module/Block/Custom.php:28)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');

@@ -27,9 +27,9 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-get',
-        description: 'Retrieves product data by SKU'
+        description: 'Retrieves product data by SKU. Use fields (comma-separated) to limit response.'
     )]
-    public function getProduct(string $sku = '', int $storeId = 0): array
+    public function getProduct(string $sku = '', int $storeId = 0, string $fields = ''): array
     {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -43,7 +43,7 @@ class CatalogTools
             $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
             $product = $productRepository->get($sku, false, $storeId);
 
-            return $this->formatProductData($product, true);
+            return $this->formatProductData($product, true, $fields);
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             return ['error' => true, 'message' => "Product not found: $sku"];
         } catch (\Throwable $e) {
@@ -62,13 +62,15 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-list',
-        description: 'Lists products with pagination and sorting'
+        description: 'Lists products with pagination and sorting. Use fields to limit returned columns. Set count_only=true to get total count without data.'
     )]
     public function listProducts(
         int $pageSize = 20,
         int $currentPage = 1,
         string $sortField = 'entity_id',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
+        bool $count_only = false,
+        string $fields = ''
     ): array {
         if (!MagentoBootstrap::isInitialized()) {
             return ['error' => true, 'message' => 'Magento not initialized'];
@@ -88,9 +90,16 @@ class CatalogTools
 
             $result = $productRepository->getList($searchCriteria);
 
+            if ($count_only) {
+                return [
+                    'total' => $result->getTotalCount(),
+                    'count_only' => true,
+                ];
+            }
+
             $products = [];
             foreach ($result->getItems() as $product) {
-                $products[] = $this->formatProductData($product, false);
+                $products[] = $this->formatProductData($product, false, $fields);
             }
 
             return [
@@ -789,7 +798,7 @@ class CatalogTools
      * @param bool $includeExtensions
      * @return array<string, mixed>
      */
-    private function formatProductData(object $product, bool $includeExtensions): array
+    private function formatProductData(object $product, bool $includeExtensions, string $fields = ''): array
     {
         $data = [
             'id' => (int) $product->getId(),
@@ -815,7 +824,7 @@ class CatalogTools
             $data['custom_attributes'] = $customAttributes;
         }
 
-        return $data;
+        return $this->filterFields($data, $fields);
     }
 
     /**
@@ -844,5 +853,15 @@ class CatalogTools
         }
 
         return $data;
+    }
+
+    private function filterFields(array $data, string $fields): array
+    {
+        if ($fields === '') {
+            return $data;
+        }
+
+        $requested = array_map('trim', explode(',', $fields));
+        return array_intersect_key($data, array_flip($requested));
     }
 }

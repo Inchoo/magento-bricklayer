@@ -22,6 +22,7 @@ class GuidelinesCompiler
         $sections = [];
         $sections[] = $this->buildHeader();
         $sections[] = $this->buildContextCategoriesSection();
+        $sections[] = $this->buildEfficiencySection();
         $sections[] = $this->buildToolSections();
         $sections[] = $this->buildArchitectureSection();
         $sections[] = $this->getShellCommandsSection($envType);
@@ -57,6 +58,7 @@ for AI-assisted development tooling.
 ## MCP Server: magento-bricklayer
 
 You have access to an MCP server with {$count} tools for Magento development.
+Use `search-tools` to discover relevant tools and `code-runner` for multi-step operations.
 Always prefer using these tools over assumptions about the codebase.
 MARKDOWN;
     }
@@ -87,8 +89,71 @@ MARKDOWN;
         }
 
         $lines[] = '| `list` | See all categories with skill/guideline counts |';
+        $lines[] = '';
+        $lines[] = '### Context Quick Reference';
+        $lines[] = '';
+        $lines[] = 'When writing code, call `development-context` for **each** matching category:';
+        $lines[] = '';
+        $lines[] = '| You are writing... | Call `development-context` with |';
+        $lines[] = '|--------------------|-------------------------------|';
+        $lines[] = '| **Any PHP file** | `coding-standards` (always) |';
+        $lines[] = '| `Cron/*.php`, `etc/crontab.xml` | `cron` |';
+        $lines[] = '| `Observer/*.php`, `etc/events.xml` | `observer` |';
+        $lines[] = '| `Plugin/*.php` | `plugin` |';
+        $lines[] = '| `Model/*.php`, `ResourceModel/*.php`, `Api/Data/*Interface.php` | `model` |';
+        $lines[] = '| `Api/*Interface.php` (service contracts) | `model` |';
+        $lines[] = '| `Model/ResourceModel/*.php`, `etc/db_schema.xml` | `model` |';
+        $lines[] = '| `Setup/Patch/Data/*.php` | `data-patch` |';
+        $lines[] = '| `Controller/Adminhtml/*.php`, admin UI | `adminhtml` |';
+        $lines[] = '| `view/adminhtml/ui_component/*.xml` (grid) | `ui-component` |';
+        $lines[] = '| `view/adminhtml/ui_component/*.xml` (form) | `ui-component-form` |';
+        $lines[] = '| `Controller/*.php` (frontend) | `frontend` |';
+        $lines[] = '| `*.phtml`, `view/frontend/layout/*.xml` | `frontend` |';
+        $lines[] = '| `Magewire/*.php`, `wire:` templates | `hyva-checkout` |';
+        $lines[] = '| `hyva_checkout_*.xml` | `hyva-checkout-config` |';
+        $lines[] = '| Hyvä `*.phtml` with Alpine.js | `hyva-theme` |';
+        $lines[] = '| `etc/webapi.xml`, REST API classes | `rest-api` |';
+        $lines[] = '| `etc/schema.graphqls`, resolvers | `graphql` |';
+        $lines[] = '| `etc/indexer.xml`, indexer classes | `indexer` |';
+        $lines[] = '| `registration.php`, `etc/module.xml`, `composer.json` | `module` |';
 
         return implode("\n", $lines);
+    }
+
+    private function buildEfficiencySection(): string
+    {
+        return <<<'MARKDOWN'
+### Token Efficiency
+
+Follow these patterns to minimize context usage when working with Bricklayer tools:
+
+**Prefer `code-runner` for multi-step operations:**
+Instead of chaining multiple individual tool calls, write PHP code in `code-runner` to execute
+them in a single call. Example: to get data for 5 products, use one `code-runner` call with a
+`foreach` loop over `repo()`, not 5 separate `product-get` calls. Call `code-runner-help` for
+available helpers and example patterns.
+
+**Discover tools before using them:**
+Call `search-tools` with a keyword to find relevant tools. Use `detail=names` first for a
+lightweight overview, then `detail=full` only for the tools you need.
+
+**Minimize list tool payloads:**
+- `count_only=true` — check result size before fetching full data
+- `fields=sku,name,price` — request only the columns you need
+- `verbosity=minimal` — get just identifiers from `module-list` and `eav-attributes`
+
+**Use `search-docs` before `development-context`:**
+`search-docs` returns a lightweight pointer to the right category. Only call
+`development-context` once you know which category you need.
+
+**Use `batch-execute` for repetitive operations:**
+When performing the same tool call with different parameters (e.g., updating stock for
+10 products), use `batch-execute` with a JSON array instead of 10 separate calls.
+
+**Truncate log output:**
+Use `max_entry_length` on `log-read` and `log-search` to limit long entries.
+Start with `max_entry_length=500` and increase only if you need full stack traces.
+MARKDOWN;
     }
 
     private function buildToolSections(): string
@@ -103,6 +168,11 @@ MARKDOWN;
 
             if (isset($group['subtitle'])) {
                 $lines[] = $group['subtitle'];
+                $lines[] = '';
+            }
+
+            if ($title === 'System & Development Tools') {
+                $lines[] = '*Tip: For multi-step operations, prefer `code-runner` over chaining individual tool calls.*';
                 $lines[] = '';
             }
 

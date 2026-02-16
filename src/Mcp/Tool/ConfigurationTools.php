@@ -208,11 +208,106 @@ class ConfigurationTools
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
+        $validAreas = ['global', 'frontend', 'adminhtml', 'webapi_rest', 'webapi_soap', 'graphql', 'crontab'];
+        if (!in_array($area, $validAreas, true)) {
+            return [
+                'error' => true,
+                'message' => sprintf('Invalid area "%s". Available: %s', $area, implode(', ', $validAreas)),
+            ];
+        }
+
+        $root = defined('BP') ? BP : getcwd();
+        $searchDirs = [
+            $root . '/vendor',
+            $root . '/app/code',
+        ];
+
+        $subPath = $area === 'global' ? 'etc/events.xml' : "etc/{$area}/events.xml";
+        $events = [];
+
+        foreach ($searchDirs as $searchDir) {
+            if (!is_dir($searchDir)) {
+                continue;
+            }
+
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($searchDir, \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->getFilename() !== 'events.xml') {
+                    continue;
+                }
+
+                $relativePath = str_replace($root . '/', '', $file->getPathname());
+
+                // Match area: global = etc/events.xml (not inside area subfolder)
+                if ($area === 'global') {
+                    if (!preg_match('#/etc/events\.xml$#', $relativePath)
+                        || preg_match('#/etc/(frontend|adminhtml|webapi_rest|webapi_soap|graphql|crontab)/#', $relativePath)) {
+                        continue;
+                    }
+                } else {
+                    if (!str_contains($relativePath, "etc/{$area}/events.xml")) {
+                        continue;
+                    }
+                }
+
+                $this->parseEventsXml($file->getPathname(), $relativePath, $events);
+            }
+        }
+
+        if ($eventName !== '') {
+            $events = array_filter($events, function (array $event) use ($eventName): bool {
+                return stripos($event['event'], $eventName) !== false;
+            });
+            $events = array_values($events);
+        }
+
+        usort($events, fn(array $a, array $b) => strcmp($a['event'], $b['event']));
+
         return [
             'area' => $area,
-            'filter' => $eventName,
-            'message' => 'Event list requires parsing events.xml files. Use module-structure tool to inspect specific module configuration.',
+            'filter' => $eventName ?: null,
+            'total' => count($events),
+            'events' => $events,
         ];
+    }
+
+    /**
+     * Parse a single events.xml file and append results to the events array.
+     *
+     * @param string $filePath Absolute path to events.xml
+     * @param string $relativePath Relative path for source attribution
+     * @param array<array<string, mixed>> $events Events array (modified by reference)
+     */
+    private function parseEventsXml(string $filePath, string $relativePath, array &$events): void
+    {
+        try {
+            $xml = @simplexml_load_file($filePath);
+            if ($xml === false) {
+                return;
+            }
+
+            foreach ($xml->event as $eventNode) {
+                $name = (string) ($eventNode['name'] ?? '');
+                if ($name === '') {
+                    continue;
+                }
+
+                foreach ($eventNode->observer as $observerNode) {
+                    $events[] = [
+                        'event' => $name,
+                        'observer' => (string) ($observerNode['name'] ?? ''),
+                        'class' => (string) ($observerNode['instance'] ?? ''),
+                        'disabled' => ((string) ($observerNode['disabled'] ?? 'false')) === 'true',
+                        'source' => $relativePath,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            // Skip unparseable files
+        }
     }
 
     /**
