@@ -120,9 +120,6 @@ class ConfigLoader
                 'exclude' => [],
             ],
             'agents' => ['claude-code', 'cursor'],
-            'documentation' => [
-                'index_path' => '.bricklayer/docs-index',
-            ],
         ];
     }
 

@@ -12,6 +12,7 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Guidelines\GuidelinesCompiler;
 use Inchoo\MagentoBricklayer\Integration\McpConfigWriter;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -251,9 +252,6 @@ HELP
             }
         }
 
-        // Create documentation index
-        $this->createDocIndex($magentoRoot, $io);
-
         // Display results
         foreach ($createdFiles as $file) {
             $io->text("  <info>\u{2713}</info> Created $file");
@@ -288,31 +286,12 @@ HELP
         $io->newLine();
         $io->success('Installation complete!');
 
+        // Run verification
+        $verifyCommand = $this->getApplication()->find('verify');
+        $verifyInput = new ArrayInput(['--magento-root' => $magentoRoot]);
+        $verifyCommand->run($verifyInput, $output);
+
         return Command::SUCCESS;
-    }
-
-    private function createDocIndex(string $magentoRoot, SymfonyStyle $io): void
-    {
-        $indexPath = $magentoRoot . '/.bricklayer/docs-index';
-
-        try {
-            if (!is_dir($indexPath)) {
-                mkdir($indexPath, 0755, true);
-            }
-
-            $indexFile = $indexPath . '/index.json';
-            $indexData = [
-                'version' => '1.0.0',
-                'updated_at' => date('c'),
-                'documents' => 0,
-                'status' => 'placeholder',
-            ];
-
-            file_put_contents($indexFile, json_encode($indexData, JSON_PRETTY_PRINT));
-            $io->text("  <info>\u{2713}</info> Created .bricklayer/docs-index/index.json");
-        } catch (\Throwable $e) {
-            $io->text("  <comment>\u{2717}</comment> Failed to create doc index: " . $e->getMessage());
-        }
     }
 
     private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array

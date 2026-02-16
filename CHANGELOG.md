@@ -1,3 +1,7 @@
+# 1.9.1
+* Added automated verify command for installation verification
+* Removed unused doc index files
+
 # 1.9.0
 * Fixed module generator
 * Added MCP efficiency features (batch-execute, count_only, fields filter, verbosity, truncation)

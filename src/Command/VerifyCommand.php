@@ -56,7 +56,6 @@ Checks include:
   - Deploy mode
   - MCP server creation and tool count
   - Agent configuration files
-  - Documentation index
   - PsySH availability
   - Database connectivity
   - Log directory writability
@@ -80,7 +79,6 @@ HELP
         $this->checkDeployMode();
         $this->checkMcpServer();
         $this->checkAgentConfigs($magentoRoot);
-        $this->checkDocIndex($magentoRoot);
         $this->checkPsySH();
         $this->checkDatabase();
         $this->checkLogDirectory($magentoRoot);
@@ -246,21 +244,6 @@ HELP
             $this->addResult('Agent config', 'pass', implode(', ', $found));
         } else {
             $this->addResult('Agent config', 'warn', 'not found (run: bricklayer install)');
-        }
-    }
-
-    private function checkDocIndex(?string $magentoRoot): void
-    {
-        if ($magentoRoot === null) {
-            $this->addResult('Doc index', 'fail', 'Magento root not found');
-            return;
-        }
-
-        $indexPath = $magentoRoot . '/.bricklayer/docs-index';
-        if (is_dir($indexPath)) {
-            $this->addResult('Doc index', 'pass', 'present');
-        } else {
-            $this->addResult('Doc index', 'warn', 'not found (run: bricklayer update)');
         }
     }
 
