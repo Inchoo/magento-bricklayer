@@ -141,7 +141,6 @@ class ConfigValidator
         $this->validateTools($config['tools'] ?? []);
         $this->validateGuidelines($config['guidelines'] ?? []);
         $this->validateAgents($config['agents'] ?? []);
-        $this->validateDocumentation($config['documentation'] ?? []);
 
         return empty($this->errors);
     }
@@ -271,22 +270,6 @@ class ConfigValidator
 
             if (!in_array($agent, self::KNOWN_AGENTS, true)) {
                 $this->warnings[] = "Unknown agent: '$agent'";
-            }
-        }
-    }
-
-    private function validateDocumentation(mixed $documentation): void
-    {
-        if (!is_array($documentation)) {
-            if ($documentation !== null) {
-                $this->errors[] = "Configuration 'documentation' must be an array";
-            }
-            return;
-        }
-
-        if (isset($documentation['index_path'])) {
-            if (!is_string($documentation['index_path'])) {
-                $this->errors[] = "Documentation 'index_path' must be a string";
             }
         }
     }
