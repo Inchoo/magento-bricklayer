@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Config;
 
+use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Exception\ConfigurationException;
 
 /**
@@ -41,6 +42,10 @@ class ConfigLoader
     {
         if ($this->config !== null && $this->projectRoot === $projectRoot) {
             return $this->config;
+        }
+
+        if ($projectRoot === null) {
+            $projectRoot = MagentoBootstrap::getMagentoRoot();
         }
 
         $this->projectRoot = $projectRoot;

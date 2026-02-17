@@ -1,3 +1,6 @@
+# 1.9.4
+* Added root directory check to config loader
+
 # 1.9.3
 * Fixed layer resolver instantiation on code-runner
 
