@@ -115,6 +115,8 @@ class CodeRunnerTools
         $previousLimit = (int) ini_get('max_execution_time');
         set_time_limit($effectiveTimeout);
 
+        $this->resetApplicationState();
+
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $startQueries = $this->getQueryCount();
@@ -443,6 +445,42 @@ class CodeRunnerTools
             return (int) $configLoader->get('tools.code-runner.max_timeout', 60);
         } catch (\Throwable $e) {
             return 60;
+        }
+    }
+
+    /**
+     * Reset Magento application state between code-runner calls.
+     *
+     * The MCP server is a long-lived process, so singletons retain state
+     * across invocations. This clears known stateful singletons to prevent
+     * errors like "Registry key already exists" or "Layer already created".
+     */
+    private function resetApplicationState(): void
+    {
+        if (!MagentoBootstrap::isInitialized()) {
+            return;
+        }
+
+        $om = MagentoBootstrap::getObjectManager();
+
+        // Clear the Registry (current_category, current_product, etc.)
+        try {
+            $registry = $om->get(\Magento\Framework\Registry::class);
+            foreach (['current_category', 'current_product', 'current_order', 'current_customer', 'current_invoice', 'current_shipment', 'current_creditmemo', 'current_cms_page'] as $key) {
+                $registry->unregister($key);
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // Reset the Catalog Layer Resolver so a new layer can be created
+        try {
+            $resolver = $om->get(\Magento\Catalog\Model\Layer\Resolver::class);
+            $ref = new \ReflectionProperty($resolver, 'layer');
+            $ref->setAccessible(true);
+            $ref->setValue($resolver, null);
+        } catch (\Throwable $e) {
+            // ignore
         }
     }
 

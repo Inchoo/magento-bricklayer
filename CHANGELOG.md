@@ -1,3 +1,6 @@
+# 1.9.2
+* Added application state reset before code-runner actions to remove stale app context
+
 # 1.9.1
 * Added automated verify command for installation verification
 * Removed unused doc index files

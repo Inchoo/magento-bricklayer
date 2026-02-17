@@ -302,6 +302,16 @@ class CodeRunnerToolsTest extends TestCase
         $this->assertEquals('array', $property->getType()?->getName());
     }
 
+    // ─── State reset ───
+
+    public function testResetApplicationStateMethodExists(): void
+    {
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $method = $ref->getMethod('resetApplicationState');
+        $this->assertTrue($method->isPrivate());
+        $this->assertEquals('void', $method->getReturnType()?->getName());
+    }
+
     // ─── Dangerous patterns count ───
 
     public function testDangerousPatternsCount(): void
