@@ -1,3 +1,6 @@
+# 1.9.3
+* Fixed layer resolver instantiation on code-runner
+
 # 1.9.2
 * Added application state reset before code-runner actions to remove stale app context
 

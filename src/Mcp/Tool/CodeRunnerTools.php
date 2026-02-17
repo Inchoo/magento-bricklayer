@@ -473,14 +473,35 @@ class CodeRunnerTools
             // ignore
         }
 
-        // Reset the Catalog Layer Resolver so a new layer can be created
+        // Reset stateful singletons only if they were already instantiated.
+        // Using the ObjectManager's shared instance pool avoids eagerly
+        // creating singletons that were never used.
+        $this->resetSharedInstance($om, \Magento\Catalog\Model\Layer\Resolver::class, 'layer');
+    }
+
+    /**
+     * Reset a property on an already-instantiated singleton.
+     *
+     * Checks the ObjectManager's shared instance pool first so we never
+     * trigger dependency resolution for singletons that weren't used.
+     */
+    private function resetSharedInstance(object $om, string $className, string $propertyName): void
+    {
         try {
-            $resolver = $om->get(\Magento\Catalog\Model\Layer\Resolver::class);
-            $ref = new \ReflectionProperty($resolver, 'layer');
-            $ref->setAccessible(true);
-            $ref->setValue($resolver, null);
+            $omRef = new \ReflectionProperty($om, '_sharedInstances');
+            $omRef->setAccessible(true);
+            $sharedInstances = $omRef->getValue($om);
+
+            if (!isset($sharedInstances[$className])) {
+                return;
+            }
+
+            $instance = $sharedInstances[$className];
+            $propRef = new \ReflectionProperty($instance, $propertyName);
+            $propRef->setAccessible(true);
+            $propRef->setValue($instance, null);
         } catch (\Throwable $e) {
-            // ignore
+            // ignore — class may not exist or property may differ
         }
     }
 
