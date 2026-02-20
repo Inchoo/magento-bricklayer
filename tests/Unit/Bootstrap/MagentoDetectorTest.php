@@ -112,10 +112,14 @@ class MagentoDetectorTest extends TestCase
         $this->assertEquals('2.4.7', $result);
     }
 
-    public function testGetEnvironmentTypeReturnsNativeByDefault(): void
+    public function testGetEnvironmentTypeReturnsNativeOrDockerByDefault(): void
     {
         $result = $this->detector->getEnvironmentType($this->tempDir);
-        $this->assertEquals('native', $result);
+
+        // When running inside Docker (e.g. ddev), /.dockerenv exists → 'docker'.
+        // On a bare host the fallback is 'native'.
+        $isDocker = file_exists('/.dockerenv') || getenv('DOCKER_CONTAINER') !== false;
+        $this->assertEquals($isDocker ? 'docker' : 'native', $result);
     }
 
     public function testGetEnvironmentTypeReturnsDdevWhenDdevConfigExists(): void

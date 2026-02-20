@@ -9,18 +9,21 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class DatabaseTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'database-schema',
         description: 'Returns database table structure with columns, indexes, and foreign keys'
     )]
     public function getDatabaseSchema(string $table = '', string $pattern = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -53,8 +56,8 @@ class DatabaseTools
     )]
     public function executeQuery(string $query, int $limit = 100): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         $trimmedQuery = trim($query);

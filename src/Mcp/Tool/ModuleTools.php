@@ -9,18 +9,21 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class ModuleTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'module-list',
         description: 'Lists all installed Magento modules. Use verbosity (minimal/standard/detailed) to control response size. Set count_only=true to get total count without data.'
     )]
     public function listModules(bool $enabledOnly = false, string $vendor = '', bool $count_only = false, string $verbosity = 'standard'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
@@ -117,8 +120,8 @@ class ModuleTools
     )]
     public function getModuleStructure(string $moduleName): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

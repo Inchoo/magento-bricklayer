@@ -33,4 +33,9 @@ class ToolException extends BricklayerException
         }
         return new self($message);
     }
+
+    public static function magentoNotInitialized(): self
+    {
+        return new self('Magento not initialized');
+    }
 }

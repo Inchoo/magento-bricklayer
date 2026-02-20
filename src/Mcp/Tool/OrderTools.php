@@ -9,18 +9,22 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class OrderTools
 {
+    use FiltersFields;
+    use RequiresMagento;
     #[McpTool(
         name: 'order-get',
         description: 'Retrieves order data by increment ID. Use fields to limit response.'
     )]
     public function getOrder(string $incrementId, string $fields = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if ($incrementId === '') {
@@ -61,8 +65,8 @@ class OrderTools
         bool $count_only = false,
         string $fields = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -116,8 +120,8 @@ class OrderTools
         string $status = '',
         bool $notifyCustomer = false
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -146,7 +150,7 @@ class OrderTools
                 'status' => $order->getStatus(),
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -157,8 +161,8 @@ class OrderTools
     )]
     public function cancelOrder(int $orderId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -171,7 +175,7 @@ class OrderTools
                 'message' => $result ? 'Order cancelled' : 'Failed to cancel order',
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -182,8 +186,8 @@ class OrderTools
     )]
     public function holdOrder(int $orderId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -196,7 +200,7 @@ class OrderTools
                 'message' => 'Order placed on hold',
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -207,8 +211,8 @@ class OrderTools
     )]
     public function unholdOrder(int $orderId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -221,7 +225,7 @@ class OrderTools
                 'message' => 'Order released from hold',
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -232,8 +236,8 @@ class OrderTools
     )]
     public function createInvoice(int $orderId, bool $capture = true, bool $notify = true): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -247,7 +251,7 @@ class OrderTools
                 'captured' => $capture,
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -258,8 +262,8 @@ class OrderTools
     )]
     public function createShipment(int $orderId, bool $notify = true): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -272,7 +276,7 @@ class OrderTools
                 'order_id' => $orderId,
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -283,8 +287,8 @@ class OrderTools
     )]
     public function createCreditMemo(int $orderId, bool $notify = true): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -297,7 +301,7 @@ class OrderTools
                 'order_id' => $orderId,
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -307,8 +311,8 @@ class OrderTools
     )]
     public function getOrderItems(int $orderId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -355,8 +359,8 @@ class OrderTools
     )]
     public function getOrderComments(int $orderId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -395,8 +399,8 @@ class OrderTools
     )]
     public function listInvoices(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -448,8 +452,8 @@ class OrderTools
     )]
     public function listShipments(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -514,8 +518,8 @@ class OrderTools
         string $title,
         string $trackNumber
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -542,9 +546,9 @@ class OrderTools
                 'track_number' => $trackNumber,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Shipment not found: $shipmentId"];
+            return ['error' => true, 'message' => "Shipment not found: $shipmentId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -554,8 +558,8 @@ class OrderTools
     )]
     public function listCreditMemos(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -644,13 +648,4 @@ class OrderTools
         return $this->filterFields($data, $fields);
     }
 
-    private function filterFields(array $data, string $fields): array
-    {
-        if ($fields === '') {
-            return $data;
-        }
-
-        $requested = array_map('trim', explode(',', $fields));
-        return array_intersect_key($data, array_flip($requested));
-    }
 }

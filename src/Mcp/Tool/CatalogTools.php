@@ -9,6 +9,9 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -18,6 +21,9 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class CatalogTools
 {
+    use FiltersFields;
+    use RequiresMagento;
+    use SecureArea;
     /**
      * Retrieves product data by SKU or ID.
      *
@@ -31,8 +37,8 @@ class CatalogTools
     )]
     public function getProduct(string $sku = '', int $storeId = 0, string $fields = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if ($sku === '') {
@@ -72,8 +78,8 @@ class CatalogTools
         bool $count_only = false,
         string $fields = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -134,8 +140,8 @@ class CatalogTools
         int $attributeSetId = 4,
         string $typeId = 'simple'
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -155,7 +161,7 @@ class CatalogTools
 
             return ['success' => true, 'product' => $this->formatProductData($savedProduct, true)];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -178,8 +184,8 @@ class CatalogTools
         float $price = -1,
         int $status = 0
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -200,9 +206,9 @@ class CatalogTools
 
             return ['success' => true, 'product' => $this->formatProductData($savedProduct, true)];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Product not found: $sku"];
+            return ['error' => true, 'message' => "Product not found: $sku"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -218,8 +224,8 @@ class CatalogTools
     )]
     public function getProductStock(string $sku): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -255,8 +261,8 @@ class CatalogTools
     )]
     public function updateProductStock(string $sku, float $qty, bool $isInStock = true): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -269,7 +275,7 @@ class CatalogTools
 
             return ['success' => true, 'sku' => $sku, 'qty' => $qty, 'is_in_stock' => $isInStock];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -286,8 +292,8 @@ class CatalogTools
     )]
     public function getCategoryTree(int $rootId = 1, int $depth = 3): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -313,8 +319,8 @@ class CatalogTools
     )]
     public function getCategory(int $categoryId, int $storeId = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -352,27 +358,21 @@ class CatalogTools
     )]
     public function deleteProduct(string $sku): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
-        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
-
         try {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', true);
+            return $this->withSecureArea(function () use ($sku) {
+                $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
+                $productRepository->deleteById($sku);
 
-            $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
-            $productRepository->deleteById($sku);
-
-            return ['success' => true, 'message' => "Product $sku deleted"];
+                return ['success' => true, 'message' => "Product $sku deleted"];
+            });
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Product not found: $sku"];
+            return ['error' => true, 'message' => "Product not found: $sku"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        } finally {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', false);
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -388,8 +388,8 @@ class CatalogTools
     )]
     public function listProductMedia(string $sku): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -436,8 +436,8 @@ class CatalogTools
         string $label = '',
         int $position = 0
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if ($file === '') {
@@ -470,7 +470,7 @@ class CatalogTools
 
             return ['success' => true, 'sku' => $sku, 'media_id' => $id];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -487,8 +487,8 @@ class CatalogTools
     )]
     public function listProductLinks(string $sku, string $linkType = 'related'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         $validTypes = ['related', 'upsell', 'crosssell'];
@@ -529,8 +529,8 @@ class CatalogTools
     )]
     public function setProductLinks(string $sku, string $linkType, string $linkedSkus): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         $validTypes = ['related', 'upsell', 'crosssell'];
@@ -558,7 +558,7 @@ class CatalogTools
 
             return ['success' => true, 'sku' => $sku, 'link_type' => $linkType, 'linked_count' => count($links)];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -581,8 +581,8 @@ class CatalogTools
         bool $isActive = true,
         string $urlKey = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -610,7 +610,7 @@ class CatalogTools
                 ],
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -633,8 +633,8 @@ class CatalogTools
         bool $isActive = true,
         string $urlKey = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -660,9 +660,9 @@ class CatalogTools
                 ],
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Category not found: $categoryId"];
+            return ['error' => true, 'message' => "Category not found: $categoryId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -678,27 +678,21 @@ class CatalogTools
     )]
     public function deleteCategory(int $categoryId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
-        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
-
         try {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', true);
+            return $this->withSecureArea(function () use ($categoryId) {
+                $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
+                $categoryRepository->deleteByIdentifier($categoryId);
 
-            $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
-            $categoryRepository->deleteByIdentifier($categoryId);
-
-            return ['success' => true, 'message' => "Category $categoryId deleted"];
+                return ['success' => true, 'message' => "Category $categoryId deleted"];
+            });
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Category not found: $categoryId"];
+            return ['error' => true, 'message' => "Category not found: $categoryId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        } finally {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', false);
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -716,8 +710,8 @@ class CatalogTools
     )]
     public function listCategoryProducts(int $categoryId, int $pageSize = 20, int $currentPage = 1): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -772,8 +766,8 @@ class CatalogTools
     )]
     public function assignProductsToCategory(int $categoryId, string $skus, string $positions = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -787,7 +781,7 @@ class CatalogTools
 
             return ['success' => true, 'category_id' => $categoryId, 'assigned_count' => count($skuList)];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -855,13 +849,4 @@ class CatalogTools
         return $data;
     }
 
-    private function filterFields(array $data, string $fields): array
-    {
-        if ($fields === '') {
-            return $data;
-        }
-
-        $requested = array_map('trim', explode(',', $fields));
-        return array_intersect_key($data, array_flip($requested));
-    }
 }

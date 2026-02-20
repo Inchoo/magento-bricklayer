@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ReadsLogFiles;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic\ExceptionParser;
 use Mcp\Capability\Attribute\McpTool;
 
@@ -23,6 +24,7 @@ use Mcp\Capability\Attribute\McpTool;
 class DiagnosticTools
 {
     use ReadsLogFiles;
+    use RequiresMagento;
 
     /**
      * Log file sources mapped to their relative paths.
@@ -386,8 +388,8 @@ class DiagnosticTools
         string $pattern = '',
         string $verbosity = 'standard'
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {

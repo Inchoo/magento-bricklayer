@@ -9,6 +9,9 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -18,6 +21,9 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class CustomerTools
 {
+    use FiltersFields;
+    use RequiresMagento;
+    use SecureArea;
     /**
      * Retrieves customer data by email.
      *
@@ -30,8 +36,8 @@ class CustomerTools
     )]
     public function getCustomer(string $email, string $fields = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if ($email === '') {
@@ -71,8 +77,8 @@ class CustomerTools
         bool $count_only = false,
         string $fields = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -133,8 +139,8 @@ class CustomerTools
         int $storeId = 1,
         int $groupId = 1
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -152,7 +158,7 @@ class CustomerTools
 
             return ['success' => true, 'customer' => $this->formatCustomerData($savedCustomer, true)];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -175,8 +181,8 @@ class CustomerTools
         string $lastname = '',
         int $groupId = 0
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -197,9 +203,9 @@ class CustomerTools
 
             return ['success' => true, 'customer' => $this->formatCustomerData($savedCustomer, true)];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Customer not found: $customerId"];
+            return ['error' => true, 'message' => "Customer not found: $customerId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -215,25 +221,19 @@ class CustomerTools
     )]
     public function deleteCustomer(int $customerId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
-        $registry = MagentoBootstrap::get(\Magento\Framework\Registry::class);
-
         try {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', true);
+            return $this->withSecureArea(function () use ($customerId) {
+                $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
+                $customerRepository->deleteById($customerId);
 
-            $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
-            $customerRepository->deleteById($customerId);
-
-            return ['success' => true, 'message' => "Customer $customerId deleted"];
+                return ['success' => true, 'message' => "Customer $customerId deleted"];
+            });
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        } finally {
-            $registry->unregister('isSecureArea');
-            $registry->register('isSecureArea', false);
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -248,8 +248,8 @@ class CustomerTools
     )]
     public function listCustomerGroups(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -287,8 +287,8 @@ class CustomerTools
     )]
     public function getCustomerOrders(int $customerId, int $pageSize = 20, int $currentPage = 1): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -341,8 +341,8 @@ class CustomerTools
     )]
     public function getCustomerAddresses(int $customerId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -399,8 +399,8 @@ class CustomerTools
         bool $defaultBilling = false,
         bool $defaultShipping = false
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -433,7 +433,7 @@ class CustomerTools
                 'address' => $this->formatAddressData($savedAddress),
             ];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -462,8 +462,8 @@ class CustomerTools
         string $postcode = '',
         string $telephone = ''
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -496,9 +496,9 @@ class CustomerTools
                 'address' => $this->formatAddressData($savedAddress),
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Address not found: $addressId"];
+            return ['error' => true, 'message' => "Address not found: $addressId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -514,8 +514,8 @@ class CustomerTools
     )]
     public function deleteCustomerAddress(int $addressId): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -524,9 +524,9 @@ class CustomerTools
 
             return ['success' => true, 'message' => "Address $addressId deleted"];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['success' => false, 'error' => "Address not found: $addressId"];
+            return ['error' => true, 'message' => "Address not found: $addressId"];
         } catch (\Throwable $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['error' => true, 'message' => $e->getMessage()];
         }
     }
 
@@ -549,8 +549,8 @@ class CustomerTools
         string $lastname = '',
         int $websiteId = 1
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         $errors = [];
@@ -646,13 +646,4 @@ class CustomerTools
         return $this->filterFields($data, $fields);
     }
 
-    private function filterFields(array $data, string $fields): array
-    {
-        if ($fields === '') {
-            return $data;
-        }
-
-        $requested = array_map('trim', explode(',', $fields));
-        return array_intersect_key($data, array_flip($requested));
-    }
 }

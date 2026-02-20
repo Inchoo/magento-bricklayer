@@ -9,10 +9,13 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class EavTools
 {
+    use RequiresMagento;
+
     private const SUPPORTED_ENTITY_TYPES = [
         'catalog_product',
         'catalog_category',
@@ -26,8 +29,8 @@ class EavTools
     )]
     public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if (!in_array($entityType, self::SUPPORTED_ENTITY_TYPES, true)) {
@@ -117,8 +120,8 @@ class EavTools
     )]
     public function getEntityTypes(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

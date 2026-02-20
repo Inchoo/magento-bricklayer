@@ -11,12 +11,17 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\AreaEmulator;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class CodeRunnerTools
 {
+    use RequiresMagento;
+
     /** @var array<int, array{label: string, value: mixed}> */
     private array $logBuffer = [];
+
+    private ?ConfigLoader $configLoader = null;
 
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
@@ -51,11 +56,8 @@ class CodeRunnerTools
         bool $allow_write = false,
         int $timeout = 30
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return [
-                'success' => false,
-                'error' => 'Magento not initialized. Code runner requires a bootstrapped Magento environment.',
-            ];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -64,8 +66,8 @@ class CodeRunnerTools
 
             if ($mode === \Magento\Framework\App\State::MODE_PRODUCTION) {
                 return [
-                    'success' => false,
-                    'error' => 'Code runner is disabled in production mode for security reasons.',
+                    'error' => true,
+                    'message' => 'Code runner is disabled in production mode for security reasons.',
                     'mode' => $mode,
                 ];
             }
@@ -74,9 +76,9 @@ class CodeRunnerTools
         }
 
         try {
-            $configLoader = new ConfigLoader();
+            $configLoader = $this->getConfigLoader();
             if (!$configLoader->isToolEnabled('code-runner')) {
-                return ['success' => false, 'error' => 'Code runner is disabled in configuration.'];
+                return ['error' => true, 'message' => 'Code runner is disabled in configuration.'];
             }
             $configAllowWrite = (bool) $configLoader->get('tools.code-runner.allow_write', false);
             if ($allow_write && !$configAllowWrite) {
@@ -89,8 +91,8 @@ class CodeRunnerTools
         $validationError = $this->validateCode($code);
         if ($validationError !== null) {
             return [
-                'success' => false,
-                'error' => $validationError,
+                'error' => true,
+                'message' => $validationError,
                 'code' => $code,
             ];
         }
@@ -99,8 +101,8 @@ class CodeRunnerTools
             $areaEmulator = new AreaEmulator();
             if (!$areaEmulator->isValidArea($area)) {
                 return [
-                    'success' => false,
-                    'error' => sprintf(
+                    'error' => true,
+                    'message' => sprintf(
                         'Invalid area "%s". Available: %s',
                         $area,
                         implode(', ', $areaEmulator->getAvailableAreas())
@@ -298,8 +300,8 @@ class CodeRunnerTools
             return $result;
         } catch (\Throwable $e) {
             return [
-                'success' => false,
-                'error' => 'PsySH execution failed: ' . $e->getMessage(),
+                'error' => true,
+                'message' => 'PsySH execution failed: ' . $e->getMessage(),
                 'mode' => $mode,
             ];
         }
@@ -359,8 +361,8 @@ class CodeRunnerTools
             return $result;
         } catch (\Throwable $e) {
             return [
-                'success' => false,
-                'error' => 'Execution failed: ' . $e->getMessage(),
+                'error' => true,
+                'message' => 'Execution failed: ' . $e->getMessage(),
                 'mode' => $mode,
             ];
         }
@@ -441,11 +443,15 @@ class CodeRunnerTools
     private function getMaxTimeout(): int
     {
         try {
-            $configLoader = new ConfigLoader();
-            return (int) $configLoader->get('tools.code-runner.max_timeout', 60);
+            return (int) $this->getConfigLoader()->get('tools.code-runner.max_timeout', 60);
         } catch (\Throwable $e) {
             return 60;
         }
+    }
+
+    private function getConfigLoader(): ConfigLoader
+    {
+        return $this->configLoader ??= new ConfigLoader();
     }
 
     /**

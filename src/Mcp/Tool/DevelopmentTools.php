@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -18,6 +19,8 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class DevelopmentTools
 {
+    use RequiresMagento;
+
     /**
      * Returns cache status for all cache types.
      *
@@ -29,8 +32,8 @@ class DevelopmentTools
     )]
     public function getCacheStatus(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -74,8 +77,8 @@ class DevelopmentTools
     )]
     public function getIndexerStatus(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -129,8 +132,8 @@ class DevelopmentTools
     )]
     public function getCronList(string $group = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -182,8 +185,8 @@ class DevelopmentTools
     )]
     public function getCronHistory(string $jobCode = '', int $limit = 50): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -236,8 +239,8 @@ class DevelopmentTools
     )]
     public function getDeployMode(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -270,8 +273,8 @@ class DevelopmentTools
     )]
     public function validateModule(string $moduleName): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

@@ -12,13 +12,13 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Mcp\Capability\Registry\Container;
 use Mcp\Schema\ServerCapabilities;
 use Mcp\Server;
+use Inchoo\MagentoBricklayer\Application;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 class McpServerFactory
 {
     private const SERVER_NAME = 'magento-bricklayer';
-    private const SERVER_VERSION = '1.0.0';
 
     public function create(?LoggerInterface $logger = null): Server
     {
@@ -30,7 +30,7 @@ class McpServerFactory
         $container->set(LoggerInterface::class, $logger);
 
         return Server::builder()
-            ->setServerInfo(self::SERVER_NAME, self::SERVER_VERSION)
+            ->setServerInfo(self::SERVER_NAME, Application::getComposerVersion())
             ->setLogger($logger)
             ->setContainer($container)
             ->setInstructions($this->getServerInstructions())

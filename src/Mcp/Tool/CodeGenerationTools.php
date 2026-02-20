@@ -9,10 +9,13 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class CodeGenerationTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'generate-module',
         description: 'Scaffolds a new Magento 2 module with required files'

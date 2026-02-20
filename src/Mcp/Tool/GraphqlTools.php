@@ -9,18 +9,21 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class GraphqlTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'graphql-types',
         description: 'Lists GraphQL schema types registered in Magento'
     )]
     public function getGraphqlTypes(string $typeName = '', string $kind = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -74,8 +77,8 @@ class GraphqlTools
     )]
     public function getGraphqlTypeInfo(string $typeName): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -150,8 +153,8 @@ class GraphqlTools
     )]
     public function getGraphqlQueries(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -198,8 +201,8 @@ class GraphqlTools
     )]
     public function getGraphqlMutations(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -245,8 +248,8 @@ class GraphqlTools
     )]
     public function getGraphqlResolvers(string $typeName = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
