@@ -18,12 +18,24 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 class Application extends ConsoleApplication
 {
     public const NAME = 'Magento Bricklayer';
-    public const VERSION = '1.0.0';
+
+    private static ?string $version = null;
 
     public function __construct()
     {
-        parent::__construct(self::NAME, self::VERSION);
+        parent::__construct(self::NAME, self::getComposerVersion());
         $this->registerCommands();
+    }
+
+    public static function getComposerVersion(): string
+    {
+        if (self::$version === null) {
+            $composerFile = dirname(__DIR__) . '/composer.json';
+            $data = json_decode((string) file_get_contents($composerFile), true);
+            self::$version = $data['version'] ?? 'dev';
+        }
+
+        return self::$version;
     }
 
     private function registerCommands(): void

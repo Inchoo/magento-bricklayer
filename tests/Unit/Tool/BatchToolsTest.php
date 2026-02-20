@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\BatchTools;
+use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use PHPUnit\Framework\TestCase;
 
 class BatchToolsTest extends TestCase
@@ -18,10 +19,8 @@ class BatchToolsTest extends TestCase
     protected function setUp(): void
     {
         $this->batch = new BatchTools();
-        // Reset static cache between tests
-        $ref = new \ReflectionClass(BatchTools::class);
-        $prop = $ref->getProperty('toolRegistry');
-        $prop->setValue(null, null);
+        // Reset ToolRegistry cache between tests
+        ToolRegistry::reset();
     }
 
     public function testRejectsInvalidJson(): void

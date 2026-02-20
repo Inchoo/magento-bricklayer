@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ReadsLogFiles;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -20,6 +21,7 @@ use Mcp\Capability\Attribute\McpTool;
 class LogTools
 {
     use ReadsLogFiles;
+    use RequiresMagento;
     /**
      * Available Magento log files
      */
@@ -46,8 +48,8 @@ class LogTools
     )]
     public function readLog(string $logType = 'system', int $lines = 100, string $filter = '', int $max_entry_length = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if (!isset(self::LOG_FILES[$logType])) {
@@ -129,8 +131,8 @@ class LogTools
     )]
     public function listLogs(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -200,8 +202,8 @@ class LogTools
     )]
     public function analyzeExceptionLog(int $hours = 24): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -284,8 +286,8 @@ class LogTools
     )]
     public function searchLogs(string $query, int $maxResults = 50, int $max_entry_length = 0): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         if (strlen($query) < 3) {

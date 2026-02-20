@@ -12,6 +12,7 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Mcp\McpServerFactory;
+use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -196,27 +197,7 @@ HELP
 
     private function countMcpTools(): int
     {
-        $toolDir = dirname(__DIR__) . '/Mcp/Tool';
-        if (!is_dir($toolDir)) {
-            return 0;
-        }
-
-        $count = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->getExtension() !== 'php') {
-                continue;
-            }
-            $content = file_get_contents($file->getPathname());
-            if ($content !== false) {
-                $count += substr_count($content, '#[McpTool(');
-            }
-        }
-
-        return $count;
+        return ToolRegistry::getInstance()->count();
     }
 
     private function checkAgentConfigs(?string $magentoRoot): void

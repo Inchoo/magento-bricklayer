@@ -1,3 +1,13 @@
+# 1.9.5
+* Extracted ToolRegistry singleton for centralized tool scanning (replaces static caches in BatchTools/SearchTools)
+* Extracted shared traits: FiltersFields, SecureArea, RequiresMagento
+* Replaced hardcoded version constant with dynamic reading from composer.json
+* Replaced static DOCUMENTATION_INDEX with runtime generation from CATEGORY_MAP
+* Standardized error responses across CatalogTools, CustomerTools, OrderTools, CodeRunnerTools
+* Applied RequiresMagento trait to all 15 Magento-dependent tool classes
+* Used match expressions in BatchTools result summarization
+* Fixed unit tests for BatchTools, SearchTools, and MagentoDetector
+
 # 1.9.4
 * Added root directory check to config loader
 

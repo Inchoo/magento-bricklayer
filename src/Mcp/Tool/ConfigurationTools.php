@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -18,6 +19,8 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class ConfigurationTools
 {
+    use RequiresMagento;
+
     /**
      * Sensitive configuration paths that should be masked
      */
@@ -49,8 +52,8 @@ class ConfigurationTools
         string $scopeType = 'default',
         int $scopeCode = 0
     ): array {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -97,8 +100,8 @@ class ConfigurationTools
     )]
     public function getDiConfiguration(string $className, string $area = 'global'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -146,8 +149,8 @@ class ConfigurationTools
     )]
     public function getPluginList(string $className, string $method = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -204,8 +207,8 @@ class ConfigurationTools
     )]
     public function getEventList(string $eventName = '', string $area = 'global'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         $validAreas = ['global', 'frontend', 'adminhtml', 'webapi_rest', 'webapi_soap', 'graphql', 'crontab'];
@@ -322,8 +325,8 @@ class ConfigurationTools
     )]
     public function listConfiguration(string $section = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -388,8 +391,8 @@ class ConfigurationTools
     )]
     public function getPreferenceList(string $interface = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

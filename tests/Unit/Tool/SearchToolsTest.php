@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\SearchTools;
+use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use PHPUnit\Framework\TestCase;
 
 class SearchToolsTest extends TestCase
@@ -18,10 +19,8 @@ class SearchToolsTest extends TestCase
     protected function setUp(): void
     {
         $this->search = new SearchTools();
-        // Reset static cache between tests
-        $ref = new \ReflectionClass(SearchTools::class);
-        $prop = $ref->getProperty('toolCache');
-        $prop->setValue(null, null);
+        // Reset ToolRegistry cache between tests
+        ToolRegistry::reset();
     }
 
     public function testSearchToolsReturnsStructure(): void

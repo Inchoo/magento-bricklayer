@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 86 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 89 tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -234,7 +234,10 @@ This is useful when container names vary between environments or are dynamically
 - `cron-list` - Configured cron jobs with schedule expressions
 - `cron-history` - Recent cron execution history with optional job code filtering
 - `code-runner` - Execute PHP code in Magento context with helper functions, area emulation, read-only mode, and metrics
+- `code-runner-help` - Returns detailed code-runner usage guide with helpers, variables, areas, and examples
 - `search-docs` - Semantic documentation search
+- `search-tools` - Search available MCP tools by keyword or group with configurable detail level
+- `batch-execute` - Execute multiple tool operations in a single call (max 20)
 
 ### Log Tools
 - `log-read` - Read recent entries from log files (system, exception, debug, cron)
@@ -289,11 +292,14 @@ code-runner(code, area="", allow_write=false, timeout=30)
 - `$create(ClassName::class, ['arg' => val])` - Create new instance
 - `$repo(RepositoryInterface::class)` - Alias for `$get()`, semantic sugar for repositories
 - `$config('section/group/field')` - Read system configuration value
+- `query('SELECT ...', $binds)` - Execute a read-only SELECT query, returns array of rows
+- `runLog($value, 'label')` - Capture values to return in the response `log` key
 
 **Response includes:**
 - `success`, `output`, `return`, `error` - Standard execution result
 - `read_only` - Whether DB changes were rolled back
 - `area` - Effective area code (if specified)
+- `log` - Values captured via `runLog()` helper
 - `metrics` - Execution time (ms), memory delta (MB), peak memory (MB), queries executed
 
 The tool validates code against 9 dangerous patterns (shell execution, file writes, superglobals, cURL, eval, header manipulation, global handler registration, long sleeps). Disabled in production mode and configurable via `.bricklayer.json`.

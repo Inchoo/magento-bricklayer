@@ -9,18 +9,21 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class RoutingTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'route-list',
         description: 'Lists all configured Magento frontend and admin routes'
     )]
     public function getRouteList(string $area = 'frontend'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -59,8 +62,8 @@ class RoutingTools
     )]
     public function getApiEndpoints(string $method = '', string $path = ''): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -112,8 +115,8 @@ class RoutingTools
     )]
     public function getRouteInfo(string $frontName, string $area = 'frontend'): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -162,8 +165,8 @@ class RoutingTools
     )]
     public function getUrlRewrites(string $requestPath = '', int $storeId = 0, int $limit = 100): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

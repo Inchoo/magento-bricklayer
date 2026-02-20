@@ -23,9 +23,6 @@ class BatchTools
         'code-runner-help',
     ];
 
-    /** @var array<string, array{object, \ReflectionMethod}>|null */
-    private static ?array $toolRegistry = null;
-
     #[McpTool(
         name: 'batch-execute',
         description: 'Executes multiple tool operations in one call. Returns consolidated results. '
@@ -54,7 +51,7 @@ class BatchTools
         }
 
         // Validate all operations before executing any
-        $registry = $this->getToolRegistry();
+        $registry = ToolRegistry::getInstance()->getAllCallables();
         $validationErrors = [];
 
         foreach ($operations as $i => $op) {
@@ -139,57 +136,6 @@ class BatchTools
     }
 
     /**
-     * Build a registry of tool name -> [instance, ReflectionMethod].
-     * Cached in static property for server lifetime.
-     */
-    private function getToolRegistry(): array
-    {
-        if (self::$toolRegistry !== null) {
-            return self::$toolRegistry;
-        }
-
-        $toolDir = __DIR__;
-        $namespace = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\';
-        $registry = [];
-
-        foreach (glob($toolDir . '/*.php') as $file) {
-            $className = pathinfo($file, PATHINFO_FILENAME);
-            $fqcn = $namespace . $className;
-
-            if (!class_exists($fqcn)) {
-                continue;
-            }
-
-            $ref = new \ReflectionClass($fqcn);
-
-            if ($ref->isAbstract() || $ref->isInterface()) {
-                continue;
-            }
-
-            $instance = null;
-
-            foreach ($ref->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                $attrs = $method->getAttributes(\Mcp\Capability\Attribute\McpTool::class);
-                if (empty($attrs)) {
-                    continue;
-                }
-
-                $attr = $attrs[0]->newInstance();
-                $toolName = $attr->name ?? $method->getName();
-
-                if ($instance === null) {
-                    $instance = $ref->newInstance();
-                }
-
-                $registry[$toolName] = [$instance, $method];
-            }
-        }
-
-        self::$toolRegistry = $registry;
-        return $registry;
-    }
-
-    /**
      * Resolve named params to positional args based on method reflection.
      */
     private function resolveArguments(\ReflectionMethod $method, array $params): array
@@ -216,25 +162,25 @@ class BatchTools
      */
     private function summarizeResult(string $toolName, array $params, array $result): string
     {
-        if (str_contains($toolName, 'stock-update') && isset($params['sku'])) {
-            return "Updated stock for {$params['sku']}";
-        }
+        return match ($toolName) {
+            'product-stock-update' => sprintf('Updated stock for %s', $params['sku'] ?? 'unknown'),
+            'product-update' => sprintf('Updated product %s', $params['sku'] ?? 'unknown'),
+            'category-update' => sprintf('Updated category %d', $params['categoryId'] ?? 0),
+            'customer-update' => sprintf('Updated customer %d', $params['customerId'] ?? 0),
+            'order-add-comment' => sprintf('Added comment to order %d', $params['orderId'] ?? 0),
+            default => $this->summarizeByPattern($toolName, $result),
+        };
+    }
 
-        if (str_contains($toolName, 'update') && isset($params['sku'])) {
-            return "Updated product {$params['sku']}";
-        }
-
-        if (str_contains($toolName, 'add-comment') && isset($params['incrementId'])) {
-            return "Added comment to order {$params['incrementId']}";
-        }
-
+    private function summarizeByPattern(string $toolName, array $result): string
+    {
         if (str_contains($toolName, 'create')) {
             $id = $result['id'] ?? $result['entity_id'] ?? $result['increment_id'] ?? null;
             return $id ? "Created (ID: {$id})" : 'Created successfully';
         }
 
         if (str_contains($toolName, 'delete')) {
-            return 'Deleted successfully';
+            return $result['message'] ?? 'Deleted successfully';
         }
 
         if (isset($result['success'])) {

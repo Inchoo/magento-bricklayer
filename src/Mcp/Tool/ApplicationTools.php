@@ -9,21 +9,21 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class ApplicationTools
 {
+    use RequiresMagento;
+
     #[McpTool(
         name: 'application-info',
         description: 'Returns Magento version, PHP version, deploy mode, and installation summary'
     )]
     public function getApplicationInfo(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return [
-                'error' => true,
-                'message' => 'Magento not initialized',
-            ];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -78,8 +78,8 @@ class ApplicationTools
     )]
     public function getStoreConfiguration(): array
     {
-        if (!MagentoBootstrap::isInitialized()) {
-            return ['error' => true, 'message' => 'Magento not initialized'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {

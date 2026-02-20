@@ -12,36 +12,149 @@ use Mcp\Capability\Attribute\McpTool;
 
 class SearchTools
 {
-    private const TOOL_GROUPS = [
-        'introspection' => ['ApplicationTools', 'ConfigurationTools', 'ModuleTools', 'EavTools', 'RoutingTools'],
-        'catalog' => ['CatalogTools'],
-        'orders' => ['OrderTools'],
-        'customers' => ['CustomerTools'],
-        'database' => ['DatabaseTools'],
-        'logs' => ['LogTools'],
-        'diagnostic' => ['DiagnosticTools'],
-        'graphql' => ['GraphqlTools'],
-        'development' => ['DevelopmentTools', 'CodeRunnerTools', 'SearchTools', 'BatchTools'],
-        'code-generation' => ['CodeGenerationTools'],
-        'context' => ['ContextTools'],
+    /**
+     * Extra search keywords and tool associations for categories in ContextTools::CATEGORY_MAP.
+     * These supplement the auto-generated keywords derived from category name, description,
+     * guideline paths, and skill names. Only include terms that cannot be derived automatically.
+     *
+     * @var array<string, array{keywords?: string[], tools?: string[]}>
+     */
+    private const CATEGORY_SEARCH_EXTRAS = [
+        'module' => [
+            'keywords' => ['composer', 'etc/module.xml'],
+            'tools' => ['module-list', 'module-structure', 'validate-module', 'generate-module'],
+        ],
+        'model' => [
+            'keywords' => ['resource', 'collection', 'entity'],
+            'tools' => ['database-schema', 'generate-model'],
+        ],
+        'plugin' => [
+            'keywords' => ['before', 'after', 'around'],
+            'tools' => ['plugin-list', 'di-configuration'],
+        ],
+        'observer' => [
+            'keywords' => ['dispatch', 'events.xml'],
+            'tools' => ['event-list'],
+        ],
+        'eav' => [
+            'keywords' => ['catalog_product', 'attribute set', 'source model'],
+            'tools' => ['eav-attributes', 'eav-entity-types'],
+        ],
+        'data-patch' => [
+            'keywords' => ['migration', 'setup:upgrade'],
+        ],
+        'graphql' => [
+            'keywords' => ['schema.graphqls'],
+            'tools' => ['graphql-types', 'graphql-type-info', 'graphql-queries', 'graphql-mutations', 'graphql-resolvers'],
+        ],
+        'cron' => [
+            'keywords' => ['job', 'schedule', 'crontab.xml', 'cron group'],
+            'tools' => ['cron-list', 'cron-history'],
+        ],
+        'indexer' => [
+            'keywords' => ['index', 'reindex', 'mview', 'indexer.xml'],
+            'tools' => ['indexer-status'],
+        ],
+        'testing' => [
+            'keywords' => ['test', 'phpunit', 'mftf', 'api functional'],
+        ],
+        'hyva-checkout' => [
+            'keywords' => ['livewire', 'hyvä checkout'],
+        ],
+        'hyva-theme' => [
+            'keywords' => ['alpine', 'alpinejs', 'tailwind', 'csp'],
+        ],
+        'payment' => [
+            'keywords' => ['gateway', 'authorize', 'capture', 'vault', 'refund'],
+        ],
+        'checkout' => [
+            'keywords' => ['layout processor', 'config provider'],
+        ],
+        'preference' => [
+            'keywords' => ['class override', 'class replacement'],
+            'tools' => ['preference-list'],
+        ],
+        'theme' => [
+            'keywords' => ['less', 'css', 'phtml', 'requirejs', 'static content', 'theme inheritance'],
+        ],
+        'shipping' => [
+            'keywords' => ['rate', 'tracking', 'delivery', 'shipment method'],
+        ],
+        'ui-component' => [
+            'keywords' => ['grid', 'listing', 'form', 'data provider'],
+        ],
+        'message-queue' => [
+            'keywords' => ['amqp', 'rabbitmq', 'consumer', 'publisher'],
+        ],
+        'frontend' => [
+            'keywords' => ['knockout', 'knockoutjs', 'requirejs', 'phtml', 'template'],
+        ],
+        'adminhtml' => [
+            'keywords' => ['backend', 'acl', 'menu', 'system config', 'system.xml'],
+        ],
+        'coding-standards' => [
+            'keywords' => ['psr-12', 'phpcs', 'strict types', 'code quality'],
+        ],
+        'security' => [
+            'keywords' => ['xss', 'csrf', 'form key', 'escaping', 'sanitize', 'vulnerability'],
+        ],
+        'performance' => [
+            'keywords' => ['n+1', 'profiler', 'slow', 'bottleneck'],
+        ],
     ];
 
-    /** @var array<int, array{name: string, description: string, class: string, group: string, parameters: array}>|null */
-    private static ?array $toolCache = null;
-
-    private const DOCUMENTATION_INDEX = [
-
-        'module' => [
-            'keywords' => ['module', 'registration', 'composer', 'etc/module.xml', 'scaffold'],
+    /**
+     * Search index for categories not in ContextTools::CATEGORY_MAP.
+     * Includes aliases (common search terms mapping to CATEGORY_MAP categories)
+     * and operational categories (tool-focused, no coding guidelines).
+     *
+     * @var array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>
+     */
+    private const SUPPLEMENTARY_INDEX = [
+        // Aliases: common search terms → existing CATEGORY_MAP categories
+        'api' => [
+            'keywords' => ['api', 'rest', 'webapi', 'endpoint', 'service contract'],
             'topics' => [
-                'Module structure and file organization',
-                'Module registration with ComponentRegistrar',
-                'Module dependencies in module.xml',
-                'Composer package configuration',
+                'REST API endpoint configuration in webapi.xml',
+                'Service contract interfaces with @api annotation',
+                'Authentication and ACL resources',
+                'Data interfaces for API responses',
             ],
-            'tools' => ['module-list', 'module-structure', 'validate-module', 'generate-module'],
-            'dev_context' => 'module',
+            'tools' => ['api-endpoints', 'generate-api'],
+            'dev_context' => 'rest-api',
         ],
+        'layout' => [
+            'keywords' => ['layout', 'xml', 'block', 'template', 'container', 'handle'],
+            'topics' => [
+                'Layout XML structure and handles',
+                'Block classes and templates',
+                'Containers and reference containers',
+                'Layout update instructions',
+            ],
+            'dev_context' => 'frontend',
+        ],
+        'database' => [
+            'keywords' => ['database', 'schema', 'db_schema', 'table', 'setup', 'whitelist'],
+            'topics' => [
+                'Declarative schema in db_schema.xml',
+                'Data patches for data migration',
+                'Schema patches for schema changes',
+                'Whitelist generation and management',
+            ],
+            'tools' => ['database-schema', 'database-query'],
+            'dev_context' => 'data-patch',
+        ],
+        'import-export' => [
+            'keywords' => ['import', 'export', 'csv', 'bulk', 'import entity', 'export entity'],
+            'topics' => [
+                'Custom import entity development',
+                'Custom export entity development',
+                'CSV data processing and validation',
+                'Bulk import/export operations',
+            ],
+            'dev_context' => 'import',
+        ],
+        // Standalone: no CATEGORY_MAP equivalent
         'di' => [
             'keywords' => ['di', 'dependency injection', 'type', 'virtualtype'],
             'topics' => [
@@ -63,105 +176,6 @@ class SearchTools
             ],
             'tools' => ['route-list', 'route-info', 'generate-controller'],
         ],
-        'model' => [
-            'keywords' => ['model', 'resource', 'collection', 'repository', 'entity', 'service contract'],
-            'topics' => [
-                'Model classes extending AbstractModel',
-                'Resource models for database operations',
-                'Collection classes for data retrieval',
-                'Repository pattern implementation',
-                'Service contracts and interfaces',
-            ],
-            'tools' => ['database-schema', 'generate-model'],
-            'dev_context' => 'model',
-        ],
-        'api' => [
-            'keywords' => ['api', 'rest', 'webapi', 'endpoint', 'service contract'],
-            'topics' => [
-                'REST API endpoint configuration in webapi.xml',
-                'Service contract interfaces with @api annotation',
-                'Authentication and ACL resources',
-                'Data interfaces for API responses',
-            ],
-            'tools' => ['api-endpoints', 'generate-api'],
-            'dev_context' => 'rest-api',
-        ],
-        'graphql' => [
-            'keywords' => ['graphql', 'resolver', 'schema', 'schema.graphqls'],
-            'topics' => [
-                'GraphQL schema definition in schema.graphqls',
-                'Resolver implementation for queries and mutations',
-                'DataProvider for GraphQL data sources',
-                'Type and input type definitions',
-            ],
-            'tools' => ['graphql-types', 'graphql-type-info', 'graphql-queries', 'graphql-mutations', 'graphql-resolvers'],
-            'dev_context' => 'graphql',
-        ],
-        'eav' => [
-            'keywords' => ['eav', 'attribute', 'entity', 'catalog_product', 'attribute set', 'source model'],
-            'topics' => [
-                'EAV (Entity-Attribute-Value) system overview',
-                'Custom attribute creation',
-                'Attribute sets and groups',
-                'Backend and frontend models',
-                'Source models for attribute options',
-            ],
-            'tools' => ['eav-attributes', 'eav-entity-types'],
-            'dev_context' => 'eav',
-        ],
-        'plugin' => [
-            'keywords' => ['plugin', 'interceptor', 'before', 'after', 'around'],
-            'topics' => [
-                'Before plugins for modifying method arguments',
-                'After plugins for modifying return values',
-                'Around plugins for full method control',
-                'Plugin sort order and naming conventions',
-            ],
-            'tools' => ['plugin-list', 'di-configuration'],
-            'dev_context' => 'plugin',
-        ],
-        'observer' => [
-            'keywords' => ['observer', 'event', 'dispatch', 'events.xml'],
-            'topics' => [
-                'Event observer pattern in Magento',
-                'Observer configuration in events.xml',
-                'Event dispatching with EventManager',
-                'Available events and their parameters',
-            ],
-            'tools' => ['event-list'],
-            'dev_context' => 'observer',
-        ],
-        'layout' => [
-            'keywords' => ['layout', 'xml', 'block', 'template', 'container', 'handle'],
-            'topics' => [
-                'Layout XML structure and handles',
-                'Block classes and templates',
-                'Containers and reference containers',
-                'Layout update instructions',
-            ],
-            'dev_context' => 'frontend',
-        ],
-        'cron' => [
-            'keywords' => ['cron', 'schedule', 'job', 'crontab.xml', 'cron group'],
-            'topics' => [
-                'Cron job configuration in crontab.xml',
-                'Cron groups and scheduling',
-                'Cron job implementation classes',
-            ],
-            'tools' => ['cron-list', 'cron-history'],
-            'dev_context' => 'cron',
-        ],
-        'indexer' => [
-            'keywords' => ['indexer', 'index', 'reindex', 'mview', 'indexer.xml'],
-            'topics' => [
-                'Custom indexer implementation',
-                'Indexer configuration in indexer.xml',
-                'Materialized views (mview)',
-                'Index management and scheduling',
-            ],
-            'tools' => ['indexer-status'],
-            'dev_context' => 'indexer',
-        ],
         'cache' => [
             'keywords' => ['cache', 'flush', 'invalidate', 'tag', 'fpc', 'varnish', 'full page cache'],
             'topics' => [
@@ -172,184 +186,7 @@ class SearchTools
             ],
             'tools' => ['cache-status'],
         ],
-        'database' => [
-            'keywords' => ['database', 'schema', 'db_schema', 'table', 'setup', 'whitelist'],
-            'topics' => [
-                'Declarative schema in db_schema.xml',
-                'Data patches for data migration',
-                'Schema patches for schema changes',
-                'Whitelist generation and management',
-            ],
-            'tools' => ['database-schema', 'database-query'],
-            'dev_context' => 'data-patch',
-        ],
-        'testing' => [
-            'keywords' => ['test', 'phpunit', 'integration', 'unit', 'mftf', 'api functional'],
-            'topics' => [
-                'Unit testing with PHPUnit',
-                'Integration testing framework',
-                'API functional tests',
-                'Magento Functional Testing Framework (MFTF)',
-            ],
-            'dev_context' => 'testing',
-        ],
-
-        'hyva-checkout' => [
-            'keywords' => ['hyva checkout', 'hyvä checkout', 'magewire', 'livewire', 'hyva'],
-            'topics' => [
-                'Hyvä Checkout Magewire component development',
-                'Hyvä Checkout XML configuration and layout',
-                'Hyvä Checkout evaluation, form, and frontend APIs',
-            ],
-            'dev_context' => 'hyva-checkout',
-        ],
-        'hyva-theme' => [
-            'keywords' => ['hyva theme', 'hyvä theme', 'alpine', 'alpinejs', 'tailwind', 'csp', 'hyva'],
-            'topics' => [
-                'Hyvä theme setup and Alpine.js CSP components',
-                'Hyvä ViewModels, module compatibility, and customization',
-                'Hyvä UI component CSS and design system',
-                'Hyvä UI component Alpine.js and interactivity',
-            ],
-            'dev_context' => 'hyva-theme',
-        ],
-        'payment' => [
-            'keywords' => ['payment', 'gateway', 'authorize', 'capture', 'vault', 'refund', 'payment method'],
-            'topics' => [
-                'Payment method module setup and configuration',
-                'Payment gateway components (builders, handlers, validators)',
-                'Payment checkout integration and frontend',
-            ],
-            'dev_context' => 'payment',
-        ],
-        'checkout' => [
-            'keywords' => ['checkout', 'step', 'layout processor', 'config provider', 'checkout customization'],
-            'topics' => [
-                'Checkout custom steps and layout processors',
-                'Checkout config providers, mixins, and validation',
-                'Checkout frontend integration and JavaScript',
-            ],
-            'dev_context' => 'checkout',
-        ],
-        'preference' => [
-            'keywords' => ['preference', 'rewrite', 'class override', 'class replacement'],
-            'topics' => [
-                'Class preference (rewrite) configuration in di.xml',
-                'When to use preferences vs plugins',
-                'Preference best practices and limitations',
-            ],
-            'tools' => ['preference-list'],
-            'dev_context' => 'preference',
-        ],
-        'theme' => [
-            'keywords' => ['theme', 'less', 'css', 'phtml', 'requirejs', 'static content', 'theme inheritance'],
-            'topics' => [
-                'Theme structure, layout XML, and templates',
-                'Theme LESS/CSS styling and JavaScript',
-                'Theme inheritance and fallback mechanism',
-                'Static content deployment',
-            ],
-            'dev_context' => 'theme',
-        ],
-        'shipping' => [
-            'keywords' => ['shipping', 'carrier', 'rate', 'tracking', 'delivery', 'shipment method'],
-            'topics' => [
-                'Shipping carrier integration and development',
-                'Rate calculation and request handling',
-                'Tracking number implementation',
-            ],
-            'dev_context' => 'shipping',
-        ],
-        'ui-component' => [
-            'keywords' => ['ui component', 'grid', 'listing', 'form', 'data provider', 'admin grid', 'admin form'],
-            'topics' => [
-                'Admin UI component grid and listing configuration',
-                'Admin UI component form configuration',
-                'Data providers for UI components',
-                'UI component XML configuration',
-            ],
-            'dev_context' => 'ui-component',
-        ],
-        'message-queue' => [
-            'keywords' => ['message queue', 'amqp', 'rabbitmq', 'consumer', 'publisher', 'queue', 'async'],
-            'topics' => [
-                'Message queue and async processing',
-                'AMQP/RabbitMQ configuration',
-                'Consumer and publisher implementation',
-                'Queue topology and communication.xml',
-            ],
-            'dev_context' => 'message-queue',
-        ],
-        'import-export' => [
-            'keywords' => ['import', 'export', 'csv', 'bulk', 'import entity', 'export entity'],
-            'topics' => [
-                'Custom import entity development',
-                'Custom export entity development',
-                'CSV data processing and validation',
-                'Bulk import/export operations',
-            ],
-            'dev_context' => 'import',
-        ],
-        'frontend' => [
-            'keywords' => ['frontend', 'knockout', 'knockoutjs', 'requirejs', 'phtml', 'template'],
-            'topics' => [
-                'Frontend development (layout, templates, JS)',
-                'KnockoutJS templates and bindings',
-                'RequireJS module configuration',
-                'Frontend template and block rendering',
-            ],
-            'dev_context' => 'frontend',
-        ],
-        'adminhtml' => [
-            'keywords' => ['admin', 'adminhtml', 'backend', 'acl', 'menu', 'system config', 'system.xml'],
-            'topics' => [
-                'Admin panel development and routing',
-                'ACL resource configuration',
-                'Admin menu configuration in menu.xml',
-                'System configuration in system.xml',
-            ],
-            'dev_context' => 'adminhtml',
-        ],
-        'coding-standards' => [
-            'keywords' => ['coding standard', 'psr-12', 'phpcs', 'strict types', 'code quality', 'formatting'],
-            'topics' => [
-                'PHP coding standards and PSR-12 compliance',
-                'Code quality rules and best practices',
-                'strict_types declaration requirements',
-            ],
-            'dev_context' => 'coding-standards',
-        ],
-        'security' => [
-            'keywords' => ['security', 'xss', 'csrf', 'form key', 'escaping', 'sanitize', 'vulnerability'],
-            'topics' => [
-                'Security best practices and guidelines',
-                'XSS prevention and output escaping',
-                'CSRF protection and form keys',
-                'Input validation and sanitization',
-            ],
-            'dev_context' => 'security',
-        ],
-        'performance' => [
-            'keywords' => ['performance', 'optimization', 'n+1', 'profiler', 'slow', 'bottleneck'],
-            'topics' => [
-                'Performance optimization guidelines',
-                'N+1 query detection and prevention',
-                'Profiling and bottleneck analysis',
-                'Caching strategies for performance',
-            ],
-            'dev_context' => 'performance',
-        ],
-        'data-patch' => [
-            'keywords' => ['data patch', 'schema patch', 'migration', 'setup:upgrade', 'patch'],
-            'topics' => [
-                'Data patch development and best practices',
-                'Schema patch for database changes',
-                'Patch dependencies and ordering',
-                'Migration from legacy install/upgrade scripts',
-            ],
-            'dev_context' => 'data-patch',
-        ],
-
+        // Operational: entity CRUD and tool-focused categories
         'orders' => [
             'keywords' => ['order', 'invoice', 'shipment', 'creditmemo', 'credit memo', 'refund', 'fulfillment'],
             'topics' => [
@@ -494,6 +331,9 @@ class SearchTools
         ],
     ];
 
+    /** @var array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>|null */
+    private ?array $documentationIndex = null;
+
     #[McpTool(
         name: 'search-docs',
         description: 'Searches Magento documentation for relevant topics and guidance'
@@ -505,9 +345,10 @@ class SearchTools
         }
 
         $queryLower = strtolower($query);
+        $index = $this->getDocumentationIndex();
         $results = [];
 
-        foreach (self::DOCUMENTATION_INDEX as $category => $data) {
+        foreach ($index as $category => $data) {
             $score = 0;
 
             foreach ($data['keywords'] as $keyword) {
@@ -560,21 +401,23 @@ class SearchTools
             return ['error' => true, 'message' => 'detail must be one of: names, summary, full'];
         }
 
-        $allTools = $this->scanAllTools();
+        $toolRegistry = ToolRegistry::getInstance();
+        $allTools = $toolRegistry->getMetadata();
+        $groups = $toolRegistry->getGroups();
 
         // Filter by group
         if ($group !== '') {
-            if (!isset(self::TOOL_GROUPS[$group])) {
+            if (!isset($groups[$group])) {
                 return [
                     'error' => true,
                     'message' => sprintf(
                         'Unknown group "%s". Available: %s',
                         $group,
-                        implode(', ', array_keys(self::TOOL_GROUPS))
+                        implode(', ', array_keys($groups))
                     ),
                 ];
             }
-            $allowedClasses = self::TOOL_GROUPS[$group];
+            $allowedClasses = $groups[$group];
             $allTools = array_filter($allTools, fn($t) => in_array($t['class'], $allowedClasses, true));
         }
 
@@ -613,77 +456,88 @@ class SearchTools
             'group' => $group ?: null,
             'detail' => $detail,
             'total' => count($tools),
-            'available_groups' => array_keys(self::TOOL_GROUPS),
+            'available_groups' => array_keys($groups),
             'tools' => $tools,
         ];
     }
 
-    private function scanAllTools(): array
+    /**
+     * Get the documentation index, building it from CATEGORY_MAP on first access.
+     *
+     * @return array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>
+     */
+    private function getDocumentationIndex(): array
     {
-        if (self::$toolCache !== null) {
-            return self::$toolCache;
-        }
+        return $this->documentationIndex ??= $this->buildDocumentationIndex();
+    }
 
-        $toolDir = dirname(__DIR__) . '/Tool';
-        $namespace = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\';
+    /**
+     * Build the documentation index by deriving entries from ContextTools::CATEGORY_MAP
+     * and merging in supplementary entries for aliases and operational categories.
+     *
+     * @return array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>
+     */
+    private function buildDocumentationIndex(): array
+    {
+        $index = [];
+        $stopwords = ['and', 'the', 'for', 'with'];
 
-        // Build reverse map: className → group
-        $classToGroup = [];
-        foreach (self::TOOL_GROUPS as $groupName => $classes) {
-            foreach ($classes as $className) {
-                $classToGroup[$className] = $groupName;
-            }
-        }
+        foreach (ContextTools::CATEGORY_MAP as $category => $mapping) {
+            // Base keyword from category name (hyphens → spaces)
+            $keywords = [str_replace('-', ' ', $category)];
 
-        $tools = [];
-
-        foreach (glob($toolDir . '/*.php') as $file) {
-            $className = pathinfo($file, PATHINFO_FILENAME);
-            $fqcn = $namespace . $className;
-
-            if (!class_exists($fqcn)) {
-                continue;
-            }
-
-            $ref = new \ReflectionClass($fqcn);
-            $group = $classToGroup[$className] ?? 'other';
-
-            foreach ($ref->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                $attrs = $method->getAttributes(\Mcp\Capability\Attribute\McpTool::class);
-                if (empty($attrs)) {
-                    continue;
+            // Meaningful words from description (>3 chars, not stopwords)
+            $descTokens = preg_split('/[\s,()]+/', strtolower($mapping['description']), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($descTokens as $word) {
+                if (strlen($word) > 3 && !in_array($word, $stopwords, true)) {
+                    $keywords[] = $word;
                 }
+            }
 
-                $attr = $attrs[0]->newInstance();
-                $parameters = [];
-
-                foreach ($method->getParameters() as $param) {
-                    $type = $param->getType();
-                    $paramInfo = [
-                        'name' => $param->getName(),
-                        'type' => $type ? $type->getName() : 'mixed',
-                        'required' => !$param->isOptional(),
-                    ];
-                    if ($param->isOptional() && $param->isDefaultValueAvailable()) {
-                        $paramInfo['default'] = $param->getDefaultValue();
+            // Keywords from guideline paths (leaf segment)
+            foreach ($mapping['guidelines'] as $guideline) {
+                $leaf = basename($guideline);
+                $keywords[] = str_replace('-', ' ', $leaf);
+                foreach (explode('-', $leaf) as $part) {
+                    if (strlen($part) > 3) {
+                        $keywords[] = $part;
                     }
-                    $parameters[] = $paramInfo;
                 }
-
-                $tools[] = [
-                    'name' => $attr->name ?? $method->getName(),
-                    'description' => $attr->description ?? '',
-                    'class' => $className,
-                    'group' => $group,
-                    'parameters' => $parameters,
-                ];
             }
+
+            // Keywords from skill names
+            foreach ($mapping['skills'] as $skill) {
+                foreach (explode('-', $skill) as $part) {
+                    if (strlen($part) > 3) {
+                        $keywords[] = $part;
+                    }
+                }
+            }
+
+            // Merge curated extras
+            if (isset(self::CATEGORY_SEARCH_EXTRAS[$category]['keywords'])) {
+                array_push($keywords, ...self::CATEGORY_SEARCH_EXTRAS[$category]['keywords']);
+            }
+
+            $entry = [
+                'keywords' => array_values(array_unique($keywords)),
+                'topics' => [$mapping['description']],
+                'dev_context' => $category,
+            ];
+
+            if (isset(self::CATEGORY_SEARCH_EXTRAS[$category]['tools'])) {
+                $entry['tools'] = self::CATEGORY_SEARCH_EXTRAS[$category]['tools'];
+            }
+
+            $index[$category] = $entry;
         }
 
-        usort($tools, fn($a, $b) => strcmp($a['name'], $b['name']));
-        self::$toolCache = $tools;
+        // Supplementary: aliases and operational categories
+        foreach (self::SUPPLEMENTARY_INDEX as $category => $data) {
+            $index[$category] = $data;
+        }
 
-        return $tools;
+        return $index;
     }
 
     private function generateGuidance(string $query, array $results): string
@@ -702,9 +556,11 @@ class SearchTools
         $guidance = "Based on your query '$query', the most relevant Magento topics are: " .
                     implode(', ', $topCategories) . ".\n\n";
 
+        $index = $this->getDocumentationIndex();
+
         foreach (array_slice($results, 0, 3) as $result) {
             $category = $result['category'];
-            $indexData = self::DOCUMENTATION_INDEX[$category];
+            $indexData = $index[$category];
 
             $guidance .= "**{$category}**: " . implode('; ', array_slice($result['topics'], 0, 2)) . "\n";
 
