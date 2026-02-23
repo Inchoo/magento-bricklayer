@@ -1,3 +1,16 @@
+# 1.10.1
+* **Security**: Fixed `requireNonProduction` bypass when no `.bricklayer.json` exists — destructive tools are now blocked by default in production mode
+* **Security**: Fixed SQL injection vector in `DatabaseTools::getTableSchema` — table names are now validated against actual database tables before use in queries
+* Removed unimplemented `production_safety` config field (`strict`/`standard`/`unrestricted`) — per-tool `enabled` flags already provide full control
+* Removed `getProductionSafety()` from `ConfigLoader` and updated `VerifyCommand` to report disabled tool count instead
+* Added `max_lines` config enforcement to `LogTools::readLog` — now respects `tools.log-reader.max_lines` setting (matching `DatabaseTools` `max_rows` pattern)
+* Removed unused `ToolException` import from `RequiresMagento` trait
+* Added file overwrite detection to `CodeGenerationTools::writeFiles` — existing files now cause a conflict error instead of silent overwrite
+* Added `force` parameter to all 4 code generation tools (`generate-module`, `generate-model`, `generate-controller`, `generate-api`)
+* Added `new`/`exists` file status annotations in dry-run mode for code generation tools
+* Added unit tests for `ChecksConfig` trait (production safety, tool enable/disable, destructive tool defaults)
+* Added unit tests for `ConfigInitializer` (production/developer config, file generation, deploy mode detection)
+
 # 1.10.0
 * Added production safety system with per-tool enable/disable via `.bricklayer.json`
 * Added ChecksConfig trait providing `requireToolEnabled()` and `requireNonProduction()` for all tool classes

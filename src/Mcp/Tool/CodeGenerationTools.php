@@ -22,7 +22,7 @@ class CodeGenerationTools
         name: 'generate-module',
         description: 'Scaffolds a new Magento 2 module with required files'
     )]
-    public function generateModule(string $vendor, string $module, string $version = '1.0.0', bool $dry_run = false): array
+    public function generateModule(string $vendor, string $module, string $version = '1.0.0', bool $dry_run = false, bool $force = false): array
     {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module names are required'];
@@ -79,18 +79,27 @@ XML;
         $files['composer.json'] = json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         $basePath = "app/code/{$vendor}/{$module}";
-        $written = false;
+        $writeResult = ['written' => false, 'conflicts' => []];
         if (!$dry_run) {
-            $written = $this->writeFiles($basePath, $files);
+            $writeResult = $this->writeFiles($basePath, $files, $force);
+            if (!$writeResult['written'] && !empty($writeResult['conflicts'])) {
+                return [
+                    'success' => false,
+                    'module_name' => $moduleName,
+                    'path' => $basePath,
+                    'conflicts' => $writeResult['conflicts'],
+                    'message' => $writeResult['message'] ?? '',
+                ];
+            }
         }
 
         return [
             'success' => true,
             'module_name' => $moduleName,
             'path' => $basePath,
-            'files' => $dry_run ? $files : array_keys($files),
-            'written' => $written,
-            'instructions' => $written
+            'files' => $dry_run ? $this->annotateFiles($basePath, $files) : array_keys($files),
+            'written' => $writeResult['written'],
+            'instructions' => $writeResult['written']
                 ? "Files created in {$basePath}/. Run: bin/magento setup:upgrade"
                 : "Create these files in {$basePath}/, then run: bin/magento setup:upgrade",
         ];
@@ -106,7 +115,8 @@ XML;
         string $entity,
         string $table,
         string $fields = '',
-        bool $dry_run = false
+        bool $dry_run = false,
+        bool $force = false
     ): array {
         if ($vendor === '' || $module === '' || $entity === '' || $table === '') {
             return ['error' => true, 'message' => 'Vendor, module, entity, and table are required'];
@@ -225,9 +235,19 @@ PHP;
         $files['etc/db_schema.xml'] = $this->buildDbSchema($table, $parsedFields);
 
         $basePath = "app/code/{$vendor}/{$module}";
-        $written = false;
+        $writeResult = ['written' => false, 'conflicts' => []];
         if (!$dry_run) {
-            $written = $this->writeFiles($basePath, $files);
+            $writeResult = $this->writeFiles($basePath, $files, $force);
+            if (!$writeResult['written'] && !empty($writeResult['conflicts'])) {
+                return [
+                    'success' => false,
+                    'module_name' => $moduleName,
+                    'entity' => $entity,
+                    'table' => $table,
+                    'conflicts' => $writeResult['conflicts'],
+                    'message' => $writeResult['message'] ?? '',
+                ];
+            }
         }
 
         return [
@@ -235,9 +255,9 @@ PHP;
             'module_name' => $moduleName,
             'entity' => $entity,
             'table' => $table,
-            'files' => $dry_run ? $files : array_keys($files),
-            'written' => $written,
-            'instructions' => $written
+            'files' => $dry_run ? $this->annotateFiles($basePath, $files) : array_keys($files),
+            'written' => $writeResult['written'],
+            'instructions' => $writeResult['written']
                 ? "Files created in {$basePath}/. Run: bin/magento setup:upgrade"
                 : "Create these files in {$basePath}/, then run: bin/magento setup:upgrade",
         ];
@@ -253,7 +273,8 @@ PHP;
         string $area = 'frontend',
         string $route = 'custom',
         string $action = 'index',
-        bool $dry_run = false
+        bool $dry_run = false,
+        bool $force = false
     ): array {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module are required'];
@@ -367,9 +388,20 @@ XML;
 PHTML;
 
         $basePath = "app/code/{$vendor}/{$module}";
-        $written = false;
+        $writeResult = ['written' => false, 'conflicts' => []];
         if (!$dry_run) {
-            $written = $this->writeFiles($basePath, $files);
+            $writeResult = $this->writeFiles($basePath, $files, $force);
+            if (!$writeResult['written'] && !empty($writeResult['conflicts'])) {
+                return [
+                    'success' => false,
+                    'module_name' => $moduleName,
+                    'area' => $area,
+                    'route' => $route,
+                    'action' => $action,
+                    'conflicts' => $writeResult['conflicts'],
+                    'message' => $writeResult['message'] ?? '',
+                ];
+            }
         }
 
         return [
@@ -379,9 +411,9 @@ PHTML;
             'route' => $route,
             'action' => $action,
             'url' => $area === 'adminhtml' ? "admin/{$routeLower}/{$action}/index" : "{$routeLower}/{$action}/index",
-            'files' => $dry_run ? $files : array_keys($files),
-            'written' => $written,
-            'instructions' => $written
+            'files' => $dry_run ? $this->annotateFiles($basePath, $files) : array_keys($files),
+            'written' => $writeResult['written'],
+            'instructions' => $writeResult['written']
                 ? "Files created in {$basePath}/. Run: bin/magento cache:clean"
                 : "Create these files in {$basePath}/, then run: bin/magento cache:clean",
         ];
@@ -397,7 +429,8 @@ PHTML;
         string $resource,
         string $method = 'GET',
         string $path = '',
-        bool $dry_run = false
+        bool $dry_run = false,
+        bool $force = false
     ): array {
         if ($vendor === '' || $module === '' || $resource === '') {
             return ['error' => true, 'message' => 'Vendor, module, and resource are required'];
@@ -558,9 +591,18 @@ XML;
 XML;
 
         $basePath = "app/code/{$vendor}/{$module}";
-        $written = false;
+        $writeResult = ['written' => false, 'conflicts' => []];
         if (!$dry_run) {
-            $written = $this->writeFiles($basePath, $files);
+            $writeResult = $this->writeFiles($basePath, $files, $force);
+            if (!$writeResult['written'] && !empty($writeResult['conflicts'])) {
+                return [
+                    'success' => false,
+                    'module_name' => $moduleName,
+                    'resource' => $resource,
+                    'conflicts' => $writeResult['conflicts'],
+                    'message' => $writeResult['message'] ?? '',
+                ];
+            }
         }
 
         return [
@@ -573,9 +615,9 @@ XML;
                 "POST {$path}" => 'save',
                 "DELETE {$path}/:id" => 'deleteById',
             ],
-            'files' => $dry_run ? $files : array_keys($files),
-            'written' => $written,
-            'instructions' => $written
+            'files' => $dry_run ? $this->annotateFiles($basePath, $files) : array_keys($files),
+            'written' => $writeResult['written'],
+            'instructions' => $writeResult['written']
                 ? "Files created in {$basePath}/. Run: bin/magento setup:di:compile"
                 : "Create these files in {$basePath}/, then run: bin/magento setup:di:compile",
         ];
@@ -586,9 +628,10 @@ XML;
      *
      * @param string $basePath Relative path from Magento root (e.g. "app/code/Vendor/Module")
      * @param array<string, string> $files Map of relative file path => content
-     * @return bool True if all files were written successfully
+     * @param bool $force Overwrite existing files
+     * @return array{written: bool, conflicts: string[]}
      */
-    private function writeFiles(string $basePath, array $files): bool
+    private function writeFiles(string $basePath, array $files, bool $force = false): array
     {
         $root = MagentoBootstrap::isInitialized()
             ? (defined('BP') ? BP : getcwd())
@@ -597,26 +640,66 @@ XML;
         $root = rtrim($root, '/');
         $absoluteBase = $root . '/' . $basePath;
 
+        // Check for existing files
+        if (!$force) {
+            $existing = [];
+            foreach ($files as $relativePath => $content) {
+                $fullPath = $absoluteBase . '/' . $relativePath;
+                if (file_exists($fullPath)) {
+                    $existing[] = $relativePath;
+                }
+            }
+            if (!empty($existing)) {
+                return [
+                    'written' => false,
+                    'conflicts' => $existing,
+                    'message' => count($existing) . ' file(s) already exist. Use force=true to overwrite.',
+                ];
+            }
+        }
+
         foreach ($files as $relativePath => $content) {
             $fullPath = $absoluteBase . '/' . $relativePath;
             $dir = dirname($fullPath);
 
             if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-                return false;
+                return ['written' => false, 'conflicts' => []];
             }
 
             // Path traversal protection: verify resolved path stays within Magento root
             $realDir = realpath($dir);
             if ($realDir === false || !str_starts_with($realDir, $root)) {
-                return false;
+                return ['written' => false, 'conflicts' => []];
             }
 
             if (file_put_contents($fullPath, $content) === false) {
-                return false;
+                return ['written' => false, 'conflicts' => []];
             }
         }
 
-        return true;
+        return ['written' => true, 'conflicts' => []];
+    }
+
+    /**
+     * Annotate file list for dry-run output with new/exists status.
+     *
+     * @param string $basePath Relative path from Magento root
+     * @param array<string, string> $files Map of relative file path => content
+     * @return array<array{path: string, status: string}>
+     */
+    private function annotateFiles(string $basePath, array $files): array
+    {
+        $root = MagentoBootstrap::isInitialized()
+            ? (defined('BP') ? BP : getcwd())
+            : getcwd();
+
+        $root = rtrim($root, '/');
+        $absoluteBase = $root . '/' . $basePath;
+
+        return array_map(fn($path) => [
+            'path' => $path,
+            'status' => file_exists($absoluteBase . '/' . $path) ? 'exists' : 'new',
+        ], array_keys($files));
     }
 
     private function buildDbSchema(string $table, array $parsedFields): string
