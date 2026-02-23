@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
+use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Mcp\McpServerFactory;
 use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
@@ -80,6 +81,7 @@ HELP
         $this->checkDeployMode();
         $this->checkMcpServer();
         $this->checkAgentConfigs($magentoRoot);
+        $this->checkBricklayerConfig($magentoRoot);
         $this->checkPsySH();
         $this->checkDatabase();
         $this->checkLogDirectory($magentoRoot);
@@ -226,6 +228,35 @@ HELP
         } else {
             $this->addResult('Agent config', 'warn', 'not found (run: bricklayer install)');
         }
+    }
+
+    private function checkBricklayerConfig(?string $magentoRoot): void
+    {
+        if ($magentoRoot === null) {
+            $this->addResult('Bricklayer config', 'fail', 'Magento root not found');
+            return;
+        }
+
+        $initializer = new ConfigInitializer();
+
+        if ($initializer->exists($magentoRoot)) {
+            try {
+                $configLoader = new ConfigLoader();
+                $safety = $configLoader->getProductionSafety();
+                $this->addResult('Bricklayer config', 'pass', ".bricklayer.json ($safety mode)");
+            } catch (\Throwable $e) {
+                $this->addResult('Bricklayer config', 'warn', '.bricklayer.json exists but has errors: ' . $e->getMessage());
+            }
+            return;
+        }
+
+        // Auto-generate .bricklayer.json
+        $result = $initializer->generate($magentoRoot);
+        $this->addResult(
+            'Bricklayer config',
+            'pass',
+            "created .bricklayer.json ({$result['safety']} mode, based on {$result['deploy_mode']})"
+        );
     }
 
     private function checkPsySH(): void

@@ -9,11 +9,13 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class DatabaseTools
 {
+    use ChecksConfig;
     use RequiresMagento;
 
     #[McpTool(
@@ -23,6 +25,10 @@ class DatabaseTools
     public function getDatabaseSchema(string $table = '', string $pattern = ''): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('database-query')) {
             return $error;
         }
 
@@ -60,6 +66,19 @@ class DatabaseTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('database-query')) {
+            return $error;
+        }
+
+        try {
+            $configMaxRows = (int) $this->getConfigLoader()->get('tools.database-query.max_rows', 100);
+            if ($limit > $configMaxRows) {
+                $limit = $configMaxRows;
+            }
+        } catch (\Throwable $e) {
+            // proceed with parameter default
+        }
+
         $trimmedQuery = trim($query);
         if (!preg_match('/^SELECT\s/i', $trimmedQuery)) {
             return [
@@ -95,6 +114,8 @@ class DatabaseTools
             $startTime = microtime(true);
             $results = $connection->fetchAll($trimmedQuery);
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            $results = $this->maskSensitiveConfigValues($results);
 
             return [
                 'success' => true,
@@ -180,5 +201,44 @@ class DatabaseTools
             'indexes' => $indexes,
             'foreign_keys' => $foreignKeys,
         ];
+    }
+
+    private const SENSITIVE_PATH_PREFIXES = [
+        'payment/',
+        'carriers/',
+        'system/smtp',
+        'trans_email/',
+        'oauth/',
+        'admin/security/',
+        'catalog/search/elasticsearch',
+        'catalog/search/opensearch',
+    ];
+
+    /**
+     * Mask sensitive configuration values in query results.
+     *
+     * When results contain rows from core_config_data (detected by having both
+     * 'path' and 'value' columns), mask values for known sensitive config paths.
+     *
+     * @param array<int, array<string, mixed>> $results
+     * @return array<int, array<string, mixed>>
+     */
+    private function maskSensitiveConfigValues(array $results): array
+    {
+        foreach ($results as &$row) {
+            if (!isset($row['path'], $row['value']) || !is_string($row['path'])) {
+                continue;
+            }
+
+            foreach (self::SENSITIVE_PATH_PREFIXES as $prefix) {
+                if (str_starts_with($row['path'], $prefix)) {
+                    $row['value'] = '***MASKED***';
+                    break;
+                }
+            }
+        }
+        unset($row);
+
+        return $results;
     }
 }

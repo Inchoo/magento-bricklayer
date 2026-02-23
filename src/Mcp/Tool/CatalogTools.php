@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
@@ -21,6 +22,7 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class CatalogTools
 {
+    use ChecksConfig;
     use FiltersFields;
     use RequiresMagento;
     use SecureArea;
@@ -144,6 +146,10 @@ class CatalogTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('product-create')) {
+            return $error;
+        }
+
         try {
             $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
             $productFactory = MagentoBootstrap::get(\Magento\Catalog\Api\Data\ProductInterfaceFactory::class);
@@ -185,6 +191,10 @@ class CatalogTools
         int $status = 0
     ): array {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('product-update')) {
             return $error;
         }
 
@@ -262,6 +272,10 @@ class CatalogTools
     public function updateProductStock(string $sku, float $qty, bool $isInStock = true): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('product-stock-update')) {
             return $error;
         }
 
@@ -362,6 +376,13 @@ class CatalogTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('product-delete')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('product-delete')) {
+            return $error;
+        }
+
         try {
             return $this->withSecureArea(function () use ($sku) {
                 $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
@@ -437,6 +458,10 @@ class CatalogTools
         int $position = 0
     ): array {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('product-media-add')) {
             return $error;
         }
 
@@ -533,6 +558,10 @@ class CatalogTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('product-link-set')) {
+            return $error;
+        }
+
         $validTypes = ['related', 'upsell', 'crosssell'];
         if (!in_array($linkType, $validTypes, true)) {
             return ['error' => true, 'message' => "Invalid link type. Use: " . implode(', ', $validTypes)];
@@ -582,6 +611,10 @@ class CatalogTools
         string $urlKey = ''
     ): array {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('category-create')) {
             return $error;
         }
 
@@ -637,6 +670,10 @@ class CatalogTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('category-update')) {
+            return $error;
+        }
+
         try {
             $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
             $category = $categoryRepository->get($categoryId);
@@ -679,6 +716,13 @@ class CatalogTools
     public function deleteCategory(int $categoryId): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('category-delete')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('category-delete')) {
             return $error;
         }
 
@@ -767,6 +811,10 @@ class CatalogTools
     public function assignProductsToCategory(int $categoryId, string $skus, string $positions = ''): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('category-assign-products')) {
             return $error;
         }
 

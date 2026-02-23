@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
@@ -21,6 +22,7 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class CustomerTools
 {
+    use ChecksConfig;
     use FiltersFields;
     use RequiresMagento;
     use SecureArea;
@@ -143,6 +145,10 @@ class CustomerTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('customer-create')) {
+            return $error;
+        }
+
         try {
             $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
             $customerFactory = MagentoBootstrap::get(\Magento\Customer\Api\Data\CustomerInterfaceFactory::class);
@@ -185,6 +191,10 @@ class CustomerTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('customer-update')) {
+            return $error;
+        }
+
         try {
             $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
             $customer = $customerRepository->getById($customerId);
@@ -222,6 +232,13 @@ class CustomerTools
     public function deleteCustomer(int $customerId): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('customer-delete')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('customer-delete')) {
             return $error;
         }
 
@@ -403,6 +420,10 @@ class CustomerTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('customer-address-create')) {
+            return $error;
+        }
+
         try {
             $addressRepository = MagentoBootstrap::get(\Magento\Customer\Api\AddressRepositoryInterface::class);
             $addressFactory = MagentoBootstrap::get(\Magento\Customer\Api\Data\AddressInterfaceFactory::class);
@@ -466,6 +487,10 @@ class CustomerTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('customer-address-update')) {
+            return $error;
+        }
+
         try {
             $addressRepository = MagentoBootstrap::get(\Magento\Customer\Api\AddressRepositoryInterface::class);
             $address = $addressRepository->getById($addressId);
@@ -515,6 +540,13 @@ class CustomerTools
     public function deleteCustomerAddress(int $addressId): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('customer-address-delete')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('customer-address-delete')) {
             return $error;
         }
 

@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 89 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes vast number of tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -46,6 +46,7 @@ vendor/bin/bricklayer install
 
 This prompts you to select which AI agents to configure and generates:
 - `.mcp.json` - MCP server configuration (always created)
+- `.bricklayer.json` - Tool safety configuration with deploy-mode-aware defaults
 - Agent-specific guideline files based on your selection (e.g. `CLAUDE.md`, `.cursorrules`)
 
 ### 2. Start Using with Your AI Agent
@@ -83,6 +84,23 @@ Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
 - `--agents=AGENTS` - Comma-separated list of agents to configure (claude-code, cursor, phpstorm, copilot, gemini)
 - `--force` - Overwrite existing configuration files
+
+### init
+Generates `.bricklayer.json` configuration file with deploy-mode-aware defaults.
+
+```bash
+vendor/bin/bricklayer init [options]
+```
+
+Options:
+- `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
+- `--force` - Overwrite existing `.bricklayer.json`
+
+The generated config varies by deploy mode:
+- **production** — Destructive tools and code generation disabled, code-runner disabled, query limits reduced
+- **developer/default** — All tools enabled, code-runner read-only
+
+This command is also called automatically during `bricklayer install`. Additionally, `bricklayer verify` will auto-generate the file if it's missing.
 
 ### mcp
 Starts the MCP server (invoked automatically by AI agents).
@@ -363,6 +381,7 @@ Create `.bricklayer.json` in your Magento root:
 
 ```json
 {
+    "production_safety": "standard",
     "tools": {
         "code-runner": {
             "enabled": true,
@@ -372,7 +391,14 @@ Create `.bricklayer.json` in your Magento root:
         "database-query": {
             "enabled": true,
             "max_rows": 100
-        }
+        },
+        "log-reader": {
+            "enabled": true,
+            "max_lines": 500
+        },
+        "product-delete": { "enabled": false },
+        "customer-delete": { "enabled": false },
+        "category-delete": { "enabled": false }
     },
     "guidelines": {
         "include": ["core", "modules", "patterns"],
@@ -382,7 +408,50 @@ Create `.bricklayer.json` in your Magento root:
 }
 ```
 
-Environment variable overrides:
+### Production Safety Levels
+
+The `production_safety` setting controls default tool availability when running against a production Magento instance:
+
+| Level | Behavior |
+|-------|----------|
+| `strict` | Read-only tools only |
+| `standard` | Read + write tools, destructive tools blocked (default) |
+| `unrestricted` | All tools enabled |
+
+### Per-Tool Configuration
+
+Every write tool can be individually enabled or disabled. All 89 tools support the `enabled` flag:
+
+```json
+{
+    "tools": {
+        "product-delete": { "enabled": false },
+        "order-cancel": { "enabled": false },
+        "generate-module": { "enabled": false }
+    }
+}
+```
+
+### Recommended Production Configuration
+
+```json
+{
+    "production_safety": "strict",
+    "tools": {
+        "code-runner": { "enabled": false },
+        "database-query": { "enabled": false },
+        "product-delete": { "enabled": false },
+        "customer-delete": { "enabled": false },
+        "category-delete": { "enabled": false },
+        "generate-module": { "enabled": false },
+        "generate-model": { "enabled": false },
+        "generate-controller": { "enabled": false },
+        "generate-api": { "enabled": false }
+    }
+}
+```
+
+### Environment Variable Overrides
 
 ```bash
 BRICKLAYER_MAGENTO_ROOT=/path/to/magento    # Override Magento root detection
@@ -456,11 +525,27 @@ vendor/bin/bricklayer update --config-only
 
 ## Security
 
-- Database queries are read-only (SELECT only)
-- `code-runner` is disabled in production mode
-- File operations restricted to `app/code` and `app/design`
-- Sensitive configuration values are masked
+### Query Safety
+- Database queries are read-only (SELECT only) with dangerous pattern detection
+- Configurable row limits via `tools.database-query.max_rows`
+- Sensitive configuration values (payment/\*, carriers/\*, oauth/\*, etc.) are automatically masked in query results
+
+### Production Mode Protection
+- **Destructive tools blocked by default** — `product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, and `creditmemo-create` are disabled in production mode
+- **Code generation blocked** — All 4 code generation tools (`generate-module`, `generate-model`, `generate-controller`, `generate-api`) refuse to write files to production servers
+- **`code-runner` hard-blocked** — Cannot be enabled in production under any circumstances
+- **Explicit override available** — Destructive tools can be re-enabled per-tool in `.bricklayer.json` when needed (e.g., `"tools": {"product-delete": {"enabled": true}}`)
+
+### Per-Tool Configuration
+- All 26 write/destructive tools can be individually enabled or disabled via `.bricklayer.json`
+- The `production_safety` level (`strict`, `standard`, `unrestricted`) provides a global safety baseline
+- Config checks are enforced via the shared `ChecksConfig` trait across all tool classes
+
+### Code Execution Safety
+- `code-runner` is read-only by default (`allow_write` must be explicitly set)
 - No network access for executed code
+- Code generation tools validate output paths with `realpath()` boundary checks to prevent path traversal
+- File operations restricted to `app/code` and `app/design`
 
 ## Contributing
 
