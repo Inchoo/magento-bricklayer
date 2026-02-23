@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ReadsLogFiles;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
@@ -20,6 +21,7 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class LogTools
 {
+    use ChecksConfig;
     use ReadsLogFiles;
     use RequiresMagento;
     /**
@@ -49,6 +51,10 @@ class LogTools
     public function readLog(string $logType = 'system', int $lines = 100, string $filter = '', int $max_entry_length = 0): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('log-reader')) {
             return $error;
         }
 
@@ -135,6 +141,10 @@ class LogTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('log-reader')) {
+            return $error;
+        }
+
         try {
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
             $logDir = $magentoRoot . '/var/log';
@@ -203,6 +213,10 @@ class LogTools
     public function analyzeExceptionLog(int $hours = 24): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('log-reader')) {
             return $error;
         }
 
@@ -287,6 +301,10 @@ class LogTools
     public function searchLogs(string $query, int $maxResults = 50, int $max_entry_length = 0): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('log-reader')) {
             return $error;
         }
 

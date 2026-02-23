@@ -242,6 +242,14 @@ HELP
             $skippedFiles[] = '.mcp.json (exists, use --force to overwrite)';
         }
 
+        // Generate .bricklayer.json configuration
+        $initCommand = $this->getApplication()->find('init');
+        $initArgs = ['--magento-root' => $magentoRoot];
+        if ($force) {
+            $initArgs['--force'] = true;
+        }
+        $initCommand->run(new ArrayInput($initArgs), $output);
+
         // Generate agent-specific files
         foreach ($agents as $agent) {
             $result = $this->generateAgentConfig($magentoRoot, $agent, $force, $envType);

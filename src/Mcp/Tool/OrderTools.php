@@ -9,12 +9,14 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class OrderTools
 {
+    use ChecksConfig;
     use FiltersFields;
     use RequiresMagento;
     #[McpTool(
@@ -124,6 +126,10 @@ class OrderTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('order-add-comment')) {
+            return $error;
+        }
+
         try {
             $orderRepository = MagentoBootstrap::get(\Magento\Sales\Api\OrderRepositoryInterface::class);
             $historyFactory = MagentoBootstrap::get(\Magento\Sales\Model\Order\Status\HistoryFactory::class);
@@ -165,6 +171,13 @@ class OrderTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('order-cancel')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('order-cancel')) {
+            return $error;
+        }
+
         try {
             $orderManagement = MagentoBootstrap::get(\Magento\Sales\Api\OrderManagementInterface::class);
             $result = $orderManagement->cancel($orderId);
@@ -187,6 +200,10 @@ class OrderTools
     public function holdOrder(int $orderId): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('order-hold')) {
             return $error;
         }
 
@@ -215,6 +232,10 @@ class OrderTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('order-unhold')) {
+            return $error;
+        }
+
         try {
             $orderManagement = MagentoBootstrap::get(\Magento\Sales\Api\OrderManagementInterface::class);
             $result = $orderManagement->unHold($orderId);
@@ -237,6 +258,10 @@ class OrderTools
     public function createInvoice(int $orderId, bool $capture = true, bool $notify = true): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('invoice-create')) {
             return $error;
         }
 
@@ -266,6 +291,10 @@ class OrderTools
             return $error;
         }
 
+        if ($error = $this->requireToolEnabled('shipment-create')) {
+            return $error;
+        }
+
         try {
             $shipOrder = MagentoBootstrap::get(\Magento\Sales\Api\ShipOrderInterface::class);
             $shipmentId = $shipOrder->execute($orderId, [], $notify);
@@ -288,6 +317,13 @@ class OrderTools
     public function createCreditMemo(int $orderId, bool $notify = true): array
     {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('creditmemo-create')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('creditmemo-create')) {
             return $error;
         }
 
@@ -519,6 +555,10 @@ class OrderTools
         string $trackNumber
     ): array {
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('shipment-track-add')) {
             return $error;
         }
 

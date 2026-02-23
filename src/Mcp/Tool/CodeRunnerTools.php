@@ -10,18 +10,17 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\AreaEmulator;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
-use Inchoo\MagentoBricklayer\Config\ConfigLoader;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class CodeRunnerTools
 {
+    use ChecksConfig;
     use RequiresMagento;
 
     /** @var array<int, array{label: string, value: mixed}> */
     private array $logBuffer = [];
-
-    private ?ConfigLoader $configLoader = null;
 
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
@@ -60,6 +59,7 @@ class CodeRunnerTools
             return $error;
         }
 
+        // Hard block in production mode (code-runner is always blocked, no config override)
         try {
             $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
             $mode = $state->getMode();
@@ -75,12 +75,12 @@ class CodeRunnerTools
             $mode = 'unknown';
         }
 
+        if ($error = $this->requireToolEnabled('code-runner')) {
+            return $error;
+        }
+
         try {
-            $configLoader = $this->getConfigLoader();
-            if (!$configLoader->isToolEnabled('code-runner')) {
-                return ['error' => true, 'message' => 'Code runner is disabled in configuration.'];
-            }
-            $configAllowWrite = (bool) $configLoader->get('tools.code-runner.allow_write', false);
+            $configAllowWrite = (bool) $this->getConfigLoader()->get('tools.code-runner.allow_write', false);
             if ($allow_write && !$configAllowWrite) {
                 $allow_write = false;
             }
@@ -447,11 +447,6 @@ class CodeRunnerTools
         } catch (\Throwable $e) {
             return 60;
         }
-    }
-
-    private function getConfigLoader(): ConfigLoader
-    {
-        return $this->configLoader ??= new ConfigLoader();
     }
 
     /**

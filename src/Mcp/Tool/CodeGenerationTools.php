@@ -9,11 +9,13 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Mcp\Capability\Attribute\McpTool;
 
 class CodeGenerationTools
 {
+    use ChecksConfig;
     use RequiresMagento;
 
     #[McpTool(
@@ -24,6 +26,13 @@ class CodeGenerationTools
     {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module names are required'];
+        }
+
+        if ($error = $this->requireToolEnabled('generate-module')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('generate-module')) {
+            return $error;
         }
 
         $moduleName = "{$vendor}_{$module}";
@@ -101,6 +110,13 @@ XML;
     ): array {
         if ($vendor === '' || $module === '' || $entity === '' || $table === '') {
             return ['error' => true, 'message' => 'Vendor, module, entity, and table are required'];
+        }
+
+        if ($error = $this->requireToolEnabled('generate-model')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('generate-model')) {
+            return $error;
         }
 
         $moduleName = "{$vendor}_{$module}";
@@ -243,6 +259,13 @@ PHP;
             return ['error' => true, 'message' => 'Vendor and module are required'];
         }
 
+        if ($error = $this->requireToolEnabled('generate-controller')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('generate-controller')) {
+            return $error;
+        }
+
         $moduleName = "{$vendor}_{$module}";
         $namespace = "{$vendor}\\{$module}";
         $actionClass = ucfirst($action);
@@ -378,6 +401,13 @@ PHTML;
     ): array {
         if ($vendor === '' || $module === '' || $resource === '') {
             return ['error' => true, 'message' => 'Vendor, module, and resource are required'];
+        }
+
+        if ($error = $this->requireToolEnabled('generate-api')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('generate-api')) {
+            return $error;
         }
 
         $moduleName = "{$vendor}_{$module}";
@@ -564,13 +594,20 @@ XML;
             ? (defined('BP') ? BP : getcwd())
             : getcwd();
 
-        $absoluteBase = rtrim($root, '/') . '/' . $basePath;
+        $root = rtrim($root, '/');
+        $absoluteBase = $root . '/' . $basePath;
 
         foreach ($files as $relativePath => $content) {
             $fullPath = $absoluteBase . '/' . $relativePath;
             $dir = dirname($fullPath);
 
             if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+                return false;
+            }
+
+            // Path traversal protection: verify resolved path stays within Magento root
+            $realDir = realpath($dir);
+            if ($realDir === false || !str_starts_with($realDir, $root)) {
                 return false;
             }
 

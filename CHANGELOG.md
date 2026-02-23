@@ -1,3 +1,25 @@
+# 1.10.0
+* Added production safety system with per-tool enable/disable via `.bricklayer.json`
+* Added ChecksConfig trait providing `requireToolEnabled()` and `requireNonProduction()` for all tool classes
+* Added `production_safety` config flag with strict/standard/unrestricted levels
+* Enforced config checks on DatabaseTools — `database-query` and `database-schema` now respect `tools.database-query.enabled`
+* Enforced config checks on LogTools — all 4 log tools now respect `tools.log-reader.enabled`
+* Enforced config checks on all 10 CatalogTools write operations (product-create, product-update, product-delete, etc.)
+* Enforced config checks on all 8 OrderTools write operations (order-cancel, invoice-create, creditmemo-create, etc.)
+* Enforced config checks on all 6 CustomerTools write operations (customer-create, customer-delete, etc.)
+* Enforced config checks on all 4 CodeGenerationTools (generate-module, generate-model, etc.)
+* Added production mode blocking for destructive tools: product-delete, category-delete, customer-delete, customer-address-delete, order-cancel, creditmemo-create
+* Added production mode blocking for all code generation tools (file writes to live servers)
+* Added `max_rows` config enforcement on DatabaseTools (previously hardcoded, now reads `tools.database-query.max_rows`)
+* Added sensitive config path masking in database-query results (payment/*, carriers/*, oauth/*, etc.)
+* Added path traversal protection to CodeGenerationTools `writeFiles()` with `realpath()` boundary check
+* Refactored CodeRunnerTools to use shared ChecksConfig trait (removes duplicate ConfigLoader logic)
+* Extended ConfigLoader defaults to include all 26 write/destructive tools for per-tool configuration
+* Added `bricklayer init` command to generate `.bricklayer.json` with deploy-mode-aware defaults
+* Added ConfigInitializer for shared config generation logic across init, install, and verify commands
+* Added automatic `.bricklayer.json` generation in `bricklayer verify` when config file is missing
+* Integrated `init` into `bricklayer install` flow — config file is now generated alongside `.mcp.json` and agent files
+
 # 1.9.5
 * Extracted ToolRegistry singleton for centralized tool scanning (replaces static caches in BatchTools/SearchTools)
 * Extracted shared traits: FiltersFields, SecureArea, RequiresMagento
