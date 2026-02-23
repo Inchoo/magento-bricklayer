@@ -133,6 +133,12 @@ class DatabaseTools
 
     private function getTableSchema(object $connection, string $tableName): array
     {
+        // Validate table exists (prevents SQL injection via table name)
+        $tables = $connection->fetchCol("SHOW TABLES");
+        if (!in_array($tableName, $tables, true)) {
+            return ['error' => true, 'message' => "Table not found: $tableName"];
+        }
+
         $columns = [];
         $columnsData = $connection->fetchAll("SHOW FULL COLUMNS FROM `$tableName`");
         foreach ($columnsData as $column) {

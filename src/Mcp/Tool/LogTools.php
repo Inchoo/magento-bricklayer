@@ -58,6 +58,15 @@ class LogTools
             return $error;
         }
 
+        try {
+            $configMaxLines = (int) $this->getConfigLoader()->get('tools.log-reader.max_lines', 500);
+            if ($lines > $configMaxLines) {
+                $lines = $configMaxLines;
+            }
+        } catch (\Throwable $e) {
+            // proceed with parameter default
+        }
+
         if (!isset(self::LOG_FILES[$logType])) {
             return [
                 'error' => true,

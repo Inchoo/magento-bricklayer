@@ -328,6 +328,8 @@ The tool validates code against 9 dangerous patterns (shell execution, file writ
 - `generate-controller` - Create controller with routes.xml, layout XML, and template
 - `generate-api` - Create REST API endpoint with interface, implementation, and webapi.xml
 
+All code generation tools support `dry_run` (preview without writing) and `force` (overwrite existing files) parameters. In dry-run mode, each file is annotated with `new` or `exists` status. Without `force`, existing files cause a conflict error listing the affected paths.
+
 ### Development Context Tool
 - `development-context` - Load coding guidelines and development patterns for a task category (37 categories covering plugins, EAV, GraphQL, Hyvä, checkout, payment, testing, and more). Use category `list` to see all available categories.
 
@@ -381,7 +383,6 @@ Create `.bricklayer.json` in your Magento root:
 
 ```json
 {
-    "production_safety": "standard",
     "tools": {
         "code-runner": {
             "enabled": true,
@@ -408,19 +409,9 @@ Create `.bricklayer.json` in your Magento root:
 }
 ```
 
-### Production Safety Levels
-
-The `production_safety` setting controls default tool availability when running against a production Magento instance:
-
-| Level | Behavior |
-|-------|----------|
-| `strict` | Read-only tools only |
-| `standard` | Read + write tools, destructive tools blocked (default) |
-| `unrestricted` | All tools enabled |
-
 ### Per-Tool Configuration
 
-Every write tool can be individually enabled or disabled. All 89 tools support the `enabled` flag:
+Every write tool can be individually enabled or disabled via the `enabled` flag:
 
 ```json
 {
@@ -432,11 +423,12 @@ Every write tool can be individually enabled or disabled. All 89 tools support t
 }
 ```
 
+Destructive tools (`product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, `creditmemo-create`, and all 4 code generation tools) are **blocked by default in production mode**. They must be explicitly enabled in `.bricklayer.json` with `"enabled": true` to work in production.
+
 ### Recommended Production Configuration
 
 ```json
 {
-    "production_safety": "strict",
     "tools": {
         "code-runner": { "enabled": false },
         "database-query": { "enabled": false },
@@ -525,20 +517,21 @@ vendor/bin/bricklayer update --config-only
 
 ## Security
 
-### Query Safety
+### Query & Log Safety
 - Database queries are read-only (SELECT only) with dangerous pattern detection
+- Table names in schema queries are validated against actual database tables to prevent SQL injection
 - Configurable row limits via `tools.database-query.max_rows`
+- Configurable log line limits via `tools.log-reader.max_lines`
 - Sensitive configuration values (payment/\*, carriers/\*, oauth/\*, etc.) are automatically masked in query results
 
 ### Production Mode Protection
-- **Destructive tools blocked by default** — `product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, and `creditmemo-create` are disabled in production mode
-- **Code generation blocked** — All 4 code generation tools (`generate-module`, `generate-model`, `generate-controller`, `generate-api`) refuse to write files to production servers
+- **Destructive tools blocked by default** — `product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, and `creditmemo-create` are blocked in production mode unless explicitly enabled in `.bricklayer.json`
+- **Code generation blocked** — All 4 code generation tools (`generate-module`, `generate-model`, `generate-controller`, `generate-api`) refuse to write files to production servers unless explicitly enabled
 - **`code-runner` hard-blocked** — Cannot be enabled in production under any circumstances
-- **Explicit override available** — Destructive tools can be re-enabled per-tool in `.bricklayer.json` when needed (e.g., `"tools": {"product-delete": {"enabled": true}}`)
+- **Explicit override required** — Destructive tools require `"enabled": true` in `.bricklayer.json` to run in production (e.g., `"tools": {"product-delete": {"enabled": true}}`). Without a config file or without the entry, they are blocked.
 
 ### Per-Tool Configuration
 - All 26 write/destructive tools can be individually enabled or disabled via `.bricklayer.json`
-- The `production_safety` level (`strict`, `standard`, `unrestricted`) provides a global safety baseline
 - Config checks are enforced via the shared `ChecksConfig` trait across all tool classes
 
 ### Code Execution Safety

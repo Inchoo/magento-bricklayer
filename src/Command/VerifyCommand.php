@@ -242,8 +242,16 @@ HELP
         if ($initializer->exists($magentoRoot)) {
             try {
                 $configLoader = new ConfigLoader();
-                $safety = $configLoader->getProductionSafety();
-                $this->addResult('Bricklayer config', 'pass', ".bricklayer.json ($safety mode)");
+                $configLoader->load($magentoRoot);
+                $tools = $configLoader->get('tools', []);
+                $disabled = 0;
+                foreach ($tools as $toolConfig) {
+                    if (is_array($toolConfig) && isset($toolConfig['enabled']) && $toolConfig['enabled'] === false) {
+                        $disabled++;
+                    }
+                }
+                $summary = $disabled > 0 ? "$disabled tools disabled" : 'all tools enabled';
+                $this->addResult('Bricklayer config', 'pass', ".bricklayer.json ($summary)");
             } catch (\Throwable $e) {
                 $this->addResult('Bricklayer config', 'warn', '.bricklayer.json exists but has errors: ' . $e->getMessage());
             }
@@ -252,10 +260,12 @@ HELP
 
         // Auto-generate .bricklayer.json
         $result = $initializer->generate($magentoRoot);
+        $disabled = $result['disabled_tools'];
+        $summary = $disabled > 0 ? "$disabled tools disabled" : 'all tools enabled';
         $this->addResult(
             'Bricklayer config',
             'pass',
-            "created .bricklayer.json ({$result['safety']} mode, based on {$result['deploy_mode']})"
+            "created .bricklayer.json ($summary, based on {$result['deploy_mode']})"
         );
     }
 

@@ -9,7 +9,6 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool\Concern;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
-use Inchoo\MagentoBricklayer\Exception\ToolException;
 
 trait RequiresMagento
 {

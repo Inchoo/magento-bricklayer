@@ -60,7 +60,7 @@ trait ChecksConfig
 
         // Allow if explicitly enabled in config despite production mode
         try {
-            $explicitlyEnabled = $this->getConfigLoader()->get("tools.$toolName.enabled");
+            $explicitlyEnabled = $this->getConfigLoader()->get("tools.$toolName.enabled", null);
             if ($explicitlyEnabled === true) {
                 return null;
             }

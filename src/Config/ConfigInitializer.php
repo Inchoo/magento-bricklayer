@@ -18,21 +18,22 @@ class ConfigInitializer
     /**
      * Generate .bricklayer.json if it does not exist.
      *
-     * @return array{created: bool, path: string, deploy_mode: string, safety: string}
+     * @return array{created: bool, path: string, deploy_mode: string, disabled_tools: int}
      */
     public function generate(string $magentoRoot, bool $force = false): array
     {
         $configPath = $magentoRoot . '/' . self::CONFIG_FILE;
         $deployMode = $this->detectDeployMode($magentoRoot);
         $config = $this->buildConfig($deployMode);
-        $safety = $config['production_safety'] ?? 'standard';
+
+        $disabledCount = $this->countDisabledTools($config);
 
         if (file_exists($configPath) && !$force) {
             return [
                 'created' => false,
                 'path' => $configPath,
                 'deploy_mode' => $deployMode,
-                'safety' => $safety,
+                'disabled_tools' => $disabledCount,
             ];
         }
 
@@ -43,7 +44,7 @@ class ConfigInitializer
             'created' => true,
             'path' => $configPath,
             'deploy_mode' => $deployMode,
-            'safety' => $safety,
+            'disabled_tools' => $disabledCount,
         ];
     }
 
@@ -87,7 +88,6 @@ class ConfigInitializer
     {
         if ($deployMode === 'production') {
             return [
-                'production_safety' => 'standard',
                 'tools' => [
                     'code-runner' => [
                         'enabled' => false,
@@ -112,12 +112,27 @@ class ConfigInitializer
 
         // developer / default mode — permissive defaults
         return [
-            'production_safety' => 'unrestricted',
             'tools' => [
                 'code-runner' => [
                     'allow_write' => false,
                 ],
             ],
         ];
+    }
+
+    /**
+     * Count how many tools are explicitly disabled in the config.
+     *
+     * @param array<string, mixed> $config
+     */
+    private function countDisabledTools(array $config): int
+    {
+        $count = 0;
+        foreach ($config['tools'] ?? [] as $toolConfig) {
+            if (is_array($toolConfig) && isset($toolConfig['enabled']) && $toolConfig['enabled'] === false) {
+                $count++;
+            }
+        }
+        return $count;
     }
 }

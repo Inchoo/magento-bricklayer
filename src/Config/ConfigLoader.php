@@ -100,22 +100,11 @@ class ConfigLoader
     }
 
     /**
-     * Get the production safety level: strict, standard, or unrestricted.
-     */
-    public function getProductionSafety(): string
-    {
-        $level = $this->get('production_safety', 'standard');
-        return in_array($level, ['strict', 'standard', 'unrestricted'], true) ? $level : 'standard';
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function getDefaultConfig(): array
     {
         return [
-            // Production safety level: strict (read-only), standard (read+write, no deletes), unrestricted (all)
-            'production_safety' => 'standard',
             'tools' => [
                 'code-runner' => [
                     'enabled' => true,
@@ -133,35 +122,35 @@ class ConfigLoader
                 // Catalog write tools
                 'product-create' => ['enabled' => true],
                 'product-update' => ['enabled' => true],
-                'product-delete' => ['enabled' => true],
+                'product-delete' => [],
                 'product-stock-update' => ['enabled' => true],
                 'product-media-add' => ['enabled' => true],
                 'product-link-set' => ['enabled' => true],
                 'category-create' => ['enabled' => true],
                 'category-update' => ['enabled' => true],
-                'category-delete' => ['enabled' => true],
+                'category-delete' => [],
                 'category-assign-products' => ['enabled' => true],
                 // Order write tools
-                'order-cancel' => ['enabled' => true],
+                'order-cancel' => [],
                 'order-hold' => ['enabled' => true],
                 'order-unhold' => ['enabled' => true],
                 'order-add-comment' => ['enabled' => true],
                 'invoice-create' => ['enabled' => true],
                 'shipment-create' => ['enabled' => true],
                 'shipment-track-add' => ['enabled' => true],
-                'creditmemo-create' => ['enabled' => true],
+                'creditmemo-create' => [],
                 // Customer write tools
                 'customer-create' => ['enabled' => true],
                 'customer-update' => ['enabled' => true],
-                'customer-delete' => ['enabled' => true],
+                'customer-delete' => [],
                 'customer-address-create' => ['enabled' => true],
                 'customer-address-update' => ['enabled' => true],
-                'customer-address-delete' => ['enabled' => true],
+                'customer-address-delete' => [],
                 // Code generation tools
-                'generate-module' => ['enabled' => true],
-                'generate-model' => ['enabled' => true],
-                'generate-controller' => ['enabled' => true],
-                'generate-api' => ['enabled' => true],
+                'generate-module' => [],
+                'generate-model' => [],
+                'generate-controller' => [],
+                'generate-api' => [],
             ],
             'guidelines' => [
                 'include' => ['core', 'modules', 'areas', 'patterns'],
