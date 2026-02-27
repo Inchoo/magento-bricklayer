@@ -331,7 +331,7 @@ The tool validates code against 9 dangerous patterns (shell execution, file writ
 All code generation tools support `dry_run` (preview without writing) and `force` (overwrite existing files) parameters. In dry-run mode, each file is annotated with `new` or `exists` status. Without `force`, existing files cause a conflict error listing the affected paths.
 
 ### Development Context Tool
-- `development-context` - Load coding guidelines and development patterns for a task category (37 categories covering plugins, EAV, GraphQL, Hyvä, checkout, payment, testing, and more). Use category `list` to see all available categories.
+- `development-context` - Load coding guidelines and development patterns for a task category (38 categories covering plugins, EAV, GraphQL, Hyvä, Magewire, checkout, payment, testing, and more). Use category `list` to see all available categories.
 
 ## MCP Resources
 
@@ -353,12 +353,13 @@ Use `magento://guidelines/index` for a complete listing.
 Magento coding standards reference with PSR-12 compliance and architecture guidelines (`magento://standards/coding`, `magento://standards/architecture`).
 
 ### Skills Resource
-27 development skills accessed via URI template `magento://skills/{name}`, covering:
+28 development skills accessed via URI template `magento://skills/{name}`, covering:
 - Checkout customization (steps & layout processors, config providers & validation)
 - Cron job development
 - EAV attribute development
 - GraphQL API development
-- Hyvä Checkout (Magewire components, XML configuration, evaluation & form APIs)
+- Hyvä Checkout (checkout steps & components, XML configuration, evaluation & form APIs)
+- Magewire standalone reactive components
 - Hyvä theme development (setup & Alpine.js CSP, ViewModels & compatibility)
 - Hyvä UI component development (CSS design system, Alpine.js interactivity)
 - Import/Export functionality (import entities, export & advanced processing)

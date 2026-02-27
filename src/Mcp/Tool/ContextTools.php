@@ -56,7 +56,7 @@ class ContextTools
         'hyva-checkout' => [
             'skills' => ['hyva-checkout-magewire'],
             'guidelines' => ['ecosystem/hyva-architecture'],
-            'description' => 'Hyvä Checkout Magewire component development',
+            'description' => 'Hyvä Checkout step and component development',
             'group' => 'Hyvä Theme',
         ],
         'hyva-checkout-config' => [
@@ -69,6 +69,12 @@ class ContextTools
             'skills' => ['hyva-checkout-apis'],
             'guidelines' => [],
             'description' => 'Hyvä Checkout evaluation, form, and frontend APIs',
+            'group' => 'Hyvä Theme',
+        ],
+        'magewire' => [
+            'skills' => ['magewire'],
+            'guidelines' => ['ecosystem/hyva-architecture'],
+            'description' => 'Magewire reactive component development (standalone)',
             'group' => 'Hyvä Theme',
         ],
         'module' => [

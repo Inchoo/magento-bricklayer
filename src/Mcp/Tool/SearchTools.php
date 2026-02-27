@@ -59,7 +59,10 @@ class SearchTools
             'keywords' => ['test', 'phpunit', 'mftf', 'api functional'],
         ],
         'hyva-checkout' => [
-            'keywords' => ['livewire', 'hyvä checkout'],
+            'keywords' => ['hyvä checkout', 'checkout step', 'payment method', 'shipping method'],
+        ],
+        'magewire' => [
+            'keywords' => ['magewire', 'livewire', 'wire:', 'reactive', 'server-driven', '$wire', 'entangle'],
         ],
         'hyva-theme' => [
             'keywords' => ['alpine', 'alpinejs', 'tailwind', 'csp'],
@@ -549,7 +552,7 @@ class SearchTools
                    "- Operations: order, customer, product, category, log, cache, indexer\n" .
                    "- Advanced: payment, shipping, checkout, ui-component, message-queue, import\n" .
                    "- Quality: testing, security, performance, coding-standards\n\n" .
-                   "Tip: Use the `development-context` tool with category `list` to see all 37 coding guideline categories.";
+                   "Tip: Use the `development-context` tool with category `list` to see all 38 coding guideline categories.";
         }
 
         $topCategories = array_slice(array_column($results, 'category'), 0, 3);

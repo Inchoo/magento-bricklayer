@@ -1,3 +1,7 @@
+# 1.10.2
+* Added standalone `magewire` development-context category for generic Magewire component development outside Hyvä Checkout
+* Refocused `hyva-checkout` category on checkout-specific patterns with condensed Magewire quick-reference
+
 # 1.10.1
 * **Security**: Fixed `requireNonProduction` bypass when no `.bricklayer.json` exists — destructive tools are now blocked by default in production mode
 * **Security**: Fixed SQL injection vector in `DatabaseTools::getTableSchema` — table names are now validated against actual database tables before use in queries

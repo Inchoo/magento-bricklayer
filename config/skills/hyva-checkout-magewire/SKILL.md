@@ -1,26 +1,26 @@
 # Hyvä Checkout: Magewire Components
 
-> Related: See [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config, and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and frontend APIs.
+> Related: See [magewire](../magewire/SKILL.md) for standalone Magewire fundamentals, [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config, and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and frontend APIs.
 
 ## Overview
 
-Hyva Checkout is a reactive, server-driven checkout for Magento 2 built on **Magewire** (a Magento 2 adaptation of Laravel Livewire). It replaces Magento's Luma/KnockoutJS checkout with PHP-based components that handle reactivity via AJAX round-trips. The checkout is composed of **steps** declared in `hyva_checkout.xml`, with **Magewire components** declared in Layout XML and rendered through `.phtml` templates using `wire:` directives.
+Hyvä Checkout is a reactive, server-driven checkout for Magento 2 built on **Magewire** (a Magento 2 adaptation of Laravel Livewire). It replaces Magento's Luma/KnockoutJS checkout with PHP-based components that handle reactivity via AJAX round-trips. The checkout is composed of **steps** declared in `hyva_checkout.xml`, with **Magewire components** declared in Layout XML and rendered through `.phtml` templates using `wire:` directives.
 
 ## When to Use This Skill
 
 | Scenario | Use This Skill? |
 |----------|-----------------|
-| Customizing Hyva Checkout steps or layout | Yes |
+| Customizing Hyvä Checkout steps or layout | Yes |
 | Adding a custom payment method integration | Yes |
 | Adding a custom shipping method view | Yes |
-| Building Magewire components (reactive PHP) | Yes |
 | Creating custom checkout form fields | Yes |
 | Implementing custom order placement logic | Yes |
 | Extending existing checkout Magewire components | Yes |
 | Building evaluation/validation for checkout | Yes |
-| Standard Magento checkout (Luma/KnockoutJS) | No (use checkout-customization) |
-| Hyva theme setup / child themes | No (use hyva-theme-development) |
-| Non-checkout Hyva UI components | No (use hyva-ui-component-development) |
+| Building Magewire components outside checkout | No (use `magewire`) |
+| Standard Magento checkout (Luma/KnockoutJS) | No (use `checkout`) |
+| Hyvä theme setup / child themes | No (use `hyva-theme`) |
+| Non-checkout Hyvä UI components | No (use `hyva-ui-component`) |
 
 ## Architecture Overview
 
@@ -44,7 +44,9 @@ Hyva Checkout is a reactive, server-driven checkout for Magento 2 built on **Mag
 
 **Route:** `/hyva_checkout/`
 
-## Magewire Component Fundamentals
+## Magewire Quick Reference
+
+This section covers the essential Magewire patterns needed for checkout development. For comprehensive Magewire documentation (lifecycle hooks, loader configuration, flash messages, best practices), see the [`magewire`](../magewire/SKILL.md) skill.
 
 ### Basic Component Class
 
@@ -57,164 +59,49 @@ namespace Vendor\Module\Magewire;
 
 use Magewirephp\Magewire\Component;
 
-class MyComponent extends Component
+class MyCheckoutComponent extends Component
 {
-    // Public properties are reactive (synced with frontend)
-
     /**
      * @var string
      */
-    public string $name = '';
+    public string $selectedMethod = '';
 
     /**
-     * @var int
+     * @var bool
      */
-    public int $count = 0;
+    public bool $isComplete = false;
 
     /**
+     * @param string $code
      * @return void
      */
-    public function increment(): void
+    public function selectMethod(string $code): void
     {
-        $this->count++;
+        $this->selectedMethod = $code;
     }
 }
 ```
 
-### Registering in Layout XML
+### `wire:` Directives Summary
 
-```xml
-<!-- Simple object reference -->
-<block name="my.component"
-       template="Vendor_Module::magewire/my-component.phtml">
-    <arguments>
-        <argument name="magewire" xsi:type="object">
-            \Vendor\Module\Magewire\MyComponent
-        </argument>
-    </arguments>
-</block>
+| Directive | Purpose |
+|-----------|---------|
+| `wire:model` | Two-way bind to property (every keystroke) |
+| `wire:model.lazy` | Two-way bind on blur/change (preferred for form inputs) |
+| `wire:click` | Call method on click |
+| `wire:submit` | Call method on form submit |
+| `wire:ignore` | Exclude subtree from DOM diffing |
+| `$set('prop', val)` | Magic action: set property |
+| `$toggle('prop')` | Magic action: toggle boolean |
+| `$refresh()` | Magic action: re-render component |
 
-<!-- With initial property values -->
-<block name="my.component"
-       template="Vendor_Module::magewire/my-component.phtml">
-    <arguments>
-        <argument name="magewire" xsi:type="array">
-            <item name="type" xsi:type="object">\Vendor\Module\Magewire\MyComponent</item>
-            <item name="name" xsi:type="string">Default Name</item>
-        </argument>
-    </arguments>
-</block>
-```
+### Events (Component Coordination)
 
-### Template with `wire:` Directives
-
-```php
-<?php
-
-declare(strict_types=1);
-
-use Vendor\Module\Magewire\MyComponent;
-use Magento\Framework\Escaper;
-
-/** @var MyComponent $magewire */
-/** @var Escaper $escaper */
-?>
-
-<div>
-    <!-- Two-way data binding -->
-    <input type="text" wire:model="name" />
-
-    <!-- Lazy binding (on blur) -->
-    <input type="text" wire:model.lazy="name" />
-
-    <!-- Call method on click -->
-    <button wire:click="increment">
-        Count: <?= $escaper->escapeHtml((string) $magewire->count) ?>
-    </button>
-
-    <!-- Magic actions -->
-    <button wire:click="$set('count', 0)">Reset</button>
-    <button wire:click="$toggle('active')">Toggle</button>
-    <button wire:click="$refresh()">Refresh</button>
-
-    <!-- Prevent DOM re-rendering for an element -->
-    <div wire:ignore>
-        <!-- Third-party JS widget here -->
-    </div>
-</div>
-```
-
-### Component Lifecycle Hooks
-
-```php
-class MyComponent extends Component
-{
-    /**
-     * @return void
-     */
-    public function boot(): void {}
-
-    /**
-     * @return void
-     */
-    public function mount(): void {}
-
-    /**
-     * @return void
-     */
-    public function booted(): void {}
-
-    /**
-     * @return void
-     */
-    public function hydrate(): void {}
-
-    /**
-     * @param mixed $value
-     * @param string $name
-     * @return void
-     */
-    public function updating(mixed $value, string $name): void {}
-
-    /**
-     * @param mixed $value
-     * @param string $name
-     * @return void
-     */
-    public function updated(mixed $value, string $name): void {}
-
-    /**
-     * @param mixed $value
-     * @return void
-     */
-    public function updatingMethod(mixed $value): void {}
-
-    /**
-     * @param mixed $value
-     * @return string
-     */
-    public function updatedMethod(mixed $value): string { return $value; }
-
-    /**
-     * @param mixed $value
-     * @return void
-     */
-    public function updatedDataEmailAddress(mixed $value): void {}
-
-    /**
-     * @return void
-     */
-    public function dehydrate(): void {}
-}
-```
-
-### Events Between Components
+Events are critical in checkout — components must coordinate across steps (e.g., shipping selection triggers payment refresh).
 
 ```php
 class ShippingComponent extends Component
 {
-    // Declare listeners: event name => method name
-
     /**
      * @var array<string, string>
      */
@@ -231,7 +118,7 @@ class ShippingComponent extends Component
     {
         // Save method...
 
-        // Emit to ALL components listening for this event
+        // Emit to ALL listening components
         $this->emit('shipping_method_selected', ['method' => $code]);
 
         // Emit to a SPECIFIC component by block name
@@ -243,75 +130,26 @@ class ShippingComponent extends Component
 }
 ```
 
-### Flash Messages
-
-```php
-/**
- * @return void
- */
-public function save(): void
-{
-    try {
-        // Save logic...
-        $this->dispatchSuccessMessage('Your changes were saved.');
-    } catch (LocalizedException $e) {
-        $this->dispatchErrorMessage($e->getMessage());
-        // Also available:
-        // $this->dispatchWarningMessage('Warning text');
-        // $this->dispatchNoticeMessage('Notice text');
-    }
-}
-```
-
-### Browser Events from PHP
-
-```php
-/**
- * @return void
- */
-public function onComplete(): void
-{
-    $this->dispatchBrowserEvent('checkout:step:complete', [
-        'step' => 'shipping'
-    ]);
-}
-```
-
-### Loader Configuration
-
-```php
-class PaymentMethodList extends Component
-{
-    // Show loader text while specific properties/methods are processing
-
-    /**
-     * @var array
-     */
-    protected array $loader = [
-        'method' => 'Saving method',         // Property update
-        'placeOrder' => 'Processing order',   // Method call
-    ];
-}
-```
-
-## Alpine.js Integration with Magewire
-
-### Accessing Component via `$wire`
+### Alpine.js Integration (`$wire` and `entangle`)
 
 ```html
 <div x-data>
-    <h1 x-text="$wire.name"></h1>
-    <button x-on:click="$wire.set('name', 'New Value')">Update</button>
-    <button x-on:click="$wire.increment()">Call Method</button>
+    <!-- Read Magewire property from Alpine -->
+    <span x-text="$wire.selectedMethod"></span>
+
+    <!-- Call PHP method from Alpine -->
+    <button x-on:click="$wire.selectMethod('flatrate')">Select</button>
+
+    <!-- Set property from Alpine -->
+    <button x-on:click="$wire.set('isComplete', true)">Complete</button>
 </div>
-```
 
-### Entangle: Two-Way Sync Between Alpine and Magewire
-
-```html
-<div x-data="{ localValue: $wire.entangle('serverValue') }">
-    <!-- Changes to localValue sync to PHP $serverValue and vice versa -->
-    <input type="text" x-model="localValue" />
+<!-- Two-way sync between Alpine local state and Magewire server state -->
+<div x-data="{ localMethod: $wire.entangle('selectedMethod') }">
+    <select x-model="localMethod">
+        <option value="flatrate">Flat Rate</option>
+        <option value="freeshipping">Free Shipping</option>
+    </select>
 </div>
 ```
 
@@ -323,4 +161,193 @@ Magewire.emit('shipping_address_saved', { addressId: 123 });
 
 // Emit to a specific component
 Magewire.emitTo('checkout.payment.methods', 'refresh');
+```
+
+## Checkout-Specific Patterns
+
+### Payment Method Component
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Magewire\Checkout\Payment\Method;
+
+use Hyva\Checkout\Magewire\Checkout\Payment\AbstractPaymentMethod;
+
+class CustomGateway extends AbstractPaymentMethod
+{
+    /**
+     * Payment method code — must match etc/payment.xml and di.xml config.
+     *
+     * @var string
+     */
+    protected string $methodCode = 'custom_gateway';
+
+    /**
+     * @var string
+     */
+    public string $cardToken = '';
+
+    /**
+     * Called by Hyvä Checkout when this payment method is submitted.
+     * Use to set additional payment information on the quote.
+     *
+     * @return void
+     */
+    public function placeOrder(): void
+    {
+        try {
+            $quote = $this->getQuote();
+            $payment = $quote->getPayment();
+            $payment->setAdditionalInformation('card_token', $this->cardToken);
+
+            parent::placeOrder();
+        } catch (\Exception $e) {
+            $this->dispatchErrorMessage($e->getMessage());
+        }
+    }
+}
+```
+
+### Shipping Method Component
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Magewire\Checkout\Shipping\Method;
+
+use Magewirephp\Magewire\Component;
+
+class CustomCarrier extends Component
+{
+    /**
+     * @var string
+     */
+    public string $selectedOption = '';
+
+    /**
+     * @var array<string, string>
+     */
+    protected $listeners = [
+        'shipping_address_saved' => 'loadOptions',
+    ];
+
+    /**
+     * @return void
+     */
+    public function loadOptions(): void
+    {
+        // Load available options for the current address
+    }
+
+    /**
+     * @param string $optionCode
+     * @return void
+     */
+    public function selectOption(string $optionCode): void
+    {
+        $this->selectedOption = $optionCode;
+        $this->emit('shipping_method_selected', ['method' => $optionCode]);
+    }
+}
+```
+
+### Step Completion via Browser Events
+
+Checkout step navigation is driven by browser events. Dispatch from PHP when a step is complete:
+
+```php
+/**
+ * @return void
+ */
+public function onStepComplete(): void
+{
+    $this->dispatchBrowserEvent('checkout:step:complete', [
+        'step' => 'shipping',
+    ]);
+}
+```
+
+### Checkout Form Integration
+
+Embed custom form fields within a checkout step:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Magewire\Checkout;
+
+use Magewirephp\Magewire\Component;
+
+class CustomFields extends Component
+{
+    /**
+     * @var string
+     */
+    public string $deliveryNote = '';
+
+    /**
+     * @var string
+     */
+    public string $preferredDate = '';
+
+    /**
+     * @var array<string, string>
+     */
+    protected $listeners = [
+        'checkout:order:place:before' => 'saveFields',
+    ];
+
+    /**
+     * Save custom fields to the quote before order placement.
+     *
+     * @return void
+     */
+    public function saveFields(): void
+    {
+        $quote = $this->getSessionQuote();
+        $quote->setData('delivery_note', $this->deliveryNote);
+        $quote->setData('preferred_date', $this->preferredDate);
+    }
+}
+```
+
+Template:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Vendor\Module\Magewire\Checkout\CustomFields;
+use Magento\Framework\Escaper;
+
+/** @var CustomFields $magewire */
+/** @var Escaper $escaper */
+?>
+
+<div>
+    <div class="field">
+        <label for="delivery-note">
+            <?= $escaper->escapeHtml(__('Delivery Note')) ?>
+        </label>
+        <textarea id="delivery-note"
+                  wire:model.lazy="deliveryNote"
+                  rows="3"></textarea>
+    </div>
+    <div class="field">
+        <label for="preferred-date">
+            <?= $escaper->escapeHtml(__('Preferred Delivery Date')) ?>
+        </label>
+        <input type="date"
+               id="preferred-date"
+               wire:model.lazy="preferredDate" />
+    </div>
+</div>
 ```
