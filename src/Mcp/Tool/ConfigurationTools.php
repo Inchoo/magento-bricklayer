@@ -45,7 +45,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'configuration-get',
-        description: 'Retrieves system configuration value for a given path'
+        description: 'Retrieves system configuration value for a given path',
+        meta: ['hidden' => true]
     )]
     public function getConfiguration(
         string $path,
@@ -203,7 +204,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'event-list',
-        description: 'Lists events and their observers in the Magento system'
+        description: 'Lists events and their observers in the Magento system',
+        meta: ['hidden' => true]
     )]
     public function getEventList(string $eventName = '', string $area = 'global'): array
     {
@@ -321,7 +323,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'configuration-list',
-        description: 'Lists available configuration paths for a section'
+        description: 'Lists available configuration paths for a section',
+        meta: ['hidden' => true]
     )]
     public function listConfiguration(string $section = ''): array
     {

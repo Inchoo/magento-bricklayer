@@ -15,7 +15,6 @@ class ConfigValidator
         'application-info',
         'module-list',
         'module-structure',
-        'store-configuration',
         'validate-module',
         'database-schema',
         'database-query',
@@ -80,23 +79,12 @@ class ConfigValidator
         'customer-address-update',
         'customer-address-delete',
         // Database & Logs
-        'log-read',
-        'log-list',
-        'log-analyze',
-        'log-search',
+        'log',
         'diagnose-error',
         // GraphQL
-        'graphql-types',
-        'graphql-type-info',
-        'graphql-queries',
-        'graphql-mutations',
-        'graphql-resolvers',
+        'graphql-inspect',
         // System
-        'cache-status',
-        'indexer-status',
-        'cron-list',
-        'cron-history',
-        'deploy-mode',
+        'system-status',
         'search-docs',
         'code-runner',
         'development-context',
@@ -205,7 +193,7 @@ class ConfigValidator
             }
         }
 
-        if ($toolName === 'log-read') {
+        if ($toolName === 'log') {
             if (isset($config['max_lines'])) {
                 if (!is_int($config['max_lines']) || $config['max_lines'] < 1) {
                     $this->errors[] = "Tool '$toolName' 'max_lines' must be a positive integer";

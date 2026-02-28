@@ -20,7 +20,8 @@ class CodeGenerationTools
 
     #[McpTool(
         name: 'generate-module',
-        description: 'Scaffolds a new Magento 2 module with required files'
+        description: 'Scaffold a new module.',
+        meta: ['hidden' => true]
     )]
     public function generateModule(string $vendor, string $module, string $version = '1.0.0', bool $dry_run = false, bool $force = false): array
     {
@@ -107,7 +108,8 @@ XML;
 
     #[McpTool(
         name: 'generate-model',
-        description: 'Creates model, resource model, and collection for an entity'
+        description: 'Generate model, resource model, and collection.',
+        meta: ['hidden' => true]
     )]
     public function generateModel(
         string $vendor,
@@ -265,7 +267,8 @@ PHP;
 
     #[McpTool(
         name: 'generate-controller',
-        description: 'Creates a controller with layout and template files'
+        description: 'Generate controller with layout and template.',
+        meta: ['hidden' => true]
     )]
     public function generateController(
         string $vendor,
@@ -421,7 +424,8 @@ PHTML;
 
     #[McpTool(
         name: 'generate-api',
-        description: 'Creates a REST API endpoint with interface and implementation'
+        description: 'Generate REST API endpoint with interface.',
+        meta: ['hidden' => true]
     )]
     public function generateApi(
         string $vendor,

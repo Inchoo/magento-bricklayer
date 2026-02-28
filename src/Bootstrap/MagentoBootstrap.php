@@ -23,6 +23,19 @@ class MagentoBootstrap
     private static ?MagentoDetector $detector = null;
     private static ?AreaEmulator $areaEmulator = null;
 
+    /** @var array<string, int|false> mtime snapshot of sentinel files at last (re)init */
+    private static array $sentinelMtimes = [];
+
+    /**
+     * Files that indicate Magento application state has changed.
+     * If any mtime differs from the snapshot taken at bootstrap, the
+     * ObjectManager is stale and needs reinitializing.
+     */
+    private const SENTINEL_FILES = [
+        'app/etc/config.php',           // module list — changes on setup:upgrade, module:enable/disable
+        'generated/metadata/global.php', // compiled DI — changes on setup:di:compile
+    ];
+
     /**
      * @throws MagentoNotFoundException When Magento installation cannot be found
      * @throws BootstrapException When bootstrap fails
@@ -66,6 +79,8 @@ class MagentoBootstrap
 
             self::$areaEmulator = new AreaEmulator();
             self::$areaEmulator->setArea($areaCode);
+
+            self::snapshotSentinels();
 
             return self::$objectManager;
         } catch (\Throwable $e) {
@@ -124,6 +139,88 @@ class MagentoBootstrap
     public static function getAreaEmulator(): ?AreaEmulator
     {
         return self::$areaEmulator;
+    }
+
+    /**
+     * Check whether sentinel files have changed since the last (re)init.
+     *
+     * A single filemtime() per file — negligible cost per tool call.
+     */
+    public static function isStale(): bool
+    {
+        if (self::$magentoRoot === null || self::$sentinelMtimes === []) {
+            return false;
+        }
+
+        foreach (self::SENTINEL_FILES as $relative) {
+            $path = self::$magentoRoot . '/' . $relative;
+            $currentMtime = @filemtime($path);
+
+            // Compare with snapshot; treat "file appeared" and "mtime changed" as stale
+            $snapshotMtime = self::$sentinelMtimes[$relative] ?? false;
+            if ($currentMtime !== $snapshotMtime) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * If stale, reinitialize automatically. Returns true if reinit happened.
+     */
+    public static function reinitializeIfStale(): bool
+    {
+        if (!self::isStale()) {
+            return false;
+        }
+
+        self::reinitialize();
+        return true;
+    }
+
+    /**
+     * Record current mtimes of sentinel files.
+     */
+    private static function snapshotSentinels(): void
+    {
+        self::$sentinelMtimes = [];
+
+        if (self::$magentoRoot === null) {
+            return;
+        }
+
+        foreach (self::SENTINEL_FILES as $relative) {
+            $path = self::$magentoRoot . '/' . $relative;
+            self::$sentinelMtimes[$relative] = @filemtime($path); // false if missing
+        }
+    }
+
+    /**
+     * Reinitialize Magento with a fresh ObjectManager.
+     *
+     * Call this after external changes that invalidate the in-memory state:
+     * setup:upgrade, setup:di:compile, module:enable, cache:flush, etc.
+     *
+     * Creates a completely new ObjectManager from current disk state
+     * (app/etc/config.php, generated/, merged config.xml, etc.).
+     *
+     * @throws BootstrapException When Magento was never initialized or reinit fails
+     */
+    public static function reinitialize(): object
+    {
+        $magentoRoot = self::$magentoRoot;
+
+        if ($magentoRoot === null) {
+            throw BootstrapException::objectManagerNotInitialized();
+        }
+
+        // Clear cached ObjectManager so initialize() will re-create it
+        self::$objectManager = null;
+        self::$areaEmulator = null;
+        // Keep $magentoRoot and $detector — they're still valid
+
+        return self::initialize($magentoRoot);
     }
 
     public static function reset(): void

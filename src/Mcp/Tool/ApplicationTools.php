@@ -18,9 +18,10 @@ class ApplicationTools
 
     #[McpTool(
         name: 'application-info',
-        description: 'Returns Magento version, PHP version, deploy mode, and installation summary'
+        description: 'Returns Magento version, PHP version, deploy mode, and installation summary. Use include=stores for store hierarchy.',
+        meta: ['hidden' => true]
     )]
-    public function getApplicationInfo(): array
+    public function getApplicationInfo(string $include = ''): array
     {
         if ($error = $this->requireMagento()) {
             return $error;
@@ -42,7 +43,7 @@ class ApplicationTools
 
             $dbInfo = $this->getDatabaseInfo();
 
-            return [
+            $result = [
                 'magento_version' => $metadata->getVersion(),
                 'edition' => strtolower($metadata->getEdition()),
                 'php_version' => PHP_VERSION,
@@ -64,6 +65,12 @@ class ApplicationTools
                     'types_enabled' => count(array_filter($cacheTypes, fn($t) => $t->getStatus())),
                 ],
             ];
+
+            if ($include === 'stores') {
+                $result['store_hierarchy'] = $this->getStoreHierarchy();
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'error' => true,
@@ -72,16 +79,8 @@ class ApplicationTools
         }
     }
 
-    #[McpTool(
-        name: 'store-configuration',
-        description: 'Returns store/website/store view hierarchy and configuration'
-    )]
-    public function getStoreConfiguration(): array
+    private function getStoreHierarchy(): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             $storeManager = MagentoBootstrap::get(\Magento\Store\Model\StoreManagerInterface::class);
 
@@ -121,9 +120,9 @@ class ApplicationTools
                 $websites[] = $websiteData;
             }
 
-            return ['websites' => $websites];
+            return $websites;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return ['error' => $e->getMessage()];
         }
     }
 

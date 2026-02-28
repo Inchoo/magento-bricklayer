@@ -379,7 +379,7 @@ class DiagnosticTools
      */
     #[McpTool(
         name: 'diagnose-error',
-        description: 'Diagnoses the most recent Magento error with context and fix suggestions. Use verbosity (minimal/standard/detailed) to control detail level.'
+        description: 'Diagnose recent Magento errors with fix suggestions. Use index to select older errors, since to filter by time, pattern to filter by text. Use verbosity (minimal/standard/detailed) to control output size.'
     )]
     public function diagnoseError(
         int $index = 0,
@@ -552,8 +552,16 @@ class DiagnosticTools
                 'suggestions' => $suggestions,
             ];
 
+            // Context-aware hints
+            if ($diContext !== null && !empty($diContext['plugins'])) {
+                $diagnosis['_hint'] = "Check plugin-list for {$diContext['class']} to inspect interceptor chain";
+            }
+            if (($matched['category'] ?? '') === 'di' && $errorClass !== null) {
+                $diagnosis['_hint'] = "Check di-configuration for {$errorClass} to inspect DI setup";
+            }
+
             if ($verbosity === 'minimal') {
-                return [
+                $minimal = [
                     'found' => true,
                     'verbosity' => 'minimal',
                     'exception' => [
@@ -563,6 +571,10 @@ class DiagnosticTools
                     'category' => $diagnosis['category'] ?? null,
                     'suggestions' => array_slice($diagnosis['suggestions'] ?? [], 0, 1),
                 ];
+                if (isset($diagnosis['_hint'])) {
+                    $minimal['_hint'] = $diagnosis['_hint'];
+                }
+                return $minimal;
             }
 
             if ($verbosity === 'detailed') {

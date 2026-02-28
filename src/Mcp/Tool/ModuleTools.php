@@ -18,7 +18,8 @@ class ModuleTools
 
     #[McpTool(
         name: 'module-list',
-        description: 'Lists all installed Magento modules. Use verbosity (minimal/standard/detailed) to control response size. Set count_only=true to get total count without data.'
+        description: 'Lists installed modules. Use verbosity to control detail. Set count_only=true to check size before fetching.',
+        meta: ['hidden' => true]
     )]
     public function listModules(bool $enabledOnly = false, string $vendor = '', bool $count_only = false, string $verbosity = 'standard'): array
     {
@@ -116,7 +117,8 @@ class ModuleTools
 
     #[McpTool(
         name: 'module-structure',
-        description: 'Returns the file/folder structure of a specific Magento module'
+        description: 'Returns the file/folder structure of a specific Magento module',
+        meta: ['hidden' => true]
     )]
     public function getModuleStructure(string $moduleName): array
     {

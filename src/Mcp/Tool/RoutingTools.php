@@ -18,7 +18,8 @@ class RoutingTools
 
     #[McpTool(
         name: 'route-list',
-        description: 'Lists all configured Magento frontend and admin routes'
+        description: 'Lists all configured Magento frontend and admin routes',
+        meta: ['hidden' => true]
     )]
     public function getRouteList(string $area = 'frontend'): array
     {
@@ -58,7 +59,8 @@ class RoutingTools
 
     #[McpTool(
         name: 'api-endpoints',
-        description: 'Lists all configured REST API endpoints'
+        description: 'Lists all configured REST API endpoints',
+        meta: ['hidden' => true]
     )]
     public function getApiEndpoints(string $method = '', string $path = ''): array
     {
@@ -111,7 +113,8 @@ class RoutingTools
 
     #[McpTool(
         name: 'route-info',
-        description: 'Returns detailed information about a specific route'
+        description: 'Returns detailed information about a specific route',
+        meta: ['hidden' => true]
     )]
     public function getRouteInfo(string $frontName, string $area = 'frontend'): array
     {
@@ -161,7 +164,8 @@ class RoutingTools
 
     #[McpTool(
         name: 'url-rewrites',
-        description: 'Lists URL rewrites with optional filtering'
+        description: 'Lists URL rewrites with optional filtering',
+        meta: ['hidden' => true]
     )]
     public function getUrlRewrites(string $requestPath = '', int $storeId = 0, int $limit = 100): array
     {

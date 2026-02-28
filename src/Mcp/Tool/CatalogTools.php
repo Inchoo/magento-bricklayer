@@ -35,7 +35,7 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-get',
-        description: 'Retrieves product data by SKU. Use fields (comma-separated) to limit response.'
+        description: 'Get product by SKU. Use fields to limit response.'
     )]
     public function getProduct(string $sku = '', int $storeId = 0, string $fields = ''): array
     {
@@ -51,7 +51,18 @@ class CatalogTools
             $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
             $product = $productRepository->get($sku, false, $storeId);
 
-            return $this->formatProductData($product, true, $fields);
+            $result = $this->formatProductData($product, true, $fields);
+
+            $eavConfig = MagentoBootstrap::get(\Magento\Eav\Model\Config::class);
+            foreach ($product->getCustomAttributes() ?? [] as $attr) {
+                $eavAttribute = $eavConfig->getAttribute('catalog_product', $attr->getAttributeCode());
+                if ($eavAttribute && $eavAttribute->getIsUserDefined()) {
+                    $result['_hint'] = 'Custom attributes present. Use eav-attributes entity_type=catalog_product for metadata';
+                    break;
+                }
+            }
+
+            return $result;
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             return ['error' => true, 'message' => "Product not found: $sku"];
         } catch (\Throwable $e) {
@@ -70,7 +81,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-list',
-        description: 'Lists products with pagination and sorting. Use fields to limit returned columns. Set count_only=true to get total count without data.'
+        description: 'Search products. Use fields to limit response. Set count_only=true to check size before fetching.',
+        meta: ['hidden' => true]
     )]
     public function listProducts(
         int $pageSize = 20,
@@ -114,6 +126,7 @@ class CatalogTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $products,
             ];
         } catch (\Throwable $e) {
@@ -133,7 +146,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-create',
-        description: 'Creates a new product in the catalog'
+        description: 'Create a product.',
+        meta: ['hidden' => true]
     )]
     public function createProduct(
         string $sku,
@@ -182,7 +196,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-update',
-        description: 'Updates an existing product'
+        description: 'Update a product.',
+        meta: ['hidden' => true]
     )]
     public function updateProduct(
         string $sku,
@@ -230,7 +245,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-stock-get',
-        description: 'Gets stock/inventory information for a product'
+        description: 'Get product stock data.',
+        meta: ['hidden' => true]
     )]
     public function getProductStock(string $sku): array
     {
@@ -267,7 +283,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-stock-update',
-        description: 'Updates stock quantity for a product'
+        description: 'Update product stock.',
+        meta: ['hidden' => true]
     )]
     public function updateProductStock(string $sku, float $qty, bool $isInStock = true): array
     {
@@ -302,7 +319,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-tree',
-        description: 'Returns category tree structure'
+        description: 'Returns category tree structure',
+        meta: ['hidden' => true]
     )]
     public function getCategoryTree(int $rootId = 1, int $depth = 3): array
     {
@@ -329,7 +347,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-get',
-        description: 'Retrieves category data by ID'
+        description: 'Get category by ID.',
+        meta: ['hidden' => true]
     )]
     public function getCategory(int $categoryId, int $storeId = 0): array
     {
@@ -368,7 +387,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-delete',
-        description: 'Deletes a product by SKU'
+        description: 'Delete a product.',
+        meta: ['hidden' => true]
     )]
     public function deleteProduct(string $sku): array
     {
@@ -405,7 +425,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-media-list',
-        description: 'Lists media gallery entries for a product'
+        description: 'List product media entries.',
+        meta: ['hidden' => true]
     )]
     public function listProductMedia(string $sku): array
     {
@@ -448,7 +469,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-media-add',
-        description: 'Adds media to product gallery'
+        description: 'Adds media to product gallery',
+        meta: ['hidden' => true]
     )]
     public function addProductMedia(
         string $sku,
@@ -508,7 +530,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-link-list',
-        description: 'Lists related, upsell, or crosssell products'
+        description: 'Lists related, upsell, or crosssell products',
+        meta: ['hidden' => true]
     )]
     public function listProductLinks(string $sku, string $linkType = 'related'): array
     {
@@ -550,7 +573,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-link-set',
-        description: 'Sets product links (related, upsell, crosssell)'
+        description: 'Sets product links (related, upsell, crosssell)',
+        meta: ['hidden' => true]
     )]
     public function setProductLinks(string $sku, string $linkType, string $linkedSkus): array
     {
@@ -602,7 +626,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-create',
-        description: 'Creates a new category'
+        description: 'Create a category.',
+        meta: ['hidden' => true]
     )]
     public function createCategory(
         string $name,
@@ -658,7 +683,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-update',
-        description: 'Updates an existing category'
+        description: 'Update a category.',
+        meta: ['hidden' => true]
     )]
     public function updateCategory(
         int $categoryId,
@@ -711,7 +737,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-delete',
-        description: 'Deletes a category'
+        description: 'Delete a category.',
+        meta: ['hidden' => true]
     )]
     public function deleteCategory(int $categoryId): array
     {
@@ -750,7 +777,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-products',
-        description: 'Lists products in a category'
+        description: 'Lists products in a category',
+        meta: ['hidden' => true]
     )]
     public function listCategoryProducts(int $categoryId, int $pageSize = 20, int $currentPage = 1): array
     {
@@ -787,6 +815,7 @@ class CatalogTools
                 'total_count' => $total,
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $total,
                 'products' => $products,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
@@ -806,7 +835,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'category-assign-products',
-        description: 'Assigns products to a category'
+        description: 'Assigns products to a category',
+        meta: ['hidden' => true]
     )]
     public function assignProductsToCategory(int $categoryId, string $skus, string $positions = ''): array
     {

@@ -23,7 +23,6 @@ class GuidelinesCompiler
         $sections[] = $this->buildHeader();
         $sections[] = $this->buildContextCategoriesSection();
         $sections[] = $this->buildEfficiencySection();
-        $sections[] = $this->buildToolSections();
         $sections[] = $this->buildArchitectureSection();
         $sections[] = $this->getShellCommandsSection($envType);
         $sections[] = $this->buildFooter($agent);
@@ -151,53 +150,9 @@ When performing the same tool call with different parameters (e.g., updating sto
 10 products), use `batch-execute` with a JSON array instead of 10 separate calls.
 
 **Truncate log output:**
-Use `max_entry_length` on `log-read` and `log-search` to limit long entries.
+Use `max_entry_length` on `log` (action=read or action=search) to limit long entries.
 Start with `max_entry_length=500` and increase only if you need full stack traces.
 MARKDOWN;
-    }
-
-    private function buildToolSections(): string
-    {
-        $toolData = $this->toolScanner->scan();
-        $sections = [];
-
-        foreach ($toolData['groups'] as $title => $group) {
-            $lines = [];
-            $lines[] = "### {$title}";
-            $lines[] = '';
-
-            if (isset($group['subtitle'])) {
-                $lines[] = $group['subtitle'];
-                $lines[] = '';
-            }
-
-            if ($title === 'System & Development Tools') {
-                $lines[] = '*Tip: For multi-step operations, prefer `code-runner` over chaining individual tool calls.*';
-                $lines[] = '';
-            }
-
-            $columns = $group['columns'];
-            $hasPrerequisite = in_array('Prerequisite', $columns, true);
-
-            // Build header row
-            $lines[] = '| ' . implode(' | ', $columns) . ' |';
-            $lines[] = '|' . implode('|', array_map(fn() => '------', $columns)) . '|';
-
-            // Build data rows
-            foreach ($group['tools'] as $tool) {
-                $cells = ['`' . $tool['name'] . '`', $tool['description']];
-
-                if ($hasPrerequisite) {
-                    $cells[] = $tool['meta']['prerequisite'] ?? 'None';
-                }
-
-                $lines[] = '| ' . implode(' | ', $cells) . ' |';
-            }
-
-            $sections[] = implode("\n", $lines);
-        }
-
-        return implode("\n\n", $sections);
     }
 
     private function buildArchitectureSection(): string

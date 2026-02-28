@@ -22,20 +22,131 @@ class DevelopmentTools
     use RequiresMagento;
 
     /**
-     * Returns cache status for all cache types.
+     * Reinitializes Magento with a fresh ObjectManager.
      *
-     * @return array<string, mixed> Cache status information
+     * The MCP server is a long-lived process that bootstraps Magento once at
+     * startup. When external commands change the application state (new modules,
+     * recompiled DI, flushed caches), the in-memory ObjectManager becomes stale:
+     * new modules aren't recognized, config.xml defaults don't load, and DI
+     * preferences are outdated.
+     *
+     * Call this tool after running any of: setup:upgrade, setup:di:compile,
+     * module:enable/disable, cache:flush, or adding new module files.
+     *
+     * @return array<string, mixed> Reinit result with module count and timing
      */
     #[McpTool(
-        name: 'cache-status',
-        description: 'Returns cache status for all Magento cache types'
+        name: 'reinitialize',
+        description: 'Reinitialize Magento context. Call after setup:upgrade, setup:di:compile, or module changes to pick up new modules and config.',
     )]
-    public function getCacheStatus(): array
+    public function reinitialize(): array
     {
+        if (!MagentoBootstrap::isInitialized()) {
+            return ['error' => true, 'message' => 'Magento was never initialized — nothing to reinitialize.'];
+        }
+
+        $startTime = microtime(true);
+
+        try {
+            MagentoBootstrap::reinitialize();
+        } catch (\Throwable $e) {
+            return [
+                'error' => true,
+                'message' => 'Reinitialize failed: ' . $e->getMessage(),
+            ];
+        }
+
+        $elapsed = round((microtime(true) - $startTime) * 1000, 1);
+
+        // Verify the new state
+        try {
+            $moduleList = MagentoBootstrap::get(\Magento\Framework\Module\ModuleListInterface::class);
+            $moduleCount = count($moduleList->getAll());
+        } catch (\Throwable $e) {
+            $moduleCount = null;
+        }
+
+        try {
+            $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
+            $mode = $state->getMode();
+        } catch (\Throwable $e) {
+            $mode = 'unknown';
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Magento reinitialized with fresh ObjectManager.',
+            'modules_loaded' => $moduleCount,
+            'mode' => $mode,
+            'elapsed_ms' => $elapsed,
+        ];
+    }
+
+    /**
+     * Checks system status for cache, indexers, deploy mode, cron jobs, or cron history.
+     *
+     * @param string $check One of: cache, indexers, deploy-mode, cron, cron-history
+     * @param string $group Filter cron jobs by group (used when check=cron)
+     * @param string $jobCode Filter cron history by job code (used when check=cron-history)
+     * @param int $limit Maximum number of cron history records (used when check=cron-history)
+     * @return array<string, mixed> Status information for the requested check
+     */
+    #[McpTool(
+        name: 'system-status',
+        description: 'Check system status: cache, indexers, deploy-mode, cron, or cron-history.',
+        meta: ['hidden' => true]
+    )]
+    public function getSystemStatus(
+        string $check,
+        string $group = '',
+        string $jobCode = '',
+        int $limit = 50
+    ): array {
+        $allowed = ['cache', 'indexers', 'deploy-mode', 'cron', 'cron-history'];
+
+        if (!in_array($check, $allowed, true)) {
+            return [
+                'error' => true,
+                'message' => sprintf(
+                    'Invalid check "%s". Allowed values: %s.',
+                    $check,
+                    implode(', ', $allowed)
+                ),
+            ];
+        }
+
         if ($error = $this->requireMagento()) {
             return $error;
         }
 
+        $result = match ($check) {
+            'cache'       => $this->getCacheStatus(),
+            'indexers'    => $this->getIndexerStatus(),
+            'deploy-mode' => $this->getDeployMode(),
+            'cron'        => $this->getCronList($group),
+            'cron-history' => $this->getCronHistory($jobCode, $limit),
+        };
+
+        // Context-aware hints
+        if ($check === 'indexers' && ($result['summary']['invalid'] ?? 0) > 0) {
+            $result['_hint'] = 'Invalid indexers found. Check log action=read log_type=system for related errors';
+        }
+        if ($check === 'cache' && ($result['summary']['disabled'] ?? 0) > 0) {
+            $result['_hint'] = 'Disabled cache types found. This may affect performance and behavior';
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns cache status for all cache types.
+     *
+     * Public so it can be called from DiagnosticTools without being a registered MCP tool.
+     *
+     * @return array<string, mixed> Cache status information
+     */
+    public function getCacheStatus(): array
+    {
         try {
             $cacheTypeList = MagentoBootstrap::get(\Magento\Framework\App\Cache\TypeListInterface::class);
             $cacheTypes = $cacheTypeList->getTypes();
@@ -69,18 +180,12 @@ class DevelopmentTools
     /**
      * Returns indexer status for all indexers.
      *
+     * Public so it can be called from DiagnosticTools without being a registered MCP tool.
+     *
      * @return array<string, mixed> Indexer status information
      */
-    #[McpTool(
-        name: 'indexer-status',
-        description: 'Returns status of all Magento indexers'
-    )]
     public function getIndexerStatus(): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             $indexerCollection = MagentoBootstrap::get(\Magento\Indexer\Model\Indexer\CollectionFactory::class);
             $collection = $indexerCollection->create();
@@ -121,147 +226,6 @@ class DevelopmentTools
     }
 
     /**
-     * Lists configured cron jobs.
-     *
-     * @param string $group Filter by cron group (optional)
-     * @return array<string, mixed> List of cron jobs
-     */
-    #[McpTool(
-        name: 'cron-list',
-        description: 'Lists all configured Magento cron jobs'
-    )]
-    public function getCronList(string $group = ''): array
-    {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
-        try {
-            $cronConfig = MagentoBootstrap::get(\Magento\Cron\Model\ConfigInterface::class);
-            $jobs = $cronConfig->getJobs();
-
-            $cronJobs = [];
-            foreach ($jobs as $groupCode => $groupJobs) {
-                if ($group !== '' && $groupCode !== $group) {
-                    continue;
-                }
-
-                foreach ($groupJobs as $jobCode => $jobConfig) {
-                    $cronJobs[] = [
-                        'group' => $groupCode,
-                        'job_code' => $jobCode,
-                        'instance' => $jobConfig['instance'] ?? null,
-                        'method' => $jobConfig['method'] ?? null,
-                        'schedule' => $jobConfig['schedule'] ?? ($jobConfig['config_path'] ?? null),
-                    ];
-                }
-            }
-
-            // Sort by group and job code
-            usort($cronJobs, fn($a, $b) =>
-                strcmp($a['group'], $b['group']) ?: strcmp($a['job_code'], $b['job_code'])
-            );
-
-            return [
-                'total' => count($cronJobs),
-                'filter_group' => $group ?: 'all',
-                'jobs' => $cronJobs,
-            ];
-        } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Returns recent cron job history.
-     *
-     * @param string $jobCode Filter by job code (optional)
-     * @param int $limit Maximum number of records
-     * @return array<string, mixed> Cron history
-     */
-    #[McpTool(
-        name: 'cron-history',
-        description: 'Returns recent cron job execution history'
-    )]
-    public function getCronHistory(string $jobCode = '', int $limit = 50): array
-    {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
-        try {
-            $resource = MagentoBootstrap::get(\Magento\Framework\App\ResourceConnection::class);
-            $connection = $resource->getConnection();
-            $tableName = $resource->getTableName('cron_schedule');
-
-            $select = $connection->select()
-                ->from($tableName)
-                ->order('scheduled_at DESC')
-                ->limit($limit);
-
-            if ($jobCode !== '') {
-                $select->where('job_code = ?', $jobCode);
-            }
-
-            $rows = $connection->fetchAll($select);
-
-            $history = [];
-            foreach ($rows as $row) {
-                $history[] = [
-                    'schedule_id' => (int) $row['schedule_id'],
-                    'job_code' => $row['job_code'],
-                    'status' => $row['status'],
-                    'scheduled_at' => $row['scheduled_at'],
-                    'executed_at' => $row['executed_at'],
-                    'finished_at' => $row['finished_at'],
-                    'messages' => $row['messages'] ? substr($row['messages'], 0, 200) : null,
-                ];
-            }
-
-            return [
-                'total' => count($history),
-                'filter_job' => $jobCode ?: 'all',
-                'history' => $history,
-            ];
-        } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Returns deploy mode and related configuration.
-     *
-     * @return array<string, mixed> Deploy mode information
-     */
-    #[McpTool(
-        name: 'deploy-mode',
-        description: 'Returns current deploy mode and related configuration'
-    )]
-    public function getDeployMode(): array
-    {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
-        try {
-            $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
-            $deploymentConfig = MagentoBootstrap::get(\Magento\Framework\App\DeploymentConfig::class);
-
-            $mode = $state->getMode();
-
-            return [
-                'mode' => $mode,
-                'mode_description' => $this->getDeployModeDescription($mode),
-                'static_content_on_demand' => $deploymentConfig->get('static_content_on_demand_in_production', false),
-                'config_sync_disabled' => $deploymentConfig->get('config_sync_disabled', false),
-                'recommendations' => $this->getDeployModeRecommendations($mode),
-            ];
-        } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
      * Validates module code structure.
      *
      * @param string $moduleName Module name (Vendor_Module format)
@@ -269,7 +233,8 @@ class DevelopmentTools
      */
     #[McpTool(
         name: 'validate-module',
-        description: 'Validates a Magento module code structure and configuration'
+        description: 'Validate module structure and configuration.',
+        meta: ['hidden' => true]
     )]
     public function validateModule(string $moduleName): array
     {
@@ -347,6 +312,125 @@ class DevelopmentTools
                 'issues' => $issues,
                 'warnings' => $warnings,
                 'info' => $info,
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Returns deploy mode and related configuration.
+     *
+     * Public so it can be called from DiagnosticTools without being a registered MCP tool.
+     *
+     * @return array<string, mixed> Deploy mode information
+     */
+    public function getDeployMode(): array
+    {
+        try {
+            $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
+            $deploymentConfig = MagentoBootstrap::get(\Magento\Framework\App\DeploymentConfig::class);
+
+            $mode = $state->getMode();
+
+            return [
+                'mode' => $mode,
+                'mode_description' => $this->getDeployModeDescription($mode),
+                'static_content_on_demand' => $deploymentConfig->get('static_content_on_demand_in_production', false),
+                'config_sync_disabled' => $deploymentConfig->get('config_sync_disabled', false),
+                'recommendations' => $this->getDeployModeRecommendations($mode),
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lists configured cron jobs.
+     *
+     * @param string $group Filter by cron group (optional)
+     * @return array<string, mixed> List of cron jobs
+     */
+    private function getCronList(string $group = ''): array
+    {
+        try {
+            $cronConfig = MagentoBootstrap::get(\Magento\Cron\Model\ConfigInterface::class);
+            $jobs = $cronConfig->getJobs();
+
+            $cronJobs = [];
+            foreach ($jobs as $groupCode => $groupJobs) {
+                if ($group !== '' && $groupCode !== $group) {
+                    continue;
+                }
+
+                foreach ($groupJobs as $jobCode => $jobConfig) {
+                    $cronJobs[] = [
+                        'group' => $groupCode,
+                        'job_code' => $jobCode,
+                        'instance' => $jobConfig['instance'] ?? null,
+                        'method' => $jobConfig['method'] ?? null,
+                        'schedule' => $jobConfig['schedule'] ?? ($jobConfig['config_path'] ?? null),
+                    ];
+                }
+            }
+
+            // Sort by group and job code
+            usort($cronJobs, fn($a, $b) =>
+                strcmp($a['group'], $b['group']) ?: strcmp($a['job_code'], $b['job_code'])
+            );
+
+            return [
+                'total' => count($cronJobs),
+                'filter_group' => $group ?: 'all',
+                'jobs' => $cronJobs,
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Returns recent cron job history.
+     *
+     * @param string $jobCode Filter by job code (optional)
+     * @param int $limit Maximum number of records
+     * @return array<string, mixed> Cron history
+     */
+    private function getCronHistory(string $jobCode = '', int $limit = 50): array
+    {
+        try {
+            $resource = MagentoBootstrap::get(\Magento\Framework\App\ResourceConnection::class);
+            $connection = $resource->getConnection();
+            $tableName = $resource->getTableName('cron_schedule');
+
+            $select = $connection->select()
+                ->from($tableName)
+                ->order('scheduled_at DESC')
+                ->limit($limit);
+
+            if ($jobCode !== '') {
+                $select->where('job_code = ?', $jobCode);
+            }
+
+            $rows = $connection->fetchAll($select);
+
+            $history = [];
+            foreach ($rows as $row) {
+                $history[] = [
+                    'schedule_id' => (int) $row['schedule_id'],
+                    'job_code' => $row['job_code'],
+                    'status' => $row['status'],
+                    'scheduled_at' => $row['scheduled_at'],
+                    'executed_at' => $row['executed_at'],
+                    'finished_at' => $row['finished_at'],
+                    'messages' => $row['messages'] ? substr($row['messages'], 0, 200) : null,
+                ];
+            }
+
+            return [
+                'total' => count($history),
+                'filter_job' => $jobCode ?: 'all',
+                'history' => $history,
             ];
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];

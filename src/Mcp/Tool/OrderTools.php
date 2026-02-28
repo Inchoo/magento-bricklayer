@@ -21,7 +21,7 @@ class OrderTools
     use RequiresMagento;
     #[McpTool(
         name: 'order-get',
-        description: 'Retrieves order data by increment ID. Use fields to limit response.'
+        description: 'Get order by increment ID. Use fields to limit response.'
     )]
     public function getOrder(string $incrementId, string $fields = ''): array
     {
@@ -56,7 +56,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-list',
-        description: 'Lists orders with pagination, sorting, and optional status filter. Use fields to limit columns. Set count_only=true to get total count without data.'
+        description: 'Search orders. Filter by status. Use fields to limit response. Set count_only=true to check size before fetching.',
+        meta: ['hidden' => true]
     )]
     public function listOrders(
         int $pageSize = 20,
@@ -105,6 +106,7 @@ class OrderTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $orders,
             ];
         } catch (\Throwable $e) {
@@ -114,7 +116,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-add-comment',
-        description: 'Adds a comment to order history'
+        description: 'Adds a comment to order history',
+        meta: ['hidden' => true]
     )]
     public function addOrderComment(
         int $orderId,
@@ -163,7 +166,7 @@ class OrderTools
     #[McpTool(
         name: 'order-cancel',
         description: 'Cancels an order',
-        meta: ['prerequisite' => 'Order must be cancellable']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must be cancellable']
     )]
     public function cancelOrder(int $orderId): array
     {
@@ -195,7 +198,7 @@ class OrderTools
     #[McpTool(
         name: 'order-hold',
         description: 'Places an order on hold',
-        meta: ['prerequisite' => 'Order must be holdable']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must be holdable']
     )]
     public function holdOrder(int $orderId): array
     {
@@ -224,7 +227,7 @@ class OrderTools
     #[McpTool(
         name: 'order-unhold',
         description: 'Releases an order from hold',
-        meta: ['prerequisite' => 'Order must be on hold']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must be on hold']
     )]
     public function unholdOrder(int $orderId): array
     {
@@ -253,7 +256,7 @@ class OrderTools
     #[McpTool(
         name: 'invoice-create',
         description: 'Creates an invoice for an order',
-        meta: ['prerequisite' => 'Order must be uninvoiced']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must be uninvoiced']
     )]
     public function createInvoice(int $orderId, bool $capture = true, bool $notify = true): array
     {
@@ -283,7 +286,7 @@ class OrderTools
     #[McpTool(
         name: 'shipment-create',
         description: 'Creates a shipment for an order',
-        meta: ['prerequisite' => 'Order must be invoiced (usually)']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must be invoiced (usually)']
     )]
     public function createShipment(int $orderId, bool $notify = true): array
     {
@@ -312,7 +315,7 @@ class OrderTools
     #[McpTool(
         name: 'creditmemo-create',
         description: 'Creates a credit memo (refund) for an order',
-        meta: ['prerequisite' => 'Order must have invoice']
+        meta: ['hidden' => true, 'prerequisite' => 'Order must have invoice']
     )]
     public function createCreditMemo(int $orderId, bool $notify = true): array
     {
@@ -343,7 +346,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-items',
-        description: 'Returns line items for an order'
+        description: 'Returns line items for an order',
+        meta: ['hidden' => true]
     )]
     public function getOrderItems(int $orderId): array
     {
@@ -391,7 +395,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-comments',
-        description: 'Lists order status history and comments'
+        description: 'Lists order status history and comments',
+        meta: ['hidden' => true]
     )]
     public function getOrderComments(int $orderId): array
     {
@@ -431,7 +436,8 @@ class OrderTools
 
     #[McpTool(
         name: 'invoice-list',
-        description: 'Lists invoices with pagination'
+        description: 'Lists invoices with pagination',
+        meta: ['hidden' => true]
     )]
     public function listInvoices(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
@@ -475,6 +481,7 @@ class OrderTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $invoices,
             ];
         } catch (\Throwable $e) {
@@ -484,7 +491,8 @@ class OrderTools
 
     #[McpTool(
         name: 'shipment-list',
-        description: 'Lists shipments with pagination'
+        description: 'Lists shipments with pagination',
+        meta: ['hidden' => true]
     )]
     public function listShipments(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
@@ -536,6 +544,7 @@ class OrderTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $shipments,
             ];
         } catch (\Throwable $e) {
@@ -546,7 +555,7 @@ class OrderTools
     #[McpTool(
         name: 'shipment-track-add',
         description: 'Adds tracking information to a shipment',
-        meta: ['prerequisite' => 'Shipment must exist']
+        meta: ['hidden' => true, 'prerequisite' => 'Shipment must exist']
     )]
     public function addShipmentTrack(
         int $shipmentId,
@@ -594,7 +603,8 @@ class OrderTools
 
     #[McpTool(
         name: 'creditmemo-list',
-        description: 'Lists credit memos with pagination'
+        description: 'Lists credit memos with pagination',
+        meta: ['hidden' => true]
     )]
     public function listCreditMemos(int $pageSize = 20, int $currentPage = 1, int $orderId = 0): array
     {
@@ -640,6 +650,7 @@ class OrderTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $creditmemos,
             ];
         } catch (\Throwable $e) {

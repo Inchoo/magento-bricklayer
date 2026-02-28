@@ -269,7 +269,7 @@ class ContextTools
      */
     #[McpTool(
         name: 'development-context',
-        description: 'Returns coding guidelines and development patterns for a given task category. Use category "list" to see available categories.'
+        description: 'Load coding guidelines for a task category. Use category "list" to see available categories.'
     )]
     public function getDevelopmentContext(string $category): array
     {

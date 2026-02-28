@@ -24,6 +24,7 @@ class LogTools
     use ChecksConfig;
     use ReadsLogFiles;
     use RequiresMagento;
+
     /**
      * Available Magento log files
      */
@@ -36,20 +37,46 @@ class LogTools
     ];
 
     /**
-     * Reads recent entries from a Magento log file.
+     * Read, list, search, or analyze Magento logs.
      *
-     * @param string $logType Log type (system, exception, debug, cron)
-     * @param int $lines Number of lines to read
-     * @param string $filter Filter entries containing this text
-     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
-     * @return array<string, mixed> Log entries
+     * @param string $action Action to perform: read, list, search, analyze
+     * @param string $logType Log type for read action (system, exception, debug, cron)
+     * @param int $lines Number of lines to read (read action)
+     * @param string $filter Filter entries containing this text (read action)
+     * @param int $max_entry_length Maximum length per log entry message, 0 = no limit (read, search actions)
+     * @param string $query Search query (search action)
+     * @param int $maxResults Maximum results per file (search action)
+     * @param int $hours Analyze entries from the last N hours (analyze action)
+     * @return array<string, mixed>
      */
     #[McpTool(
-        name: 'log-read',
-        description: 'Reads recent entries from Magento log files. Set max_entry_length to truncate long entries (0 = no limit).'
+        name: 'log',
+        description: 'Read, list, search, or analyze Magento logs. Use max_entry_length to truncate long entries.',
+        meta: ['hidden' => true]
     )]
-    public function readLog(string $logType = 'system', int $lines = 100, string $filter = '', int $max_entry_length = 0): array
-    {
+    public function log(
+        string $action,
+        string $logType = 'system',
+        int $lines = 100,
+        string $filter = '',
+        int $max_entry_length = 0,
+        string $query = '',
+        int $maxResults = 50,
+        int $hours = 24,
+    ): array {
+        $allowedActions = ['read', 'list', 'search', 'analyze'];
+
+        if (!in_array($action, $allowedActions, true)) {
+            return [
+                'error' => true,
+                'message' => sprintf(
+                    'Invalid action "%s". Allowed actions: %s',
+                    $action,
+                    implode(', ', $allowedActions)
+                ),
+            ];
+        }
+
         if ($error = $this->requireMagento()) {
             return $error;
         }
@@ -58,6 +85,25 @@ class LogTools
             return $error;
         }
 
+        return match ($action) {
+            'read'    => $this->performRead($logType, $lines, $filter, $max_entry_length),
+            'list'    => $this->performList(),
+            'search'  => $this->performSearch($query, $maxResults, $max_entry_length),
+            'analyze' => $this->performAnalyze($hours),
+        };
+    }
+
+    /**
+     * Reads recent entries from a Magento log file.
+     *
+     * @param string $logType Log type (system, exception, debug, cron)
+     * @param int $lines Number of lines to read
+     * @param string $filter Filter entries containing this text
+     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
+     * @return array<string, mixed> Log entries
+     */
+    private function performRead(string $logType, int $lines, string $filter, int $max_entry_length): array
+    {
         try {
             $configMaxLines = (int) $this->getConfigLoader()->get('tools.log-reader.max_lines', 500);
             if ($lines > $configMaxLines) {
@@ -140,20 +186,8 @@ class LogTools
      *
      * @return array<string, mixed> List of log files
      */
-    #[McpTool(
-        name: 'log-list',
-        description: 'Lists available Magento log files with sizes and modification times'
-    )]
-    public function listLogs(): array
+    private function performList(): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
-        if ($error = $this->requireToolEnabled('log-reader')) {
-            return $error;
-        }
-
         try {
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
             $logDir = $magentoRoot . '/var/log';
@@ -210,25 +244,96 @@ class LogTools
     }
 
     /**
+     * Searches across all log files.
+     *
+     * @param string $query Search query
+     * @param int $maxResults Maximum results per file
+     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
+     * @return array<string, mixed> Search results
+     */
+    private function performSearch(string $query, int $maxResults, int $max_entry_length): array
+    {
+        if (strlen($query) < 3) {
+            return ['error' => true, 'message' => 'Search query must be at least 3 characters'];
+        }
+
+        try {
+            $magentoRoot = MagentoBootstrap::getMagentoRoot();
+            $results = [];
+
+            foreach (self::LOG_FILES as $type => $relativePath) {
+                $path = $magentoRoot . '/' . $relativePath;
+                if (!file_exists($path)) {
+                    continue;
+                }
+
+                $entries = $this->readLastLines($path, 5000);
+                $matches = [];
+
+                foreach ($entries as $entry) {
+                    if (stripos($entry, $query) !== false) {
+                        $parsed = $this->parseLogEntry($entry);
+                        if ($parsed !== null) {
+                            $matches[] = $parsed;
+                        }
+                    }
+                }
+
+                if (!empty($matches)) {
+                    $limitedMatches = array_slice($matches, -$maxResults);
+
+                    // Apply truncation if max_entry_length is set
+                    if ($max_entry_length > 0) {
+                        foreach ($limitedMatches as &$match) {
+                            if (isset($match['message']) && strlen($match['message']) > $max_entry_length) {
+                                $truncated = $this->truncateText($match['message'], $max_entry_length);
+                                $match['message'] = $truncated['text'];
+                                $match['truncated'] = true;
+                                $match['original_length'] = $truncated['original_length'];
+                            }
+                        }
+                        unset($match);
+                    }
+
+                    $results[$type] = [
+                        'file' => $relativePath,
+                        'match_count' => count($matches),
+                        'matches' => $limitedMatches,
+                    ];
+                }
+            }
+
+            return [
+                'query' => $query,
+                'files_searched' => count(self::LOG_FILES),
+                'results' => $results,
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Analyzes exception log for error patterns.
+     *
+     * Public so it can be called from DiagnosticTools without being a registered MCP tool.
      *
      * @param int $hours Analyze entries from the last N hours
      * @return array<string, mixed> Error analysis
      */
-    #[McpTool(
-        name: 'log-analyze',
-        description: 'Analyzes exception log for error patterns and frequency'
-    )]
-    public function analyzeExceptionLog(int $hours = 24): array
+    public function analyzeExceptionLog(int $hours): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
+        return $this->performAnalyze($hours);
+    }
 
-        if ($error = $this->requireToolEnabled('log-reader')) {
-            return $error;
-        }
-
+    /**
+     * Analyzes exception log for error patterns (internal implementation).
+     *
+     * @param int $hours Analyze entries from the last N hours
+     * @return array<string, mixed> Error analysis
+     */
+    private function performAnalyze(int $hours): array
+    {
         try {
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
             $logPath = $magentoRoot . '/' . self::LOG_FILES['exception'];
@@ -294,87 +399,4 @@ class LogTools
             return ['error' => true, 'message' => $e->getMessage()];
         }
     }
-
-    /**
-     * Searches across all log files.
-     *
-     * @param string $query Search query
-     * @param int $maxResults Maximum results per file
-     * @param int $max_entry_length Maximum length per log entry message (0 = no limit)
-     * @return array<string, mixed> Search results
-     */
-    #[McpTool(
-        name: 'log-search',
-        description: 'Searches for a pattern across all Magento log files. Set max_entry_length to truncate long entries.'
-    )]
-    public function searchLogs(string $query, int $maxResults = 50, int $max_entry_length = 0): array
-    {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
-        if ($error = $this->requireToolEnabled('log-reader')) {
-            return $error;
-        }
-
-        if (strlen($query) < 3) {
-            return ['error' => true, 'message' => 'Search query must be at least 3 characters'];
-        }
-
-        try {
-            $magentoRoot = MagentoBootstrap::getMagentoRoot();
-            $results = [];
-
-            foreach (self::LOG_FILES as $type => $relativePath) {
-                $path = $magentoRoot . '/' . $relativePath;
-                if (!file_exists($path)) {
-                    continue;
-                }
-
-                $entries = $this->readLastLines($path, 5000);
-                $matches = [];
-
-                foreach ($entries as $entry) {
-                    if (stripos($entry, $query) !== false) {
-                        $parsed = $this->parseLogEntry($entry);
-                        if ($parsed !== null) {
-                            $matches[] = $parsed;
-                        }
-                    }
-                }
-
-                if (!empty($matches)) {
-                    $limitedMatches = array_slice($matches, -$maxResults);
-
-                    // Apply truncation if max_entry_length is set
-                    if ($max_entry_length > 0) {
-                        foreach ($limitedMatches as &$match) {
-                            if (isset($match['message']) && strlen($match['message']) > $max_entry_length) {
-                                $truncated = $this->truncateText($match['message'], $max_entry_length);
-                                $match['message'] = $truncated['text'];
-                                $match['truncated'] = true;
-                                $match['original_length'] = $truncated['original_length'];
-                            }
-                        }
-                        unset($match);
-                    }
-
-                    $results[$type] = [
-                        'file' => $relativePath,
-                        'match_count' => count($matches),
-                        'matches' => $limitedMatches,
-                    ];
-                }
-            }
-
-            return [
-                'query' => $query,
-                'files_searched' => count(self::LOG_FILES),
-                'results' => $results,
-            ];
-        } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
-        }
-    }
-
 }
