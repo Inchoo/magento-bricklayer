@@ -34,7 +34,7 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-get',
-        description: 'Retrieves customer data by email address. Use fields to limit response.'
+        description: 'Get customer by email. Use fields to limit response.'
     )]
     public function getCustomer(string $email, string $fields = ''): array
     {
@@ -50,7 +50,18 @@ class CustomerTools
             $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
             $customer = $customerRepository->get($email);
 
-            return $this->formatCustomerData($customer, true, $fields);
+            $result = $this->formatCustomerData($customer, true, $fields);
+
+            $eavConfig = MagentoBootstrap::get(\Magento\Eav\Model\Config::class);
+            foreach ($customer->getCustomAttributes() ?? [] as $attr) {
+                $eavAttribute = $eavConfig->getAttribute('customer', $attr->getAttributeCode());
+                if ($eavAttribute && $eavAttribute->getIsUserDefined()) {
+                    $result['_hint'] = 'Custom attributes present. Use eav-attributes entity_type=customer for metadata';
+                    break;
+                }
+            }
+
+            return $result;
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             return ['error' => true, 'message' => "Customer not found: $email"];
         } catch (\Throwable $e) {
@@ -69,7 +80,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-list',
-        description: 'Lists customers with pagination and sorting. Use fields to limit columns. Set count_only=true to get total count without data.'
+        description: 'Search customers. Use fields to limit response. Set count_only=true to check size before fetching.',
+        meta: ['hidden' => true]
     )]
     public function listCustomers(
         int $pageSize = 20,
@@ -113,6 +125,7 @@ class CustomerTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'items' => $customers,
             ];
         } catch (\Throwable $e) {
@@ -132,7 +145,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-create',
-        description: 'Creates a new customer account'
+        description: 'Create a customer.',
+        meta: ['hidden' => true]
     )]
     public function createCustomer(
         string $email,
@@ -179,7 +193,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-update',
-        description: 'Updates customer data'
+        description: 'Update a customer.',
+        meta: ['hidden' => true]
     )]
     public function updateCustomer(
         int $customerId,
@@ -227,7 +242,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-delete',
-        description: 'Deletes a customer account'
+        description: 'Delete a customer.',
+        meta: ['hidden' => true]
     )]
     public function deleteCustomer(int $customerId): array
     {
@@ -261,7 +277,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-groups-list',
-        description: 'Lists all customer groups'
+        description: 'List customer groups.',
+        meta: ['hidden' => true]
     )]
     public function listCustomerGroups(): array
     {
@@ -300,7 +317,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-orders',
-        description: 'Lists orders for a specific customer'
+        description: 'List customer orders.',
+        meta: ['hidden' => true]
     )]
     public function getCustomerOrders(int $customerId, int $pageSize = 20, int $currentPage = 1): array
     {
@@ -339,6 +357,7 @@ class CustomerTools
                 'total_count' => $result->getTotalCount(),
                 'page_size' => $pageSize,
                 'current_page' => $currentPage,
+                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
                 'orders' => $orders,
             ];
         } catch (\Throwable $e) {
@@ -354,7 +373,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-addresses',
-        description: 'Lists customer addresses'
+        description: 'Lists customer addresses',
+        meta: ['hidden' => true]
     )]
     public function getCustomerAddresses(int $customerId): array
     {
@@ -401,7 +421,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-address-create',
-        description: 'Adds an address to a customer'
+        description: 'Adds an address to a customer',
+        meta: ['hidden' => true]
     )]
     public function createCustomerAddress(
         int $customerId,
@@ -472,7 +493,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-address-update',
-        description: 'Updates a customer address'
+        description: 'Updates a customer address',
+        meta: ['hidden' => true]
     )]
     public function updateCustomerAddress(
         int $addressId,
@@ -535,7 +557,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-address-delete',
-        description: 'Deletes a customer address'
+        description: 'Deletes a customer address',
+        meta: ['hidden' => true]
     )]
     public function deleteCustomerAddress(int $addressId): array
     {
@@ -573,7 +596,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-validate',
-        description: 'Validates customer data before create/update'
+        description: 'Validates customer data before create/update',
+        meta: ['hidden' => true]
     )]
     public function validateCustomer(
         string $email,

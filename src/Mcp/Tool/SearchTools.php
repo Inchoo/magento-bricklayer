@@ -45,15 +45,15 @@ class SearchTools
         ],
         'graphql' => [
             'keywords' => ['schema.graphqls'],
-            'tools' => ['graphql-types', 'graphql-type-info', 'graphql-queries', 'graphql-mutations', 'graphql-resolvers'],
+            'tools' => ['graphql-inspect'],
         ],
         'cron' => [
             'keywords' => ['job', 'schedule', 'crontab.xml', 'cron group'],
-            'tools' => ['cron-list', 'cron-history'],
+            'tools' => ['system-status'],
         ],
         'indexer' => [
             'keywords' => ['index', 'reindex', 'mview', 'indexer.xml'],
-            'tools' => ['indexer-status'],
+            'tools' => ['system-status'],
         ],
         'testing' => [
             'keywords' => ['test', 'phpunit', 'mftf', 'api functional'],
@@ -187,7 +187,7 @@ class SearchTools
                 'Full page cache (FPC)',
                 'Block caching with cache keys',
             ],
-            'tools' => ['cache-status'],
+            'tools' => ['system-status'],
         ],
         // Operational: entity CRUD and tool-focused categories
         'orders' => [
@@ -272,7 +272,7 @@ class SearchTools
                 'Search for patterns across all log files',
                 'Diagnose errors with full context and fix suggestions',
             ],
-            'tools' => ['log-read', 'log-list', 'log-analyze', 'log-search', 'diagnose-error'],
+            'tools' => ['log', 'diagnose-error'],
         ],
         'diagnostic' => [
             'keywords' => ['diagnose', 'diagnosis', 'troubleshoot', 'debug error', 'fix error',
@@ -284,7 +284,7 @@ class SearchTools
                 'Get actionable fix suggestions with confidence levels',
                 'Identify error patterns (class not found, DI, database, search, memory)',
             ],
-            'tools' => ['diagnose-error', 'log-analyze', 'log-read', 'cache-status', 'indexer-status'],
+            'tools' => ['diagnose-error', 'log', 'system-status'],
         ],
         'code-runner' => [
             'keywords' => ['code runner', 'execute', 'run code', 'tinker', 'repl', 'eval',
@@ -319,7 +319,7 @@ class SearchTools
                 'Execute PHP code in Magento context',
                 'Validate module structure and configuration',
             ],
-            'tools' => ['application-info', 'store-configuration', 'deploy-mode', 'code-runner', 'validate-module'],
+            'tools' => ['application-info', 'system-status', 'code-runner', 'validate-module'],
         ],
         'configuration' => [
             'keywords' => ['configuration', 'config', 'system configuration', 'config value',
@@ -339,7 +339,8 @@ class SearchTools
 
     #[McpTool(
         name: 'search-docs',
-        description: 'Searches Magento documentation for relevant topics and guidance'
+        description: 'Search Magento documentation topics.',
+        meta: ['hidden' => true]
     )]
     public function searchDocs(string $query, int $limit = 10): array
     {
@@ -393,7 +394,7 @@ class SearchTools
 
     #[McpTool(
         name: 'search-tools',
-        description: 'Search available MCP tools by keyword or group. Use detail parameter to control response size: names, summary, or full.'
+        description: 'Discover tools by keyword or group. Use detail (names|summary|full) to control response size.'
     )]
     public function searchTools(
         string $query = '',

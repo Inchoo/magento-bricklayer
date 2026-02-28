@@ -64,48 +64,31 @@ class McpServerFactory
 
     private function getServerInstructions(): string
     {
-        $magentoInfo = 'Magento installation not detected';
+        $edition = 'Community';
+        $version = 'unknown';
+        $mode = 'unknown';
 
         if (MagentoBootstrap::isInitialized()) {
             try {
                 $metadata = MagentoBootstrap::get(\Magento\Framework\App\ProductMetadataInterface::class);
-                $version = $metadata->getVersion();
                 $edition = $metadata->getEdition();
-                $magentoInfo = "Magento $edition $version";
-            } catch (\Throwable $e) {
-                $magentoInfo = 'Magento (version unknown)';
+                $version = $metadata->getVersion();
+            } catch (\Throwable) {
+            }
+
+            try {
+                $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
+                $mode = $state->getMode();
+            } catch (\Throwable) {
             }
         }
 
-        return "This MCP server provides comprehensive tools for Magento 2 development.\nCurrent installation: $magentoInfo\n\n" . <<<'INSTRUCTIONS'
-Efficiency:
-- For multi-step operations (bulk updates, cross-entity lookups, data aggregation), use code-runner to write PHP — one call replaces many individual tool calls.
-- Use search-docs to find relevant tools before calling them. Do not explore all tools by trial and error.
-- For list tools (product-list, order-list, etc.), use count_only=true to check result size before fetching. Use fields parameter to request only needed columns.
-- Use verbosity=minimal on module-list and eav-attributes when you only need identifiers.
-
-code-runner examples:
-
-Batch product lookup:
-$skus = ['SKU1', 'SKU2', 'SKU3'];
-$repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);
-$results = [];
-foreach ($skus as $sku) {
-    $p = $repo->get($sku);
-    $results[$sku] = ['name' => $p->getName(), 'price' => $p->getPrice()];
-}
-return $results;
-
-Cross-entity query:
-$order = repo(\Magento\Sales\Api\OrderRepositoryInterface::class)->get($orderId);
-$customer = repo(\Magento\Customer\Api\CustomerRepositoryInterface::class)->getById($order->getCustomerId());
-return ['order' => $order->getIncrementId(), 'customer' => $customer->getEmail()];
-
-SQL aggregation:
-$result = query("SELECT status, COUNT(*) as cnt FROM sales_order GROUP BY status");
-return $result;
-
-Always use introspection tools before generating code to understand existing codebase structure. Before writing code, call development-context with the relevant task category to load coding guidelines.
-INSTRUCTIONS;
+        return <<<INSTRUCTIONS
+        Magento {$edition} {$version} ({$mode} mode).
+        Use search-tools to discover available tools.
+        Use development-context to load coding guidelines before writing code.
+        Use code-runner for multi-step operations instead of chaining individual tools.
+        On list tools: use fields to limit response, count_only=true to check size.
+        INSTRUCTIONS;
     }
 }

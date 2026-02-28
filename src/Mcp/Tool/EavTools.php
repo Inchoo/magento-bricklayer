@@ -25,7 +25,7 @@ class EavTools
 
     #[McpTool(
         name: 'eav-attributes',
-        description: 'Returns EAV attributes for a specified entity type. Use verbosity (minimal/standard/detailed) to control response size.'
+        description: 'Returns EAV attributes. Use verbosity to control detail level.'
     )]
     public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
     {
@@ -116,7 +116,8 @@ class EavTools
 
     #[McpTool(
         name: 'eav-entity-types',
-        description: 'Returns all supported EAV entity types registered in the Magento system'
+        description: 'Returns all supported EAV entity types registered in the Magento system',
+        meta: ['hidden' => true]
     )]
     public function getEntityTypes(): array
     {

@@ -17,15 +17,39 @@ class GraphqlTools
     use RequiresMagento;
 
     #[McpTool(
-        name: 'graphql-types',
-        description: 'Lists GraphQL schema types registered in Magento'
+        name: 'graphql-inspect',
+        description: 'Inspect GraphQL schema. Target: types, queries, mutations, resolvers. Use name for type details.',
+        meta: ['hidden' => true]
     )]
-    public function getGraphqlTypes(string $typeName = '', string $kind = ''): array
+    public function inspectGraphql(string $target, string $name = '', string $kind = ''): array
     {
+        $allowed = ['types', 'queries', 'mutations', 'resolvers'];
+
+        if (!in_array($target, $allowed, true)) {
+            return [
+                'error' => true,
+                'message' => sprintf(
+                    'Invalid target "%s". Must be one of: %s.',
+                    $target,
+                    implode(', ', $allowed)
+                ),
+            ];
+        }
+
         if ($error = $this->requireMagento()) {
             return $error;
         }
 
+        return match ($target) {
+            'types'     => $name !== '' ? $this->getGraphqlTypeInfo($name) : $this->getGraphqlTypes($name, $kind),
+            'queries'   => $this->getGraphqlQueries(),
+            'mutations' => $this->getGraphqlMutations(),
+            'resolvers' => $this->getGraphqlResolvers($name),
+        };
+    }
+
+    private function getGraphqlTypes(string $typeName = '', string $kind = ''): array
+    {
         try {
             $schema = $this->generateSchema();
             $typeMap = $schema->getTypeMap();
@@ -71,16 +95,8 @@ class GraphqlTools
         }
     }
 
-    #[McpTool(
-        name: 'graphql-type-info',
-        description: 'Returns detailed information about a specific GraphQL type'
-    )]
-    public function getGraphqlTypeInfo(string $typeName): array
+    private function getGraphqlTypeInfo(string $typeName): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             $schema = $this->generateSchema();
 
@@ -147,16 +163,8 @@ class GraphqlTools
         }
     }
 
-    #[McpTool(
-        name: 'graphql-queries',
-        description: 'Lists all GraphQL queries available in the schema'
-    )]
-    public function getGraphqlQueries(): array
+    private function getGraphqlQueries(): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             $schema = $this->generateSchema();
 
@@ -195,16 +203,8 @@ class GraphqlTools
         }
     }
 
-    #[McpTool(
-        name: 'graphql-mutations',
-        description: 'Lists all GraphQL mutations available in the schema'
-    )]
-    public function getGraphqlMutations(): array
+    private function getGraphqlMutations(): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             $schema = $this->generateSchema();
 
@@ -242,19 +242,11 @@ class GraphqlTools
         }
     }
 
-    #[McpTool(
-        name: 'graphql-resolvers',
-        description: 'Lists GraphQL resolvers registered for types'
-    )]
-    public function getGraphqlResolvers(string $typeName = ''): array
+    private function getGraphqlResolvers(string $typeName = ''): array
     {
-        if ($error = $this->requireMagento()) {
-            return $error;
-        }
-
         try {
             return [
-                'message' => 'Use graphql-type-info to inspect specific type resolvers',
+                'message' => 'Use graphql-inspect with target=types and a name to inspect specific type resolvers',
                 'note' => 'Resolver configuration is defined in etc/schema.graphqls files',
                 'hint' => 'Search for "@resolver" directive in graphqls files',
                 'filter_type' => $typeName ?: 'all',

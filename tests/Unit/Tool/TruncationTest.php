@@ -48,16 +48,9 @@ class TruncationTest extends TestCase
         $this->assertStringEndsWith('END_MARKER', $result['text']);
     }
 
-    public function testReadLogHasMaxEntryLengthParam(): void
+    public function testLogToolHasMaxEntryLengthParam(): void
     {
-        $ref = new \ReflectionMethod(\Inchoo\MagentoBricklayer\Mcp\Tool\LogTools::class, 'readLog');
-        $params = array_map(fn($p) => $p->getName(), $ref->getParameters());
-        $this->assertContains('max_entry_length', $params);
-    }
-
-    public function testSearchLogsHasMaxEntryLengthParam(): void
-    {
-        $ref = new \ReflectionMethod(\Inchoo\MagentoBricklayer\Mcp\Tool\LogTools::class, 'searchLogs');
+        $ref = new \ReflectionMethod(\Inchoo\MagentoBricklayer\Mcp\Tool\LogTools::class, 'log');
         $params = array_map(fn($p) => $p->getName(), $ref->getParameters());
         $this->assertContains('max_entry_length', $params);
     }

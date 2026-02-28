@@ -1,3 +1,24 @@
+# 1.11.0
+* Added `reinitialize` MCP tool to rebuild the Magento ObjectManager on demand after external state changes (setup:upgrade, setup:di:compile, module:enable)
+* Added automatic staleness detection — the MCP server now tracks `app/etc/config.php` and `generated/metadata/global.php` mtimes and auto-reinitializes when they change on disk
+* Added `MagentoBootstrap::reinitialize()` method for programmatic ObjectManager rebuild
+* Added `MagentoBootstrap::isStale()` and `reinitializeIfStale()` for sentinel-based staleness checks
+* Updated `RequiresMagento` trait to auto-reinitialize before every tool call when staleness is detected
+* **Progressive tool disclosure** — Added `meta: ['hidden' => true]` to tier 2 tools so only 16 essential tools appear in `tools/list`; all 78 tools remain callable and discoverable via `search-tools`
+* **Compressed tool descriptions** — Rewrote all tool descriptions to ≤80 words, removing redundant explanations already conveyed by parameter names and types
+* **Tool consolidation** — Reduced tool count by merging related tools into single entry points with routing parameters:
+  - 5 GraphQL tools → `graphql-inspect` (parameter: `target` = types|queries|mutations|resolvers, optional `name` for type detail)
+  - 4 Log tools → `log` (parameter: `action` = read|list|search|analyze)
+  - 5 System status tools → `system-status` (parameter: `check` = cache|indexers|deploy-mode|cron|cron-history)
+  - `store-configuration` merged into `application-info` (parameter: `include` = stores)
+* **Pagination metadata** — Added `has_more` boolean to all list tool responses (product-list, order-list, customer-list, category-products, invoice-list, shipment-list, creditmemo-list, customer-orders) for reliable pagination signaling
+* **Pruned guidelines duplication** — Removed tool documentation tables from guidelines templates (CLAUDE.md, .cursorrules, etc.) since `tools/list` already provides this information
+* **Minimal server instructions** — Compressed MCP server instructions from multi-paragraph prose to 5 actionable lines
+* **Context-aware hints** — Added conditional `_hint` field to tool responses guiding agents toward logical next steps:
+  - `product-get` / `customer-get` — hints when custom EAV attributes are present
+  - `system-status` — hints when indexers are invalid or cache types are disabled
+  - `diagnose-error` — hints to check `plugin-list` or `di-configuration` when relevant
+
 # 1.10.2
 * Added standalone `magewire` development-context category for generic Magewire component development outside Hyvä Checkout
 * Refocused `hyva-checkout` category on checkout-specific patterns with condensed Magewire quick-reference

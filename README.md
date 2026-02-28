@@ -4,13 +4,16 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes vast number of tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 78 tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
 - Manage products, orders, and customers
 - Generate Magento-compliant code
-- Search Magento documentation
+- Diagnose errors with full context and fix suggestions
+- Search Magento documentation and coding guidelines
+
+Only 16 essential tools are advertised at startup — the rest are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
 
 The name "Bricklayer" reflects the methodical, structured approach to building Magento 2 modules and extensions, laying each component (the "bricks") in the correct order and position to construct a solid, maintainable codebase.
 
@@ -178,98 +181,78 @@ This is useful when container names vary between environments or are dynamically
 
 ## MCP Tools Overview
 
-### Application & Store Tools
-- `application-info` - Magento version, PHP version, deploy mode, module counts
-- `store-configuration` - Website/store/store view hierarchy with locale and base URLs
-- `deploy-mode` - Current deploy mode with recommendations
+Bricklayer uses **progressive disclosure** — 16 essential tools are advertised in `tools/list` while 62 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
 
-### Module Tools
-- `module-list` - All installed modules with version, status, and vendor
-- `module-structure` - File/folder structure of a module with dependencies
-- `validate-module` - Validates module code structure (registration.php, module.xml, composer.json, strict_types)
+### Application & Module Tools
+- `application-info` — Magento version, PHP version, deploy mode, module counts. Use `include=stores` for website/store hierarchy
+- `module-list` — All installed modules with version, status, and vendor
+- `module-structure` — File/folder structure of a module with dependencies
+- `validate-module` — Validates module code structure (registration.php, module.xml, composer.json, strict_types)
 
 ### Database Tools
-- `database-schema` - Table structures, columns, indexes, foreign keys
-- `database-query` - Execute read-only SELECT queries with automatic LIMIT enforcement
+- `database-schema` **[tier 1]** — Table structures, columns, indexes, foreign keys
+- `database-query` **[tier 1]** — Execute read-only SELECT queries with automatic LIMIT enforcement
 
 ### EAV Tools
-- `eav-attributes` - EAV attributes for entity types (catalog_product, catalog_category, customer, customer_address)
-- `eav-entity-types` - List all supported EAV entity types
+- `eav-attributes` **[tier 1]** — EAV attributes for entity types (catalog_product, catalog_category, customer, customer_address)
+- `eav-entity-types` — List all supported EAV entity types
 
 ### Configuration & DI Tools
-- `configuration-get` - Retrieve system configuration values by path (with scope support)
-- `configuration-list` - List available configuration paths by section
-- `di-configuration` - DI configuration showing preferences and plugins for classes
-- `plugin-list` - List all plugins/interceptors for a class with method filtering
-- `event-list` - List events and observers with area filtering
-- `preference-list` - List all class preference rewrites
+- `configuration-get` — Retrieve system configuration values by path (with scope support)
+- `configuration-list` — List available configuration paths by section
+- `di-configuration` **[tier 1]** — DI configuration showing preferences and plugins for classes
+- `plugin-list` **[tier 1]** — List all plugins/interceptors for a class with method filtering
+- `event-list` — List events and observers with area filtering
+- `preference-list` **[tier 1]** — List all class preference rewrites
 
 ### Routing & API Tools
-- `route-list` - Frontend and admin routes with handling modules
-- `route-info` - Detailed information about specific routes with controller classes
-- `api-endpoints` - REST API endpoints with method/path filtering and security info
-- `url-rewrites` - URL rewrites with request path and store filtering
+- `route-list` — Frontend and admin routes with handling modules
+- `route-info` — Detailed information about specific routes with controller classes
+- `api-endpoints` — REST API endpoints with method/path filtering and security info
+- `url-rewrites` — URL rewrites with request path and store filtering
 
 ### GraphQL Tools
-- `graphql-types` - List all GraphQL types in the schema
-- `graphql-type-info` - Detailed information about a specific GraphQL type
-- `graphql-queries` - List all available GraphQL queries
-- `graphql-mutations` - List all available GraphQL mutations
-- `graphql-resolvers` - List GraphQL resolvers with their implementation classes
+- `graphql-inspect` — Consolidated GraphQL introspection tool. Use `target` (types|queries|mutations|resolvers) to select what to inspect, and optional `name` for detail on a specific type
 
 ### Catalog Tools
-- `product-get`, `product-list`, `product-create`, `product-update`, `product-delete`
+- `product-get` **[tier 1]**, `product-list`, `product-create`, `product-update`, `product-delete`
 - `product-stock-get`, `product-stock-update`
-- `product-media-list` - List product media gallery entries
-- `product-media-add` - Add images to product gallery (base64 or file path)
-- `product-link-list` - List related, upsell, or crosssell products
-- `product-link-set` - Set product relationships
+- `product-media-list`, `product-media-add`
+- `product-link-list`, `product-link-set`
 - `category-get`, `category-tree`, `category-create`, `category-update`, `category-delete`
-- `category-products` - List products assigned to category
-- `category-assign-products` - Assign products to category with position ordering
+- `category-products`, `category-assign-products`
 
 ### Order Tools
-- `order-get`, `order-list`, `order-cancel`, `order-hold`, `order-unhold`
-- `order-items` - List line items with quantities, prices, discounts, taxes
-- `order-comments` - List order status history and comments
-- `order-add-comment` - Add comment to order with optional status change and notification
+- `order-get` **[tier 1]**, `order-list`, `order-cancel`, `order-hold`, `order-unhold`
+- `order-items`, `order-comments`, `order-add-comment`
 - `invoice-create`, `invoice-list`
-- `shipment-create`, `shipment-list`
-- `shipment-track-add` - Add tracking information to shipment
+- `shipment-create`, `shipment-list`, `shipment-track-add`
 - `creditmemo-create`, `creditmemo-list`
 
 ### Customer Tools
-- `customer-get`, `customer-list`, `customer-create`, `customer-update`, `customer-delete`
-- `customer-validate` - Validate customer data before create/update
-- `customer-groups-list` - List all customer groups with tax class IDs
-- `customer-orders` - List orders for specific customer
-- `customer-addresses` - List all addresses for customer
-- `customer-address-create`, `customer-address-update`, `customer-address-delete`
+- `customer-get` **[tier 1]**, `customer-list`, `customer-create`, `customer-update`, `customer-delete`
+- `customer-validate`, `customer-groups-list`, `customer-orders`
+- `customer-addresses`, `customer-address-create`, `customer-address-update`, `customer-address-delete`
 
 ### Development Tools
-- `cache-status` - Status of all cache types with enabled/disabled counts
-- `indexer-status` - Status of all indexers (valid/invalid/processing, mode)
-- `cron-list` - Configured cron jobs with schedule expressions
-- `cron-history` - Recent cron execution history with optional job code filtering
-- `code-runner` - Execute PHP code in Magento context with helper functions, area emulation, read-only mode, and metrics
-- `code-runner-help` - Returns detailed code-runner usage guide with helpers, variables, areas, and examples
-- `search-docs` - Semantic documentation search
-- `search-tools` - Search available MCP tools by keyword or group with configurable detail level
-- `batch-execute` - Execute multiple tool operations in a single call (max 20)
+- `system-status` — Consolidated system check tool. Use `check` (cache|indexers|deploy-mode|cron|cron-history) to select what to inspect
+- `reinitialize` — Rebuild the Magento ObjectManager after external state changes. Also triggers automatically when `app/etc/config.php` or `generated/metadata/global.php` change on disk
+- `code-runner` **[tier 1]** — Execute PHP code in Magento context with helper functions, area emulation, read-only mode, and metrics
+- `code-runner-help` **[tier 1]** — Returns detailed code-runner usage guide with helpers, variables, areas, and examples
+- `search-docs` — Semantic documentation search
+- `search-tools` **[tier 1]** — Search available MCP tools by keyword or group with configurable detail level
+- `batch-execute` **[tier 1]** — Execute multiple tool operations in a single call (max 20)
 
 ### Log Tools
-- `log-read` - Read recent entries from log files (system, exception, debug, cron)
-- `log-list` - List all available log files with sizes and modification times
-- `log-analyze` - Analyze exception log for error patterns and frequency
-- `log-search` - Search across all log files with pattern matching
+- `log` — Consolidated log tool. Use `action` (read|list|search|analyze) with per-action parameters (logType, lines, filter, query, hours, etc.)
 
 ### Diagnostic Tools
-- `diagnose-error` - Diagnoses the most recent Magento error with full context, DI analysis, and actionable fix suggestions in a single call
+- `diagnose-error` **[tier 1]** — Diagnoses the most recent Magento error with full context, DI analysis, and actionable fix suggestions in a single call
 
 The `diagnose-error` tool orchestrates multiple introspection tools to produce a comprehensive diagnosis:
 
 ```
-diagnose-error(index=0, source="exception", since="1h", pattern="")
+diagnose-error(index=0, source="exception", since="1h", pattern="", verbosity="standard")
 ```
 
 **Parameters:**
@@ -279,14 +262,16 @@ diagnose-error(index=0, source="exception", since="1h", pattern="")
 | `source` | `exception` | Log file: exception, system, debug, cron |
 | `since` | `1h` | Time window: 5m, 1h, 24h, 7d |
 | `pattern` | `""` | Substring filter for error messages |
+| `verbosity` | `standard` | Detail level: minimal, standard, detailed |
 
 **Response structure:**
-- `error` - Parsed exception with class, message, file, line, stack trace, and chained previous exception
-- `module_context` - Responsible module's name, version, enabled status, dependencies, and validation issues
-- `di_context` - DI preferences and plugins for the error class
-- `environment` - Deploy mode, disabled caches, invalid indexers, generated code age
-- `history` - Error frequency and top exception types in the time period
-- `suggestions` - Actionable fixes with confidence levels (high/medium/low) and CLI commands
+- `error` — Parsed exception with class, message, file, line, stack trace, and chained previous exception
+- `module_context` — Responsible module's name, version, enabled status, dependencies, and validation issues
+- `di_context` — DI preferences and plugins for the error class
+- `environment` — Deploy mode, disabled caches, invalid indexers, generated code age
+- `history` — Error frequency and top exception types in the time period
+- `suggestions` — Actionable fixes with confidence levels (high/medium/low) and CLI commands
+- `_hint` — *(conditional)* Next-step guidance when plugins or DI issues are involved
 
 The tool recognizes 15 common Magento error patterns including class-not-found, DI compilation errors, database issues, search engine failures, invalid templates/blocks, memory exhaustion, and session errors.
 
@@ -323,15 +308,44 @@ code-runner(code, area="", allow_write=false, timeout=30)
 The tool validates code against 9 dangerous patterns (shell execution, file writes, superglobals, cURL, eval, header manipulation, global handler registration, long sleeps). Disabled in production mode and configurable via `.bricklayer.json`.
 
 ### Code Generation Tools
-- `generate-module` - Scaffold a new Magento 2 module with registration.php, module.xml, composer.json
-- `generate-model` - Create model, resource model, and collection classes with db_schema.xml
-- `generate-controller` - Create controller with routes.xml, layout XML, and template
-- `generate-api` - Create REST API endpoint with interface, implementation, and webapi.xml
+- `generate-module` — Scaffold a new Magento 2 module with registration.php, module.xml, composer.json
+- `generate-model` — Create model, resource model, and collection classes with db_schema.xml
+- `generate-controller` — Create controller with routes.xml, layout XML, and template
+- `generate-api` — Create REST API endpoint with interface, implementation, and webapi.xml
 
 All code generation tools support `dry_run` (preview without writing) and `force` (overwrite existing files) parameters. In dry-run mode, each file is annotated with `new` or `exists` status. Without `force`, existing files cause a conflict error listing the affected paths.
 
 ### Development Context Tool
-- `development-context` - Load coding guidelines and development patterns for a task category (38 categories covering plugins, EAV, GraphQL, Hyvä, Magewire, checkout, payment, testing, and more). Use category `list` to see all available categories.
+- `development-context` **[tier 1]** — Load coding guidelines and development patterns for a task category (38 categories covering plugins, EAV, GraphQL, Hyvä, Magewire, checkout, payment, testing, and more). Use category `list` to see all available categories.
+
+### Context-Aware Hints
+
+Select tools return a conditional `_hint` field in their response when they detect a situation where the agent would benefit from a follow-up action:
+
+| Tool | Condition | Hint |
+|------|-----------|------|
+| `product-get` | Product has custom EAV attributes | Points to `eav-attributes` for attribute metadata |
+| `customer-get` | Customer has custom EAV attributes | Points to `eav-attributes` for attribute metadata |
+| `system-status check=indexers` | Any indexer is invalid | Points to `log` for related errors |
+| `system-status check=cache` | Any cache type is disabled | Warns about potential impact |
+| `diagnose-error` | Exception involves plugins | Points to `plugin-list` for the relevant class |
+| `diagnose-error` | Exception involves DI config | Points to `di-configuration` for the relevant class |
+
+### Pagination
+
+All list tools include pagination metadata in their response:
+
+```json
+{
+    "total_count": 150,
+    "page_size": 20,
+    "current_page": 1,
+    "has_more": true,
+    "items": [...]
+}
+```
+
+The `has_more` field provides a reliable signal for agents to decide whether to fetch additional pages.
 
 ## MCP Resources
 
@@ -463,6 +477,18 @@ Bricklayer is implemented as a standalone Composer library rather than a Magento
 - **Full Magento access** - Uses ObjectManager for complete framework integration
 - **Easy installation** - Just `composer require`, ready to use
 - **Clean removal** - Just `composer remove`, no database cleanup
+
+### Auto-Reinitialize
+
+Bricklayer runs as a long-lived MCP server process that bootstraps Magento's ObjectManager once at startup. When external commands change the application state (e.g. `setup:upgrade`, `setup:di:compile`, `module:enable`), the in-memory ObjectManager can become stale — new modules won't be recognized, config defaults won't load, and DI preferences may be outdated.
+
+To solve this, Bricklayer tracks the modification times of two sentinel files:
+- `app/etc/config.php` — changes on `setup:upgrade`, `module:enable/disable`
+- `generated/metadata/global.php` — changes on `setup:di:compile`
+
+Before every tool call, the `RequiresMagento` trait checks these mtimes. If either file has changed since the last initialization, Magento is automatically reinitialized with a fresh ObjectManager — no manual intervention required. The staleness check costs two `filemtime()` calls (~microseconds) per tool invocation.
+
+A manual `reinitialize` tool is also available for edge cases where sentinel files don't change (e.g. editing a module's `config.xml` without recompiling).
 
 ## Extending Bricklayer
 
