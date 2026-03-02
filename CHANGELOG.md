@@ -1,3 +1,10 @@
+# 1.11.1
+* **Security**: Fixed `isProductionMode()` to fail closed — returns `true` when Magento bootstrap is unavailable, blocking destructive tools by default instead of allowing them
+* Tightened MCP SDK version constraint from `>=0.3` to `^0.3 || ^1.0` to prevent accepting breaking future major versions
+* Improved `checkDiagnoseError` in VerifyCommand to actually instantiate and test `ExceptionParser` instead of always reporting pass
+* Clarified `graphql-inspect` tool description to note that `resolvers` target returns guidance only
+* Added inline comment in `MagentoBootstrap::reinitialize()` explaining why `require_once` works correctly during reinit
+
 # 1.11.0
 * Added `reinitialize` MCP tool to rebuild the Magento ObjectManager on demand after external state changes (setup:upgrade, setup:di:compile, module:enable)
 * Added automatic staleness detection — the MCP server now tracks `app/etc/config.php` and `generated/metadata/global.php` mtimes and auto-reinitializes when they change on disk

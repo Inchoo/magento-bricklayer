@@ -42,7 +42,8 @@ trait ChecksConfig
             $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
             return $state->getMode() === \Magento\Framework\App\State::MODE_PRODUCTION;
         } catch (\Throwable $e) {
-            return false;
+            // Fail closed: if we can't determine mode, assume production to block destructive tools
+            return true;
         }
     }
 

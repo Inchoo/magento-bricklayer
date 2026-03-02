@@ -346,8 +346,18 @@ HELP
 
     private function checkDiagnoseError(): void
     {
-        // DiagnosticTools is always registered when the MCP server starts
-        $this->addResult('Diagnose error', 'pass', 'enabled');
+        try {
+            if (class_exists(\Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic\ExceptionParser::class)) {
+                $parser = new \Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic\ExceptionParser();
+                // Verify the parser can handle a basic input without throwing
+                $parser->parse(['Test exception: something went wrong']);
+                $this->addResult('Diagnose error', 'pass', 'ExceptionParser operational');
+            } else {
+                $this->addResult('Diagnose error', 'fail', 'ExceptionParser class not found');
+            }
+        } catch (\Throwable $e) {
+            $this->addResult('Diagnose error', 'fail', 'ExceptionParser error: ' . $e->getMessage());
+        }
     }
 
     private function addResult(string $name, string $status, string $message): void

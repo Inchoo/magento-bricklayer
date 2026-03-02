@@ -116,16 +116,16 @@ class ChecksConfigTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function testIsProductionModeReturnsFalseWhenMagentoNotInitialized(): void
+    public function testIsProductionModeReturnsTrueWhenMagentoNotInitialized(): void
     {
         $subject = new ChecksConfigTestSubject();
 
-        // Without Magento bootstrap, should return false
+        // Without Magento bootstrap, should return true (fail closed)
         $result = $subject->testIsProductionMode();
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
-    public function testRequireNonProductionReturnsNullInNonProductionMode(): void
+    public function testRequireNonProductionBlocksWhenMagentoNotInitialized(): void
     {
         $loader = new ConfigLoader();
         $loader->load($this->tempDir);
@@ -133,10 +133,13 @@ class ChecksConfigTest extends TestCase
         $subject = new ChecksConfigTestSubject();
         $subject->setConfigLoader($loader);
 
-        // Without Magento initialized, isProductionMode() returns false
-        // so requireNonProduction should return null (allowed)
+        // Without Magento initialized, isProductionMode() returns true (fail closed)
+        // so requireNonProduction should return error (blocked)
         $result = $subject->testRequireNonProduction('product-delete');
-        $this->assertNull($result);
+        $this->assertIsArray($result);
+        $this->assertTrue($result['error']);
+        $this->assertStringContainsString('product-delete', $result['message']);
+        $this->assertStringContainsString('production mode', $result['message']);
     }
 
     public function testDestructiveToolsHaveNoDefaultEnabled(): void

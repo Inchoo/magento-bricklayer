@@ -220,6 +220,9 @@ class MagentoBootstrap
         self::$areaEmulator = null;
         // Keep $magentoRoot and $detector — they're still valid
 
+        // Note: initialize() uses require_once for the bootstrap file, which won't
+        // re-execute on reinit. This is intentional — autoloading from the first
+        // require persists, and Bootstrap::create() handles the actual reinitialization.
         return self::initialize($magentoRoot);
     }
 

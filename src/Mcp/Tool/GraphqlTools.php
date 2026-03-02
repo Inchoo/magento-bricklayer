@@ -18,7 +18,7 @@ class GraphqlTools
 
     #[McpTool(
         name: 'graphql-inspect',
-        description: 'Inspect GraphQL schema. Target: types, queries, mutations, resolvers. Use name for type details.',
+        description: 'Inspect GraphQL schema. Target: types, queries, mutations. Use name for type details. Note: resolvers target returns guidance only (Magento does not expose resolvers programmatically).',
         meta: ['hidden' => true]
     )]
     public function inspectGraphql(string $target, string $name = '', string $kind = ''): array
