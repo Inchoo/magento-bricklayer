@@ -2,6 +2,7 @@
 
 **Getting Started**
 - [Installation & Setup](getting-started)
+- [Developer Guide](developer-guide)
 - [CLI Commands](cli-commands)
 - [FAQ](faq)
 
