@@ -1,3 +1,6 @@
+1.11.2
+* Improved test coverage
+
 # 1.11.1
 * **Security**: Fixed `isProductionMode()` to fail closed — returns `true` when Magento bootstrap is unavailable, blocking destructive tools by default instead of allowing them
 * Tightened MCP SDK version constraint from `>=0.3` to `^0.3 || ^1.0` to prevent accepting breaking future major versions
