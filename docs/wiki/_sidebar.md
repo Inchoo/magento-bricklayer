@@ -19,6 +19,7 @@
 - [Customers](tools/customers)
 - [Database](tools/database)
 - [Logs & Diagnostics](tools/logs-and-diagnostics)
+- [GraphQL](tools/graphql)
 - [Development](tools/development)
 
 **Configuration**

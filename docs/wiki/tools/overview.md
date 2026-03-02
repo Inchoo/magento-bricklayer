@@ -11,8 +11,8 @@ Magento Bricklayer provides 79 MCP tools organized into 11 groups. Use `search-t
 | [Orders](orders) | 14 | Orders, invoices, shipments, credit memos |
 | [Customers](customers) | 12 | Customers, addresses, groups, validation |
 | [Database](database) | 2 | Schema inspection and read-only queries |
-| [Logs](logs) | 1 | Log reading, searching, and analysis (4 actions) |
-| [Diagnostic](diagnostic) | 2 | Error diagnosis and performance analysis |
+| [Logs](logs-and-diagnostics#log-tool) | 1 | Log reading, searching, and analysis (4 actions) |
+| [Diagnostic](logs-and-diagnostics#diagnostic-tools) | 2 | Error diagnosis and performance analysis |
 | [GraphQL](graphql) | 1 | Schema inspection (types, queries, mutations) |
 | [Development](development) | 3 | Code runner, search tools, batch execution |
 | [Code Generation](../code-generation/overview) | 4 | Module, model, controller, API scaffolding |
