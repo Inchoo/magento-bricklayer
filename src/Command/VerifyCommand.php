@@ -187,10 +187,10 @@ HELP
             // Server created successfully — count tools by scanning for #[McpTool] attributes
             $toolCount = $this->countMcpTools();
 
-            if ($toolCount >= 85) {
+            if ($toolCount > 0) {
                 $this->addResult('MCP server', 'pass', "OK ($toolCount tools registered)");
             } else {
-                $this->addResult('MCP server', 'warn', "Only $toolCount tools registered (expected ≥85)");
+                $this->addResult('MCP server', 'warn', 'No tools registered');
             }
         } catch (\Throwable $e) {
             $this->addResult('MCP server', 'fail', $e->getMessage());

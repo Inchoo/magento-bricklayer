@@ -4,7 +4,7 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 78 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 79 tools that AI agents can invoke to:
 
 - Inspect modules, configuration, and database schema
 - Query EAV attributes and entity types
@@ -181,7 +181,7 @@ This is useful when container names vary between environments or are dynamically
 
 ## MCP Tools Overview
 
-Bricklayer uses **progressive disclosure** — 16 essential tools are advertised in `tools/list` while 62 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
+Bricklayer uses **progressive disclosure** — 16 essential tools are advertised in `tools/list` while 63 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
 
 ### Application & Module Tools
 - `application-info` — Magento version, PHP version, deploy mode, module counts. Use `include=stores` for website/store hierarchy
@@ -236,7 +236,7 @@ Bricklayer uses **progressive disclosure** — 16 essential tools are advertised
 
 ### Development Tools
 - `system-status` — Consolidated system check tool. Use `check` (cache|indexers|deploy-mode|cron|cron-history) to select what to inspect
-- `reinitialize` — Rebuild the Magento ObjectManager after external state changes. Also triggers automatically when `app/etc/config.php` or `generated/metadata/global.php` change on disk
+- `reinitialize` — Rebuild the Magento ObjectManager after external state changes. Clears any defined code-runner functions. Also triggers automatically when `app/etc/config.php` or `generated/metadata/global.php` change on disk
 - `code-runner` **[tier 1]** — Execute PHP code in Magento context with helper functions, area emulation, read-only mode, and metrics
 - `code-runner-help` **[tier 1]** — Returns detailed code-runner usage guide with helpers, variables, areas, and examples
 - `search-docs` — Semantic documentation search
@@ -248,6 +248,7 @@ Bricklayer uses **progressive disclosure** — 16 essential tools are advertised
 
 ### Diagnostic Tools
 - `diagnose-error` **[tier 1]** — Diagnoses the most recent Magento error with full context, DI analysis, and actionable fix suggestions in a single call
+- `diagnose-performance` — Analyzes Magento performance configuration and data. Use `check` (all|indexes|cache|flat-tables|cron-backlog|config|queries) to select what to inspect. Returns findings with severity levels (info/warning/critical) and fix suggestions
 
 The `diagnose-error` tool orchestrates multiple introspection tools to produce a comprehensive diagnosis:
 
@@ -279,7 +280,7 @@ The tool recognizes 15 common Magento error patterns including class-not-found, 
 - `code-runner` - Execute PHP code within the Magento application context with helper functions, area emulation, transaction rollback, and execution metrics
 
 ```
-code-runner(code, area="", allow_write=false, timeout=30)
+code-runner(code, area="", allow_write=false, timeout=30, mode="execute")
 ```
 
 **Parameters:**
@@ -289,6 +290,16 @@ code-runner(code, area="", allow_write=false, timeout=30)
 | `area` | `""` | Magento area for DI resolution: frontend, adminhtml, webapi_rest, graphql, crontab, global |
 | `allow_write` | `false` | When false, DB changes are rolled back after execution |
 | `timeout` | `30` | Maximum execution time in seconds |
+| `mode` | `"execute"` | `execute` runs code normally; `define` saves reusable functions for the session |
+
+**Reusable functions** (`mode=define`):
+
+Define named PHP functions that persist across `code-runner` calls within the same session. Functions are validated against the same dangerous pattern blocklist and cleared on `reinitialize`. Maximum 20 defined functions per session.
+
+```
+code-runner(mode="define", code="function getProductBySku($sku) { return get(\Magento\Catalog\Api\ProductRepositoryInterface::class)->get($sku); }")
+code-runner(code="$p = getProductBySku('24-MB01'); return $p->getName();")
+```
 
 **Helper functions** available in executed code:
 - `$get(ClassName::class)` - Retrieve singleton from DI container
@@ -489,6 +500,10 @@ To solve this, Bricklayer tracks the modification times of two sentinel files:
 Before every tool call, the `RequiresMagento` trait checks these mtimes. If either file has changed since the last initialization, Magento is automatically reinitialized with a fresh ObjectManager — no manual intervention required. The staleness check costs two `filemtime()` calls (~microseconds) per tool invocation.
 
 A manual `reinitialize` tool is also available for edge cases where sentinel files don't change (e.g. editing a module's `config.xml` without recompiling).
+
+### Config Hot-Reload
+
+Bricklayer also tracks the modification time of `.bricklayer.json`. When the file is edited while the MCP server is running (e.g. enabling a tool), the change is detected automatically on the next tool call — no server restart required. The staleness check costs a single `filemtime()` call per config access.
 
 ## Extending Bricklayer
 

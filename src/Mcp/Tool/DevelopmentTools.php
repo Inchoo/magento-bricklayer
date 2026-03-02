@@ -56,6 +56,8 @@ class DevelopmentTools
             ];
         }
 
+        CodeRunnerTools::clearDefinedFunctions();
+
         $elapsed = round((microtime(true) - $startTime) * 1000, 1);
 
         // Verify the new state

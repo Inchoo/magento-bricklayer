@@ -25,6 +25,7 @@ class ConfigLoader
     private ConfigValidator $validator;
     private ?array $config = null;
     private ?string $projectRoot = null;
+    private ?int $configMtime = null;
 
     public function __construct(
         ?EnvironmentResolver $envResolver = null,
@@ -289,6 +290,66 @@ class ConfigLoader
         }
 
         return $array;
+    }
+
+    /**
+     * Snapshot the current mtime of the config file for later staleness checks.
+     */
+    public function snapshotConfigMtime(): void
+    {
+        $path = $this->getConfigPath();
+        $mtime = ($path !== null && file_exists($path)) ? filemtime($path) : false;
+        $this->configMtime = $mtime !== false ? $mtime : null;
+    }
+
+    /**
+     * Check whether the config file on disk has changed since the last snapshot.
+     */
+    public function isConfigStale(): bool
+    {
+        $path = $this->getConfigPath();
+
+        if ($path === null) {
+            return false;
+        }
+
+        if (!file_exists($path)) {
+            return $this->configMtime !== null;
+        }
+
+        $currentMtime = filemtime($path);
+
+        return $currentMtime !== false && $currentMtime !== $this->configMtime;
+    }
+
+    /**
+     * Reload configuration from disk if the file has changed since the last snapshot.
+     *
+     * @return bool True if config was reloaded, false if unchanged
+     */
+    public function reloadIfStale(): bool
+    {
+        if (!$this->isConfigStale()) {
+            return false;
+        }
+
+        $this->config = null;
+        $this->load($this->projectRoot);
+        $this->snapshotConfigMtime();
+
+        return true;
+    }
+
+    /**
+     * Get the full path to the config file, or null if no project root is set.
+     */
+    private function getConfigPath(): ?string
+    {
+        if ($this->projectRoot === null) {
+            return null;
+        }
+
+        return $this->projectRoot . '/' . self::CONFIG_FILE;
     }
 
     /**

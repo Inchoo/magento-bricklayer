@@ -74,18 +74,18 @@ class ProgressiveDisclosureTest extends TestCase
         $tier2Count = count(array_filter(self::$toolVisibility, fn(bool $hidden) => $hidden));
 
         $this->assertSame(
-            62,
+            63,
             $tier2Count,
-            sprintf('Expected 62 Tier 2 (hidden) tools, found %d', $tier2Count)
+            sprintf('Expected 63 Tier 2 (hidden) tools, found %d', $tier2Count)
         );
     }
 
     public function testTotalToolCount(): void
     {
         $this->assertSame(
-            78,
+            79,
             self::$totalTools,
-            sprintf('Expected 78 total tools, found %d', self::$totalTools)
+            sprintf('Expected 79 total tools, found %d', self::$totalTools)
         );
     }
 

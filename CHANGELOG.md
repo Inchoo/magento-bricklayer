@@ -1,4 +1,11 @@
-1.11.2
+# 1.12.0
+* **Config staleness detection** — `.bricklayer.json` changes are now detected automatically via mtime tracking; the MCP server reloads config on the next tool call without requiring a restart
+* **Reusable code-runner functions** — Added `mode=define` to `code-runner` for saving named PHP functions that persist across calls within a session; cleared on `reinitialize`; capped at 20 functions
+* **`diagnose-performance` tool** — New diagnostic tool with 6 checks: `indexes`, `cache`, `flat-tables`, `cron-backlog`, `config`, `queries`; returns findings with severity levels (info/warning/critical) and fix suggestions
+* Added `PerformanceTools` to the `diagnostic` tool group in `ToolRegistry`
+* Updated `code-runner-help` with `mode` parameter documentation and reusable functions section
+
+# 1.11.2
 * Improved test coverage
 
 # 1.11.1

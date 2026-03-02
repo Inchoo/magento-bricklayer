@@ -240,12 +240,13 @@ class CodeRunnerToolsTest extends TestCase
         $params = $method->getParameters();
 
         $paramNames = array_map(fn($p) => $p->getName(), $params);
-        $this->assertEquals(['code', 'area', 'allow_write', 'timeout'], $paramNames);
+        $this->assertEquals(['code', 'area', 'allow_write', 'timeout', 'mode'], $paramNames);
 
         // Check defaults
         $this->assertEquals('', $params[1]->getDefaultValue());
         $this->assertFalse($params[2]->getDefaultValue());
         $this->assertEquals(30, $params[3]->getDefaultValue());
+        $this->assertEquals('execute', $params[4]->getDefaultValue());
     }
 
     // ─── code-runner-help ───

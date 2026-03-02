@@ -78,6 +78,13 @@ trait ChecksConfig
 
     private function getConfigLoader(): ConfigLoader
     {
-        return $this->configLoader ??= new ConfigLoader();
+        if ($this->configLoader === null) {
+            $this->configLoader = new ConfigLoader();
+            $this->configLoader->snapshotConfigMtime();
+        } else {
+            $this->configLoader->reloadIfStale();
+        }
+
+        return $this->configLoader;
     }
 }

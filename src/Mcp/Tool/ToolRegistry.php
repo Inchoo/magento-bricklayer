@@ -35,7 +35,7 @@ class ToolRegistry
         'customers' => ['CustomerTools'],
         'database' => ['DatabaseTools'],
         'logs' => ['LogTools'],
-        'diagnostic' => ['DiagnosticTools'],
+        'diagnostic' => ['DiagnosticTools', 'PerformanceTools'],
         'graphql' => ['GraphqlTools'],
         'development' => ['DevelopmentTools', 'CodeRunnerTools', 'SearchTools', 'BatchTools'],
         'code-generation' => ['CodeGenerationTools'],

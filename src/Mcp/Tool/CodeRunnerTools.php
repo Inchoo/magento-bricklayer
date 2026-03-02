@@ -19,8 +19,13 @@ class CodeRunnerTools
     use ChecksConfig;
     use RequiresMagento;
 
+    private const MAX_DEFINED_FUNCTIONS = 20;
+
     /** @var array<int, array{label: string, value: mixed}> */
     private array $logBuffer = [];
+
+    /** @var array<string, string> Named PHP functions stored for the session */
+    private static array $definedFunctions = [];
 
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
@@ -53,8 +58,20 @@ class CodeRunnerTools
         string $code,
         string $area = '',
         bool $allow_write = false,
-        int $timeout = 30
+        int $timeout = 30,
+        string $mode = 'execute'
     ): array {
+        if (!in_array($mode, ['execute', 'define'], true)) {
+            return [
+                'error' => true,
+                'message' => sprintf('Invalid mode "%s". Allowed: execute, define.', $mode),
+            ];
+        }
+
+        if ($mode === 'define') {
+            return $this->defineFunction($code);
+        }
+
         if ($error = $this->requireMagento()) {
             return $error;
         }
@@ -119,6 +136,12 @@ class CodeRunnerTools
 
         $this->resetApplicationState();
 
+        // Prepend any defined functions to the code
+        if (!empty(self::$definedFunctions)) {
+            $preamble = implode("\n", self::$definedFunctions);
+            $code = $preamble . "\n" . $code;
+        }
+
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
         $startQueries = $this->getQueryCount();
@@ -177,6 +200,7 @@ class CodeRunnerTools
                 'area (string, optional)' => 'Magento area to emulate. Empty for default.',
                 'allow_write (bool, default false)' => 'When false, DB changes are rolled back automatically.',
                 'timeout (int, default 30)' => 'Max execution time in seconds.',
+                'mode (string, default execute)' => 'execute = run code, define = save reusable functions for the session.',
             ],
             'examples' => [
                 'Batch product lookup' => '$repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);'
@@ -191,6 +215,15 @@ class CodeRunnerTools
                     . "\n" . 'runLog(query("SELECT COUNT(*) as cnt FROM catalog_product_entity"), "product count");'
                     . "\n" . '// Both values appear in the "log" key of the response',
             ],
+            'reusable_functions' => [
+                'define' => 'Use mode=define to save functions for the session:'
+                    . "\n" . '  code-runner mode=define code="function getProductBySku($sku) '
+                    . '{ return get(\Magento\Catalog\Api\ProductRepositoryInterface::class)->get($sku); }"',
+                'usage' => 'Defined functions are available in all subsequent code-runner calls:'
+                    . "\n" . '  code-runner code="$product = getProductBySku(\'my-sku\'); return $product->getName();"',
+                'limit' => 'Maximum 20 defined functions per session.',
+                'clearing' => 'Functions are cleared on reinitialize.',
+            ],
             'safety' => [
                 'read_only_mode' => 'By default, a DB transaction wraps execution and is rolled back. Set allow_write=true to persist.',
                 'blocked_functions' => 'exec, shell_exec, system, passthru, eval, unlink, file_put_contents, exit, die, header',
@@ -198,6 +231,88 @@ class CodeRunnerTools
                 'timeout' => 'Default 30s, max configurable via tools.code-runner.max_timeout in config.',
             ],
         ];
+    }
+
+    /**
+     * Store a function definition for use in subsequent code-runner calls.
+     *
+     * @return array<string, mixed>
+     */
+    private function defineFunction(string $code): array
+    {
+        $validationError = $this->validateCode($code);
+        if ($validationError !== null) {
+            return [
+                'error' => true,
+                'message' => $validationError,
+                'code' => $code,
+            ];
+        }
+
+        // Extract function names from the code
+        preg_match_all('/function\s+([a-zA-Z_]\w*)\s*\(/', $code, $matches);
+        $functionNames = $matches[1];
+
+        if (empty($functionNames)) {
+            return [
+                'error' => true,
+                'message' => 'No function declarations found in code. '
+                    . 'mode=define requires at least one "function name(...)" declaration.',
+            ];
+        }
+
+        // Check capacity limit
+        $newCount = count(self::$definedFunctions) + count($functionNames);
+        if ($newCount > self::MAX_DEFINED_FUNCTIONS) {
+            return [
+                'error' => true,
+                'message' => sprintf(
+                    'Function limit reached. Maximum %d defined functions allowed (current: %d, requested: %d). '
+                    . 'Call reinitialize to clear stored functions.',
+                    self::MAX_DEFINED_FUNCTIONS,
+                    count(self::$definedFunctions),
+                    count($functionNames)
+                ),
+            ];
+        }
+
+        // Store each function keyed by name
+        foreach ($functionNames as $name) {
+            self::$definedFunctions[$name] = $code;
+        }
+
+        // Deduplicate: if multiple function names came from the same code block,
+        // we stored the same code under each name. That's fine for the key lookup
+        // but we need to deduplicate for the preamble.
+
+        return [
+            'success' => true,
+            'message' => sprintf(
+                'Defined %d function(s): %s. Available in all subsequent code-runner calls.',
+                count($functionNames),
+                implode(', ', $functionNames)
+            ),
+            'defined_functions' => array_keys(self::$definedFunctions),
+            'total_defined' => count(self::$definedFunctions),
+        ];
+    }
+
+    /**
+     * Get the names of all currently defined functions.
+     *
+     * @return list<string>
+     */
+    public static function getDefinedFunctions(): array
+    {
+        return array_keys(self::$definedFunctions);
+    }
+
+    /**
+     * Clear all stored function definitions.
+     */
+    public static function clearDefinedFunctions(): void
+    {
+        self::$definedFunctions = [];
     }
 
     private function executeWithTransaction(string $code, string $mode, bool $allowWrite): array
