@@ -129,5 +129,5 @@ The MCP server monitors `.bricklayer.json` mtime. Changes are picked up automati
 
 ## Related Pages
 
-- [Environment Variables](environment-variables) — Override settings via env vars
-- [Security](../security/overview) — Production safety system
+- [Environment Variables](configuration/environment-variables) — Override settings via env vars
+- [Security](security/overview) — Production safety system

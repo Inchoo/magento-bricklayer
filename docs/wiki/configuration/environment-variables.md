@@ -24,5 +24,5 @@ No configuration is needed for containerized setups — `EnvironmentResolver` ha
 
 ## Related Pages
 
-- [.bricklayer.json](bricklayer-json) — Project-level configuration
-- [Getting Started](../getting-started) — Installation and setup
+- [.bricklayer.json](configuration/bricklayer-json) — Project-level configuration
+- [Getting Started](getting-started) — Installation and setup
