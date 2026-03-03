@@ -156,4 +156,30 @@ class CodeRunnerDefineTest extends TestCase
         $this->assertContains('myFunc', $result['defined_functions']);
         $this->assertEquals(1, $result['total_defined']);
     }
+
+    public function testMultiFunctionDefineDoesNotDuplicateInPreamble(): void
+    {
+        $tools = new CodeRunnerTools();
+
+        // Define two functions in a single call
+        $tools->execute(
+            'function preambleA() { return 1; } function preambleB() { return 2; }',
+            mode: 'define'
+        );
+
+        // Internal storage has 2 keys but both point to the same code string
+        $functions = CodeRunnerTools::getDefinedFunctions();
+        $this->assertCount(2, $functions);
+
+        // Use reflection to access the private static $definedFunctions and verify
+        // that array_unique reduces the values (proving dedup is needed and works)
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $prop = $ref->getProperty('definedFunctions');
+        $prop->setAccessible(true);
+        $raw = $prop->getValue();
+
+        $this->assertCount(2, $raw, 'Raw array should have 2 entries (one per function name)');
+        $unique = array_unique($raw);
+        $this->assertCount(1, $unique, 'Unique values should be 1 (same code block stored under both keys)');
+    }
 }

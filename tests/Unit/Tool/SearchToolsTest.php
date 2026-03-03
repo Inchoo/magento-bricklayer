@@ -98,4 +98,34 @@ class SearchToolsTest extends TestCase
         $instance = $attrs[0]->newInstance();
         $this->assertEquals('search-tools', $instance->name);
     }
+
+    public function testSearchDocsFindsPerformanceTool(): void
+    {
+        $tools = new SearchTools();
+        $result = $tools->searchDocs('performance');
+
+        $this->assertGreaterThan(0, $result['result_count']);
+
+        // Check that guidance mentions diagnose-performance
+        $this->assertStringContainsString('diagnose-performance', $result['guidance']);
+    }
+
+    public function testSearchDocsFindsPerformanceInDiagnosticCategory(): void
+    {
+        $tools = new SearchTools();
+        $result = $tools->searchDocs('diagnose');
+
+        $this->assertGreaterThan(0, $result['result_count']);
+
+        // Find the diagnostic category result
+        $diagnosticResult = null;
+        foreach ($result['results'] as $r) {
+            if ($r['category'] === 'diagnostic') {
+                $diagnosticResult = $r;
+                break;
+            }
+        }
+
+        $this->assertNotNull($diagnosticResult, 'diagnostic category should appear in results');
+    }
 }

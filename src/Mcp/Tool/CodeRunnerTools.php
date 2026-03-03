@@ -79,17 +79,18 @@ class CodeRunnerTools
         // Hard block in production mode (code-runner is always blocked, no config override)
         try {
             $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
-            $mode = $state->getMode();
+            $deployMode = $state->getMode();
 
-            if ($mode === \Magento\Framework\App\State::MODE_PRODUCTION) {
+            if ($deployMode === \Magento\Framework\App\State::MODE_PRODUCTION) {
                 return [
                     'error' => true,
                     'message' => 'Code runner is disabled in production mode for security reasons.',
-                    'mode' => $mode,
+                    'deploy_mode' => $deployMode,
                 ];
             }
         } catch (\Throwable $e) {
-            $mode = 'unknown';
+            // Cannot determine deploy mode — proceed (production blocking is best-effort here;
+            // the hard security block is in ChecksConfig::isProductionMode which fails closed)
         }
 
         if ($error = $this->requireToolEnabled('code-runner')) {
@@ -137,8 +138,10 @@ class CodeRunnerTools
         $this->resetApplicationState();
 
         // Prepend any defined functions to the code
+        // Use array_unique because multi-function define calls store the same
+        // code block under each function name (for key-based lookup)
         if (!empty(self::$definedFunctions)) {
-            $preamble = implode("\n", self::$definedFunctions);
+            $preamble = implode("\n", array_unique(self::$definedFunctions));
             $code = $preamble . "\n" . $code;
         }
 

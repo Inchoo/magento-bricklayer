@@ -1,3 +1,12 @@
+# 1.12.1
+* **Bug fix**: Fixed preamble duplication in `code-runner` `mode=define` — multi-function define calls no longer cause "Cannot redeclare" fatal errors
+* **Bug fix**: Fixed `$mode` variable shadowing in `CodeRunnerTools` — response `mode` field now correctly reports `execute` instead of the Magento deploy mode
+* Added `diagnose-performance` to search indexes in `search-docs` and `search-tools` (diagnostic and performance categories)
+* Added config gating to `diagnose-performance` tool — now respects `tools.diagnose-performance.enabled` in `.bricklayer.json`
+* Removed phantom Integration test suite declaration from `phpunit.xml.dist`
+* Reduced coupling: `PerformanceTools` now uses a single lazy-initialized `DevelopmentTools` instance instead of creating new instances per check
+* Added unit tests for `FiltersFields` trait, `RequiresMagento` trait, and `ToolScanner`
+
 # 1.12.0
 * **Config staleness detection** — `.bricklayer.json` changes are now detected automatically via mtime tracking; the MCP server reloads config on the next tool call without requiring a restart
 * **Reusable code-runner functions** — Added `mode=define` to `code-runner` for saving named PHP functions that persist across calls within a session; cleared on `reinitialize`; capped at 20 functions

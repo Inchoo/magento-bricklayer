@@ -147,6 +147,8 @@ class ConfigLoader
                 'customer-address-create' => ['enabled' => true],
                 'customer-address-update' => ['enabled' => true],
                 'customer-address-delete' => [],
+                // Diagnostic tools
+                'diagnose-performance' => ['enabled' => true],
                 // Code generation tools
                 'generate-module' => [],
                 'generate-model' => [],

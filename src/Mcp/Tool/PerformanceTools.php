@@ -12,6 +12,7 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\DevelopmentTools;
 use Mcp\Capability\Attribute\McpTool;
 
 class PerformanceTools
@@ -28,6 +29,13 @@ class PerformanceTools
         'config',
         'queries',
     ];
+
+    private ?DevelopmentTools $devTools = null;
+
+    private function getDevelopmentTools(): DevelopmentTools
+    {
+        return $this->devTools ??= new DevelopmentTools();
+    }
 
     /**
      * Analyze Magento performance configuration and data for common issues.
@@ -55,6 +63,10 @@ class PerformanceTools
         }
 
         if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('diagnose-performance')) {
             return $error;
         }
 
@@ -94,8 +106,7 @@ class PerformanceTools
         $findings = [];
 
         try {
-            $devTools = new DevelopmentTools();
-            $status = $devTools->getIndexerStatus();
+            $status = $this->getDevelopmentTools()->getIndexerStatus();
 
             if (isset($status['error'])) {
                 $findings[] = [
@@ -156,8 +167,7 @@ class PerformanceTools
         $criticalCaches = ['config', 'full_page'];
 
         try {
-            $devTools = new DevelopmentTools();
-            $status = $devTools->getCacheStatus();
+            $status = $this->getDevelopmentTools()->getCacheStatus();
 
             if (isset($status['error'])) {
                 $findings[] = [

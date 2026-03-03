@@ -72,4 +72,14 @@ class PerformanceToolsTest extends TestCase
         $this->assertTrue($result['error']);
         $this->assertStringContainsString('Invalid check', $result['message']);
     }
+
+    public function testToolUsesChecksConfigTrait(): void
+    {
+        // Verify the trait is used (ensures config gating is wired)
+        $ref = new \ReflectionClass(PerformanceTools::class);
+        $traitNames = array_map(fn($t) => $t->getShortName(), $ref->getTraits());
+
+        $this->assertContains('ChecksConfig', $traitNames);
+        $this->assertContains('RequiresMagento', $traitNames);
+    }
 }

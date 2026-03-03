@@ -103,6 +103,7 @@ class SearchTools
         ],
         'performance' => [
             'keywords' => ['n+1', 'profiler', 'slow', 'bottleneck'],
+            'tools' => ['diagnose-performance'],
         ],
     ];
 
@@ -284,7 +285,7 @@ class SearchTools
                 'Get actionable fix suggestions with confidence levels',
                 'Identify error patterns (class not found, DI, database, search, memory)',
             ],
-            'tools' => ['diagnose-error', 'log', 'system-status'],
+            'tools' => ['diagnose-error', 'diagnose-performance', 'log', 'system-status'],
         ],
         'code-runner' => [
             'keywords' => ['code runner', 'execute', 'run code', 'tinker', 'repl', 'eval',
