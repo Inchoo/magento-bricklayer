@@ -20,7 +20,7 @@ class DatabaseTools
 
     #[McpTool(
         name: 'database-schema',
-        description: 'Returns database table structure with columns, indexes, and foreign keys'
+        description: 'Check BEFORE writing db_schema.xml — shows actual database table structure. Runtime schema may differ from declarative schema due to third-party modules or patches.'
     )]
     public function getDatabaseSchema(string $table = '', string $pattern = ''): array
     {
@@ -197,7 +197,7 @@ class DatabaseTools
 
         $tableInfo = $connection->fetchRow("SHOW TABLE STATUS LIKE '$tableName'");
 
-        return [
+        $result = [
             'table' => $tableName,
             'engine' => $tableInfo['Engine'] ?? 'unknown',
             'rows' => (int) ($tableInfo['Rows'] ?? 0),
@@ -207,6 +207,10 @@ class DatabaseTools
             'indexes' => $indexes,
             'foreign_keys' => $foreignKeys,
         ];
+
+        $result['_skill_hint'] = 'For declarative schema and data patch patterns: development-context category=model';
+
+        return $result;
     }
 
     private const SENSITIVE_PATH_PREFIXES = [

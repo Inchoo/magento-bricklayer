@@ -379,7 +379,7 @@ class DiagnosticTools
      */
     #[McpTool(
         name: 'diagnose-error',
-        description: 'Diagnose recent Magento errors with fix suggestions. Use index to select older errors, since to filter by time, pattern to filter by text. Use verbosity (minimal/standard/detailed) to control output size.'
+        description: 'FIRST STEP for any Magento error — combines exception log, stack trace, DI context, and plugin chain analysis into actionable diagnosis with fix suggestions. Use index for older errors, since/pattern to filter.'
     )]
     public function diagnoseError(
         int $index = 0,

@@ -40,12 +40,18 @@ class GraphqlTools
             return $error;
         }
 
-        return match ($target) {
+        $result = match ($target) {
             'types'     => $name !== '' ? $this->getGraphqlTypeInfo($name) : $this->getGraphqlTypes($name, $kind),
             'queries'   => $this->getGraphqlQueries(),
             'mutations' => $this->getGraphqlMutations(),
             'resolvers' => $this->getGraphqlResolvers($name),
         };
+
+        if (!isset($result['error'])) {
+            $result['_skill_hint'] = 'For GraphQL schema and resolver patterns: development-context category=graphql';
+        }
+
+        return $result;
     }
 
     private function getGraphqlTypes(string $typeName = '', string $kind = ''): array

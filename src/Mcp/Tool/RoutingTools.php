@@ -47,11 +47,15 @@ class RoutingTools
 
             usort($routes, fn($a, $b) => strcmp($a['route_id'], $b['route_id']));
 
-            return [
+            $result = [
                 'area' => $area,
                 'total' => count($routes),
                 'routes' => $routes,
             ];
+
+            $result['_skill_hint'] = 'For controller and routing patterns: development-context category=frontend';
+
+            return $result;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }
@@ -100,12 +104,16 @@ class RoutingTools
                 strcmp($a['path'], $b['path']) ?: strcmp($a['method'], $b['method'])
             );
 
-            return [
+            $result = [
                 'total' => count($endpoints),
                 'filter_method' => $method ?: 'all',
                 'filter_path' => $path ?: 'all',
                 'endpoints' => $endpoints,
             ];
+
+            $result['_skill_hint'] = 'For REST API development patterns: development-context category=rest-api';
+
+            return $result;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }

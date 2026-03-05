@@ -269,7 +269,7 @@ class ContextTools
      */
     #[McpTool(
         name: 'development-context',
-        description: 'Load coding guidelines for a task category. Use category "list" to see available categories.'
+        description: 'Load coding guidelines and development patterns BEFORE writing code. Use category "list" to see available categories. Always load "coding-standards" for any PHP file.'
     )]
     public function getDevelopmentContext(string $category): array
     {
@@ -305,11 +305,14 @@ class ContextTools
                 $loadedGuidelines
             );
 
+            $nextSteps = $this->getNextSteps($category);
+
             return [
                 'category' => $category,
                 'description' => $mapping['description'],
                 'skills' => $skillsContent,
                 'guidelines' => $guidelinesContent,
+                '_next_steps' => !empty($nextSteps) ? $nextSteps : null,
                 'summary' => sprintf(
                     'Loaded %d skill(s) and %d guideline(s) for "%s" development.',
                     $loadedSkills,
@@ -344,6 +347,64 @@ class ContextTools
             'total' => count($categories),
             'categories' => $categories,
         ];
+    }
+
+    /**
+     * Returns contextual introspection tool recommendations for a given category.
+     *
+     * @return string[]
+     */
+    private function getNextSteps(string $category): array
+    {
+        return match ($category) {
+            'plugin' => [
+                'Before writing your plugin: check-class className=TargetClass',
+                'Check existing plugins and their sortOrder to avoid conflicts',
+            ],
+            'observer' => [
+                'Check existing observers: event-list eventName=your_event_name',
+            ],
+            'preference' => [
+                'Before overriding: check-class className=TargetClass',
+                'Verify no other module already rewrites this class',
+            ],
+            'eav' => [
+                'Check existing attributes: eav-attributes entityType=catalog_product',
+                'Check table structure: database-schema table=catalog_product_entity',
+            ],
+            'model' => [
+                'Check table structure: database-schema table=your_table_name',
+                'Check existing preferences: preference-list interface=YourInterface',
+            ],
+            'data-patch' => [
+                'Check current schema: database-schema table=target_table',
+            ],
+            'rest-api' => [
+                'Check existing endpoints: api-endpoints',
+            ],
+            'graphql' => [
+                'Check existing schema: graphql-inspect target=types',
+            ],
+            'cron' => [
+                'Check existing jobs: system-status check=cron',
+            ],
+            'indexer' => [
+                'Check indexer state: system-status check=indexers',
+            ],
+            'module' => [
+                'Check installed modules: module-list verbosity=minimal',
+            ],
+            'frontend', 'adminhtml', 'checkout', 'checkout-advanced' => [
+                'Check routes: route-list',
+            ],
+            'hyva-checkout', 'hyva-checkout-config', 'hyva-checkout-api', 'magewire' => [
+                'Check installed modules: module-list (verify Hyva_Checkout and Magewirephp_Magewire are present)',
+            ],
+            'hyva-theme', 'hyva-theme-advanced', 'hyva-ui-component', 'hyva-ui-component-js' => [
+                'Check installed modules: module-list (verify Hyva_Theme is present)',
+            ],
+            default => [],
+        };
     }
 
     /**
