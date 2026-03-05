@@ -1,3 +1,14 @@
+# 1.13.0
+* **`check-class` tool** — New Tier 1 tool combining plugin-list, di-configuration, and preference-list in one call for any class. The essential pre-modification check.
+* **Behavioral triggers in server instructions** — Server instructions now explain WHY agents should check runtime state before modifying code, not just how to use tools
+* **"Before Modifying Magento Code" section in agent guidelines** — Generated CLAUDE.md/.cursorrules now include a task→tool→skill decision matrix that tells agents what to check before writing code
+* **`_skill_hint` in introspection tool responses** — Plugin-list, di-configuration, preference-list, eav-attributes, database-schema, graphql-inspect, route-list, api-endpoints, and diagnose-performance now hint which `development-context` category to load next
+* **`_next_steps` in development-context responses** — After loading guidelines, agents are told which introspection tools to call for the specific task
+* **Rewrote Tier 1 tool descriptions** — Descriptions now include WHEN to use each tool (e.g., "Check BEFORE writing a plugin"), not just what the tool does
+* **Removed generic architecture section** from generated agent guidelines (duplicated training data)
+* **Simplified Context Quick Reference** — Replaced 20-row file-pattern table with reference to the new decision matrix
+* **README rewritten** — Added "How Agents Use Bricklayer" section, documented check→learn→write workflow, updated tool counts and feature descriptions
+
 # 1.12.1
 * **Bug fix**: Fixed preamble duplication in `code-runner` `mode=define` — multi-function define calls no longer cause "Cannot redeclare" fatal errors
 * **Bug fix**: Fixed `$mode` variable shadowing in `CodeRunnerTools` — response `mode` field now correctly reports `execute` instead of the Magento deploy mode

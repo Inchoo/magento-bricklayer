@@ -1,10 +1,11 @@
 # Magento Bricklayer
 
-AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) server that enables AI coding agents to interact with Magento installations through introspection tools, code generation capabilities, and comprehensive Magento knowledge.
+An MCP server that gives AI coding agents runtime visibility into Magento 2. Agents reading source files miss the full picture — DI preferences, plugin chains, EAV attributes, and event observers are resolved at runtime across dozens of modules. Bricklayer exposes this runtime state so agents make informed architectural decisions instead of guessing.
 
 ## Table of Contents
 
 - [What is Bricklayer?](#what-is-bricklayer)
+- [How Agents Use Bricklayer](#how-agents-use-bricklayer)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -65,18 +66,33 @@ AI-assisted development toolkit for Magento 2. An MCP (Model Context Protocol) s
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 79 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 80 tools that AI agents can invoke to:
 
-- Inspect modules, configuration, and database schema
-- Query EAV attributes and entity types
-- Manage products, orders, and customers
-- Generate Magento-compliant code
-- Diagnose errors with full context and fix suggestions
-- Search Magento documentation and coding guidelines
+- **Check runtime state before writing code** — see actual plugin chains, DI resolution, preferences, and event observers across all installed modules
+- Inspect database schema, EAV attributes, and system configuration as they exist at runtime
+- Diagnose errors with full context (exception + stack trace + DI + plugin chains + fix suggestions)
+- Analyze performance across indexes, cache, cron, and query patterns
+- Manage products, orders, and customers through Magento's service layer
+- Generate Magento-compliant module scaffolding with conflict detection
+- Load domain-specific development guidelines and coding standards on demand
 
-Only 16 essential tools are advertised at startup — the rest are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
+Only 17 essential tools are visible at startup — the remaining 63 are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
 
 The name "Bricklayer" reflects the methodical, structured approach to building Magento 2 modules and extensions, laying each component (the "bricks") in the correct order and position to construct a solid, maintainable codebase.
+
+## How Agents Use Bricklayer
+
+Magento resolves DI configuration, plugin chains, preferences, and event observers at runtime across all installed modules. An agent reading source files sees only one module's perspective — it misses overrides, conflicts, and customizations from other modules. Bricklayer bridges this gap.
+
+**Before writing a plugin**, an agent calls `check-class` to see existing plugins and their sortOrders, DI preferences, and class rewrites — preventing conflicts that would only surface in environments with more extensions installed.
+
+**Before working with products or customers**, an agent calls `eav-attributes` to discover custom attributes that exist only in the database, not in any source file.
+
+**When debugging**, an agent calls `diagnose-error` which combines the exception log, stack trace, DI context, and plugin chain analysis into a single actionable diagnosis — far more than reading `var/log/exception.log` alone.
+
+**Before writing any code**, an agent calls `development-context` to load domain-specific guidelines (plugin patterns, EAV best practices, Hyvä checkout APIs, etc.) ensuring the generated code follows Magento conventions.
+
+Each tool response includes hints pointing to the next logical step — introspection tools suggest relevant guidelines to load, and guidelines suggest which runtime checks to perform. This creates a natural workflow: **check → learn → write**.
 
 ## Requirements
 
@@ -242,7 +258,7 @@ This is useful when container names vary between environments or are dynamically
 
 ## MCP Tools Overview
 
-Bricklayer uses **progressive disclosure** — 16 essential tools are advertised in `tools/list` while 63 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
+Bricklayer uses **progressive disclosure** — 17 essential tools are visible in `tools/list` while 63 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
 
 ### Application & Module Tools
 - `application-info` — Magento version, PHP version, deploy mode, module counts. Use `include=stores` for website/store hierarchy
@@ -259,6 +275,7 @@ Bricklayer uses **progressive disclosure** — 16 essential tools are advertised
 - `eav-entity-types` — List all supported EAV entity types
 
 ### Configuration & DI Tools
+- `check-class` **[tier 1]** — Combined pre-modification check: returns plugins, DI configuration, and preferences for any class in one call. Essential before writing plugins, preferences, or DI overrides
 - `configuration-get` — Retrieve system configuration values by path (with scope support)
 - `configuration-list` — List available configuration paths by section
 - `di-configuration` **[tier 1]** — DI configuration showing preferences and plugins for classes
@@ -388,7 +405,7 @@ The tool validates code against 9 dangerous patterns (shell execution, file writ
 All code generation tools support `dry_run` (preview without writing) and `force` (overwrite existing files) parameters. In dry-run mode, each file is annotated with `new` or `exists` status. Without `force`, existing files cause a conflict error listing the affected paths.
 
 ### Development Context Tool
-- `development-context` **[tier 1]** — Load coding guidelines and development patterns for a task category (38 categories covering plugins, EAV, GraphQL, Hyvä, Magewire, checkout, payment, testing, and more). Use category `list` to see all available categories.
+- `development-context` **[tier 1]** — Load coding guidelines and development patterns BEFORE writing code. 38 categories covering plugins, EAV, GraphQL, Hyvä, Magewire, checkout, payment, testing, and more. Returns `_next_steps` suggesting which introspection tools to call. Use category `list` to see all available categories. Always load `coding-standards` for any PHP file.
 
 ### Context-Aware Hints
 
@@ -402,6 +419,23 @@ Select tools return a conditional `_hint` field in their response when they dete
 | `system-status check=cache` | Any cache type is disabled | Warns about potential impact |
 | `diagnose-error` | Exception involves plugins | Points to `plugin-list` for the relevant class |
 | `diagnose-error` | Exception involves DI config | Points to `di-configuration` for the relevant class |
+
+Additionally, introspection tools return a `_skill_hint` field that guides agents to load relevant development guidelines:
+
+| Tool | Hint |
+|------|------|
+| `plugin-list` | Points to `development-context category=plugin` |
+| `di-configuration` | Points to `development-context category=module` |
+| `preference-list` | Points to `development-context category=preference` |
+| `event-list` | Points to `development-context category=observer` |
+| `eav-attributes` | Points to `development-context category=eav` |
+| `database-schema` | Points to `development-context category=model` |
+| `graphql-inspect` | Points to `development-context category=graphql` |
+| `route-list` | Points to `development-context category=frontend` |
+| `api-endpoints` | Points to `development-context category=rest-api` |
+| `diagnose-performance` | Points to `development-context category=performance` |
+
+The `development-context` tool itself returns `_next_steps` — suggesting which introspection tools to call for the loaded category (e.g., loading the `plugin` category suggests calling `check-class` for the target class).
 
 ### Pagination
 

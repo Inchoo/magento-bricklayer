@@ -168,7 +168,7 @@ class SearchTools
                 'Virtual types for object customization',
                 'Type arguments and constructor injection',
             ],
-            'tools' => ['di-configuration', 'plugin-list', 'preference-list'],
+            'tools' => ['check-class', 'di-configuration', 'plugin-list', 'preference-list'],
         ],
         'controller' => [
             'keywords' => ['controller', 'action', 'route', 'routes.xml'],
@@ -331,7 +331,7 @@ class SearchTools
                 'View DI configuration for classes',
                 'List plugins, events, and preferences',
             ],
-            'tools' => ['configuration-get', 'configuration-list', 'di-configuration', 'plugin-list', 'event-list', 'preference-list'],
+            'tools' => ['check-class', 'configuration-get', 'configuration-list', 'di-configuration', 'plugin-list', 'event-list', 'preference-list'],
         ],
     ];
 

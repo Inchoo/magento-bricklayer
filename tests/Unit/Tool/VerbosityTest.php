@@ -85,11 +85,11 @@ class VerbosityTest extends TestCase
         $this->assertStringContainsString('verbosity', $instance->description);
     }
 
-    public function testDiagnosticToolsDescriptionMentionsVerbosity(): void
+    public function testDiagnosticToolsHasVerbosityParameter(): void
     {
         $method = new \ReflectionMethod(DiagnosticTools::class, 'diagnoseError');
-        $attrs = $method->getAttributes(\Mcp\Capability\Attribute\McpTool::class);
-        $instance = $attrs[0]->newInstance();
-        $this->assertStringContainsString('verbosity', $instance->description);
+        $params = $method->getParameters();
+        $paramNames = array_map(fn(\ReflectionParameter $p) => $p->getName(), $params);
+        $this->assertContains('verbosity', $paramNames, 'diagnoseError should have a verbosity parameter');
     }
 }

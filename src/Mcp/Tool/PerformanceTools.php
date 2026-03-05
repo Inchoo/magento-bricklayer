@@ -89,11 +89,15 @@ class PerformanceTools
 
         $summary = $this->buildSummary($results);
 
-        return [
+        $result = [
             'check' => $check,
             'summary' => $summary,
             'findings' => $results,
         ];
+
+        $result['_skill_hint'] = 'For performance optimization guidelines: development-context category=performance';
+
+        return $result;
     }
 
     /**

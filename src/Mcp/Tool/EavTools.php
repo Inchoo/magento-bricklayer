@@ -25,7 +25,7 @@ class EavTools
 
     #[McpTool(
         name: 'eav-attributes',
-        description: 'Returns EAV attributes. Use verbosity to control detail level.'
+        description: 'Check BEFORE working with product/customer/category data — shows all attributes including custom ones that exist only in database, not in code. Use verbosity for detail control.'
     )]
     public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
     {
@@ -103,12 +103,16 @@ class EavTools
                 $attributes[] = $attrData;
             }
 
-            return [
+            $result = [
                 'entity_type' => $entityType,
                 'entity_type_id' => $entityTypeId,
                 'attribute_count' => $attributeList->getTotalCount(),
                 'attributes' => $attributes,
             ];
+
+            $result['_skill_hint'] = 'For EAV attribute creation and management patterns: development-context category=eav';
+
+            return $result;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }

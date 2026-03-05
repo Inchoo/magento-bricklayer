@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
+use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use PHPUnit\Framework\TestCase;
@@ -118,6 +119,10 @@ class ChecksConfigTest extends TestCase
 
     public function testIsProductionModeReturnsTrueWhenMagentoNotInitialized(): void
     {
+        if (MagentoBootstrap::isInitialized()) {
+            $this->markTestSkipped('Magento is initialized — cannot test "not initialized" path.');
+        }
+
         $subject = new ChecksConfigTestSubject();
 
         // Without Magento bootstrap, should return true (fail closed)
@@ -127,6 +132,10 @@ class ChecksConfigTest extends TestCase
 
     public function testRequireNonProductionBlocksWhenMagentoNotInitialized(): void
     {
+        if (MagentoBootstrap::isInitialized()) {
+            $this->markTestSkipped('Magento is initialized — cannot test "not initialized" path.');
+        }
+
         $loader = new ConfigLoader();
         $loader->load($this->tempDir);
 

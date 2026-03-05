@@ -88,6 +88,62 @@ class ConfigurationTools
         }
     }
 
+    #[McpTool(
+        name: 'check-class',
+        description: 'Essential pre-check before modifying any class — returns combined plugin list, DI configuration, and preferences in one call. Shows the full runtime picture that file reading misses.'
+    )]
+    public function checkClass(string $className): array
+    {
+        if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($className === '') {
+            return ['error' => true, 'message' => 'className is required'];
+        }
+
+        $result = [
+            'class' => $className,
+        ];
+
+        // Plugins
+        try {
+            $plugins = $this->getPluginList($className);
+            if (!isset($plugins['error'])) {
+                unset($plugins['_skill_hint']);
+                $result['plugins'] = $plugins;
+            }
+        } catch (\Throwable $e) {
+            $result['plugins'] = ['error' => $e->getMessage()];
+        }
+
+        // DI configuration
+        try {
+            $di = $this->getDiConfiguration($className);
+            if (!isset($di['error'])) {
+                unset($di['_skill_hint']);
+                $result['di_configuration'] = $di;
+            }
+        } catch (\Throwable $e) {
+            $result['di_configuration'] = ['error' => $e->getMessage()];
+        }
+
+        // Preferences
+        try {
+            $preferences = $this->getPreferenceList($className);
+            if (!isset($preferences['error'])) {
+                unset($preferences['_skill_hint']);
+                $result['preferences'] = $preferences;
+            }
+        } catch (\Throwable $e) {
+            $result['preferences'] = ['error' => $e->getMessage()];
+        }
+
+        $result['_skill_hint'] = 'Load relevant development guidelines with development-context based on what you plan to modify.';
+
+        return $result;
+    }
+
     /**
      * Returns DI configuration for a class/interface.
      *
@@ -97,7 +153,7 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'di-configuration',
-        description: 'Returns dependency injection configuration for a class or interface'
+        description: 'Check BEFORE modifying DI — shows runtime-resolved config for a class including preferences, arguments, and virtual types from all modules. File reading misses cross-module overrides.'
     )]
     public function getDiConfiguration(string $className, string $area = 'global'): array
     {
@@ -131,6 +187,8 @@ class ConfigurationTools
             $plugins = $this->getPluginsForClass($className, $area);
             $config['plugins'] = $plugins;
 
+            $config['_skill_hint'] = 'For DI configuration patterns: development-context category=module';
+
             return $config;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
@@ -146,7 +204,7 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'plugin-list',
-        description: 'Lists all plugins (interceptors) for a specified class'
+        description: 'Check BEFORE writing a plugin — lists existing plugins on a class with sortOrder. Prevents sortOrder conflicts and reveals the full interceptor chain across all modules.'
     )]
     public function getPluginList(string $className, string $method = ''): array
     {
@@ -185,11 +243,15 @@ class ConfigurationTools
                 $plugins = $filtered;
             }
 
-            return [
+            $result = [
                 'class' => $className,
                 'method' => $method,
                 'plugins' => $plugins,
             ];
+
+            $result['_skill_hint'] = 'For plugin development patterns and sortOrder best practices: development-context category=plugin';
+
+            return $result;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }
@@ -271,12 +333,16 @@ class ConfigurationTools
 
         usort($events, fn(array $a, array $b) => strcmp($a['event'], $b['event']));
 
-        return [
+        $result = [
             'area' => $area,
             'filter' => $eventName ?: null,
             'total' => count($events),
             'events' => $events,
         ];
+
+        $result['_skill_hint'] = 'For observer development patterns: development-context category=observer';
+
+        return $result;
     }
 
     /**
@@ -390,7 +456,7 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'preference-list',
-        description: 'Lists all preferences (class rewrites) configured in the system'
+        description: 'Check BEFORE overriding a class — lists all preferences (rewrites). Reveals if another module already replaces the target class, preventing conflicts.'
     )]
     public function getPreferenceList(string $interface = ''): array
     {
@@ -443,11 +509,15 @@ class ConfigurationTools
                 }
             }
 
-            return [
+            $result = [
                 'filter' => $interface ?: 'common interfaces',
                 'count' => count($preferences),
                 'preferences' => $preferences,
             ];
+
+            $result['_skill_hint'] = 'For preference and class override patterns: development-context category=preference';
+
+            return $result;
         } catch (\Throwable $e) {
             return ['error' => true, 'message' => $e->getMessage()];
         }

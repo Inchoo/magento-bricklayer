@@ -21,9 +21,9 @@ class GuidelinesCompiler
     {
         $sections = [];
         $sections[] = $this->buildHeader();
+        $sections[] = $this->buildIntrospectionSection();
         $sections[] = $this->buildContextCategoriesSection();
         $sections[] = $this->buildEfficiencySection();
-        $sections[] = $this->buildArchitectureSection();
         $sections[] = $this->getShellCommandsSection($envType);
         $sections[] = $this->buildFooter($agent);
 
@@ -62,6 +62,33 @@ Always prefer using these tools over assumptions about the codebase.
 MARKDOWN;
     }
 
+    private function buildIntrospectionSection(): string
+    {
+        return <<<'MARKDOWN'
+### Before Modifying Magento Code
+
+Magento resolves DI, plugins, preferences, and events at runtime across many modules.
+Reading source files alone misses overrides from other modules. **Always check runtime
+state before writing code that touches existing classes.**
+
+| Task | Check runtime state first | Then load guidelines |
+|------|---------------------------|----------------------|
+| Writing or modifying a plugin | `check-class className=Target\Class` | `development-context category=plugin` |
+| Overriding or extending a class | `check-class className=Target\Class` | (based on what you find) |
+| Injecting or changing DI config | `di-configuration className=Target\Class` | (based on what you find) |
+| Working with product data | `eav-attributes entityType=catalog_product` | `development-context category=eav` |
+| Working with customer data | `eav-attributes entityType=customer` | `development-context category=eav` |
+| Creating/modifying a DB table | `database-schema table=table_name` | `development-context category=model` |
+| Subscribing to an event | `event-list eventName=event_name` | `development-context category=observer` |
+| Adding a REST API endpoint | `api-endpoints` | `development-context category=rest-api` |
+| Writing a GraphQL resolver | `graphql-inspect target=types` | `development-context category=graphql` |
+| Creating a cron job | `system-status check=cron` | `development-context category=cron` |
+| Debugging an error | `diagnose-error` | (based on diagnosis) |
+| Investigating performance | `diagnose-performance` | `development-context category=performance` |
+| Writing **any** PHP file | — | `development-context category=coding-standards` (always) |
+MARKDOWN;
+    }
+
     private function buildContextCategoriesSection(): string
     {
         $lines = [];
@@ -89,32 +116,10 @@ MARKDOWN;
 
         $lines[] = '| `list` | See all categories with skill/guideline counts |';
         $lines[] = '';
-        $lines[] = '### Context Quick Reference';
+        $lines[] = '### Reminder';
         $lines[] = '';
-        $lines[] = 'When writing code, call `development-context` for **each** matching category:';
-        $lines[] = '';
-        $lines[] = '| You are writing... | Call `development-context` with |';
-        $lines[] = '|--------------------|-------------------------------|';
-        $lines[] = '| **Any PHP file** | `coding-standards` (always) |';
-        $lines[] = '| `Cron/*.php`, `etc/crontab.xml` | `cron` |';
-        $lines[] = '| `Observer/*.php`, `etc/events.xml` | `observer` |';
-        $lines[] = '| `Plugin/*.php` | `plugin` |';
-        $lines[] = '| `Model/*.php`, `ResourceModel/*.php`, `Api/Data/*Interface.php` | `model` |';
-        $lines[] = '| `Api/*Interface.php` (service contracts) | `model` |';
-        $lines[] = '| `Model/ResourceModel/*.php`, `etc/db_schema.xml` | `model` |';
-        $lines[] = '| `Setup/Patch/Data/*.php` | `data-patch` |';
-        $lines[] = '| `Controller/Adminhtml/*.php`, admin UI | `adminhtml` |';
-        $lines[] = '| `view/adminhtml/ui_component/*.xml` (grid) | `ui-component` |';
-        $lines[] = '| `view/adminhtml/ui_component/*.xml` (form) | `ui-component-form` |';
-        $lines[] = '| `Controller/*.php` (frontend) | `frontend` |';
-        $lines[] = '| `*.phtml`, `view/frontend/layout/*.xml` | `frontend` |';
-        $lines[] = '| `Magewire/*.php`, `wire:` templates | `hyva-checkout` |';
-        $lines[] = '| `hyva_checkout_*.xml` | `hyva-checkout-config` |';
-        $lines[] = '| Hyvä `*.phtml` with Alpine.js | `hyva-theme` |';
-        $lines[] = '| `etc/webapi.xml`, REST API classes | `rest-api` |';
-        $lines[] = '| `etc/schema.graphqls`, resolvers | `graphql` |';
-        $lines[] = '| `etc/indexer.xml`, indexer classes | `indexer` |';
-        $lines[] = '| `registration.php`, `etc/module.xml`, `composer.json` | `module` |';
+        $lines[] = 'Always call `development-context category=coding-standards` before writing any PHP file.';
+        $lines[] = 'See the "Before Modifying Magento Code" table above for task-specific guidelines.';
 
         return implode("\n", $lines);
     }
@@ -152,75 +157,6 @@ When performing the same tool call with different parameters (e.g., updating sto
 **Truncate log output:**
 Use `max_entry_length` on `log` (action=read or action=search) to limit long entries.
 Start with `max_entry_length=500` and increase only if you need full stack traces.
-MARKDOWN;
-    }
-
-    private function buildArchitectureSection(): string
-    {
-        return <<<'MARKDOWN'
-## Magento Architecture Guidelines
-
-### Module Structure
-
-All module files must be placed in the correct directories:
-
-```
-app/code/Vendor/Module/
-├── Api/                     # Service contracts (interfaces)
-│   └── Data/               # Data interfaces
-├── Block/                  # View blocks
-├── Controller/             # Controllers
-│   ├── Adminhtml/         # Admin controllers
-│   └── Index/             # Frontend controllers
-├── etc/                    # Configuration
-│   ├── adminhtml/         # Admin-specific config
-│   ├── frontend/          # Frontend-specific config
-│   ├── di.xml             # Dependency injection
-│   ├── module.xml         # Module declaration
-│   └── routes.xml         # Route configuration
-├── Model/                  # Business logic
-│   └── ResourceModel/     # Database operations
-├── Observer/              # Event observers
-├── Plugin/                # Plugins (interceptors)
-├── Setup/                 # Installation scripts
-│   └── Patch/            # Data/Schema patches
-├── view/                  # View files
-│   ├── adminhtml/        # Admin templates/layouts
-│   └── frontend/         # Frontend templates/layouts
-├── registration.php       # Module registration
-└── composer.json         # Composer definition
-```
-
-### Coding Standards
-
-- Use `declare(strict_types=1);` in all PHP files
-- Follow PSR-12 coding standards
-- Use constructor property promotion (PHP 8.1+)
-- Always type-hint method parameters and return types
-- Use service contracts (interfaces) over concrete implementations
-- Prefer composition over inheritance
-
-### Dependency Injection
-
-- Never use ObjectManager directly in application code
-- Inject dependencies via constructor
-- Use interfaces for dependencies, not concrete classes
-- Define preferences in di.xml for interface implementations
-
-### Plugins vs Observers vs Preferences
-
-| Mechanism | When to Use |
-|-----------|-------------|
-| Plugin | Modify method behavior (before/after/around) |
-| Observer | React to events without modifying source |
-| Preference | Complete class replacement (use sparingly) |
-
-### Database Operations
-
-- Use declarative schema (db_schema.xml) for table definitions
-- Use data patches for data migrations
-- Always use repositories for CRUD operations
-- Use SearchCriteriaBuilder for complex queries
 MARKDOWN;
     }
 
