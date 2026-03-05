@@ -74,6 +74,8 @@ public function myNewTool(string $requiredParam, string $optionalParam = ''): ar
 
 3. Add `meta: ['hidden' => true]` for tier 2 tools (discoverable via `search-tools` only).
 
+4. For introspection tools, add a `_skill_hint` field to the success response pointing to the relevant `development-context` category.
+
 ## Adding a Guideline
 
 Drop a markdown file in the appropriate `config/guidelines/` subdirectory:

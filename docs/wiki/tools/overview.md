@@ -1,6 +1,6 @@
 # Tools Reference
 
-Magento Bricklayer provides 79 MCP tools organized into 11 groups. Use `search-tools` at runtime to discover tools by keyword.
+Magento Bricklayer provides 80 MCP tools organized into 11 groups. Use `search-tools` at runtime to discover tools by keyword.
 
 ## Tool Groups
 
@@ -20,26 +20,27 @@ Magento Bricklayer provides 79 MCP tools organized into 11 groups. Use `search-t
 
 ## Tier 1 Tools (Always Visible)
 
-These 16 tools appear in the MCP `tools/list` response:
+These 17 tools appear in the MCP `tools/list` response:
 
 | Tool | Description |
 |------|-------------|
+| `check-class` | Essential pre-check — combined plugins, DI, and preferences for any class |
 | `application-info` | Magento/PHP version, deploy mode, store hierarchy |
-| `database-schema` | Table structure with columns, indexes, foreign keys |
+| `database-schema` | Check BEFORE writing db_schema.xml — actual table structure |
 | `database-query` | Read-only SELECT query execution |
-| `eav-attributes` | EAV attributes by entity type |
-| `di-configuration` | DI preferences and plugins for a class |
-| `plugin-list` | All plugins for a specified class |
-| `preference-list` | All class preferences (rewrites) |
+| `eav-attributes` | Check BEFORE working with product/customer data — all attributes including DB-only |
+| `di-configuration` | Check BEFORE modifying DI — runtime-resolved config from all modules |
+| `plugin-list` | Check BEFORE writing a plugin — existing plugins with sortOrder |
+| `preference-list` | Check BEFORE overriding a class — all preferences (rewrites) |
 | `product-get` | Get product by SKU |
 | `order-get` | Get order by increment ID |
 | `customer-get` | Get customer by email |
 | `code-runner` | Execute PHP in Magento context |
 | `code-runner-help` | Code runner documentation |
 | `search-tools` | Discover tools by keyword |
-| `development-context` | Load coding guidelines by category |
+| `development-context` | Load coding guidelines BEFORE writing code |
 | `batch-execute` | Run multiple tools in one call |
-| `diagnose-error` | Diagnose errors with fix suggestions |
+| `diagnose-error` | FIRST STEP for any error — combines logs, DI, and plugin analysis |
 
 ## Tier 2 Tools (Discoverable)
 
@@ -48,6 +49,38 @@ The remaining 63 tools are hidden from `tools/list` to reduce token overhead but
 ```
 search-tools query="product" detail="summary"
 ```
+
+## Response Hints
+
+Introspection tools include behavioral hints that guide agents through a check→learn→write workflow:
+
+### `_skill_hint`
+
+Returned by introspection tools (plugin-list, di-configuration, eav-attributes, database-schema, etc.) on success. Points the agent to the relevant `development-context` category to load next.
+
+```json
+{
+  "class": "Magento\\Catalog\\Api\\ProductRepositoryInterface",
+  "plugins": { ... },
+  "_skill_hint": "For plugin development patterns: development-context category=plugin"
+}
+```
+
+### `_next_steps`
+
+Returned by `development-context` after loading guidelines. Suggests introspection tools the agent should call before writing code.
+
+```json
+{
+  "category": "plugin",
+  "_next_steps": [
+    "Before writing your plugin: check-class className=TargetClass",
+    "Check existing plugins and their sortOrder to avoid conflicts"
+  ]
+}
+```
+
+Categories that don't need introspection (coding-standards, security, testing) return `_next_steps: null`.
 
 ## Common Parameters
 

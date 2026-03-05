@@ -1,6 +1,6 @@
 # Tool System
 
-The tool system is the core of Magento Bricklayer, providing 79 MCP tools organized into groups with progressive disclosure and shared behavior traits.
+The tool system is the core of Magento Bricklayer, providing 80 MCP tools organized into groups with progressive disclosure and shared behavior traits.
 
 ## Tool Registration
 
@@ -22,7 +22,7 @@ public function getProduct(string $sku, string $fields = ''): array
 | Class | Group | Tools |
 |-------|-------|-------|
 | `ApplicationTools` | introspection | application-info |
-| `ConfigurationTools` | introspection | configuration-get, configuration-list, di-configuration, plugin-list, event-list, preference-list |
+| `ConfigurationTools` | introspection | check-class, configuration-get, configuration-list, di-configuration, plugin-list, event-list, preference-list |
 | `ModuleTools` | introspection | module-list, module-structure, validate-module |
 | `EavTools` | introspection | eav-attributes, eav-entity-types |
 | `RoutingTools` | introspection | route-list, route-info, api-endpoints, url-rewrites |
@@ -45,7 +45,7 @@ public function getProduct(string $sku, string $fields = ''): array
 
 To reduce token overhead for AI agents, tools are split into two tiers:
 
-- **Tier 1 (16 tools)** — Always visible in `tools/list`. These are the most commonly needed tools.
+- **Tier 1 (17 tools)** — Always visible in `tools/list`. These are the most commonly needed tools.
 - **Tier 2 (63 tools)** — Hidden from `tools/list` but fully callable. Discoverable via `search-tools`.
 
 Tier 2 tools have `meta: ['hidden' => true]` in their registration.
@@ -67,7 +67,8 @@ All tools follow consistent response patterns:
 - **Get tools** support `fields` parameter for response filtering
 - **List tools** support `count_only=true` for size checking
 - **Write tools** check `requireToolEnabled()` and `requireNonProduction()`
-- **Context-aware hints** — `_hint` field guides agents to logical next steps
+- **Skill hints** — `_skill_hint` field in introspection tool responses points agents to the relevant `development-context` category
+- **Next steps** — `_next_steps` field in `development-context` responses suggests introspection tools to call before writing code
 
 ## Batch Execution
 

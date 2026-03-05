@@ -26,7 +26,7 @@ The agent writes a generic plugin. It might conflict with three other plugins yo
 **Good:**
 > "I need to modify the product save process. Check what plugins already exist on `Magento\Catalog\Api\ProductRepositoryInterface` and what DI configuration is set for it, then create a plugin that adds a custom validation step."
 
-The agent now calls `plugin-list` and `di-configuration` first, sees the full interceptor chain, and writes a plugin with the correct sort order that doesn't conflict.
+The agent now calls `check-class` (which combines plugin-list, di-configuration, and preference-list in one call), sees the full interceptor chain, and writes a plugin with the correct sort order that doesn't conflict.
 
 **Other examples:**
 

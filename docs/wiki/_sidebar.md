@@ -12,7 +12,7 @@
 - [Tool System](architecture/tool-system)
 
 **Tools Reference**
-- [Overview (79 Tools)](tools/overview)
+- [Overview (80 Tools)](tools/overview)
 - [Introspection](tools/introspection)
 - [Catalog](tools/catalog)
 - [Orders](tools/orders)

@@ -18,7 +18,7 @@ wiki/
 │   ├── bootstrap.md                 # Magento bootstrap process
 │   └── tool-system.md              # Tool registration and groups
 ├── tools/
-│   ├── overview.md                  # All 79 tools summary
+│   ├── overview.md                  # All 80 tools summary
 │   ├── introspection.md            # Application, config, modules, EAV, routing
 │   ├── catalog.md                  # Products, categories, stock, media
 │   ├── orders.md                   # Orders, invoices, shipments, refunds

@@ -1,6 +1,18 @@
 # Introspection Tools
 
-16 tools for inspecting Magento's application state, configuration, modules, EAV system, and routing.
+Tools for inspecting Magento's application state, configuration, modules, EAV system, and routing.
+
+## Pre-Modification Check
+
+### `check-class`
+
+Essential pre-check before modifying any class — returns combined plugin list, DI configuration, and preferences in one call. Shows the full runtime picture that file reading misses.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `className` | string | *required* | Fully qualified class name |
+
+Returns a combined view with `plugins`, `di_configuration`, and `preferences` keys. Includes a `_skill_hint` pointing to the relevant `development-context` category.
 
 ## Application & System
 

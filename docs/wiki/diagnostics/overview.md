@@ -98,8 +98,9 @@ Returns error frequency counts, grouped by pattern, helping identify the most im
 
 ## Recommended Debugging Workflow
 
-1. **Start with `diagnose-error`** — Check for recent exceptions
-2. **Check `system-status`** — Verify cache, indexers, cron status
-3. **Run `diagnose-performance`** — Identify performance bottlenecks
-4. **Use `log action=search`** — Search for specific patterns across all log files
-5. **Use `code-runner`** — Execute targeted PHP to inspect runtime state
+1. **Start with `diagnose-error`** — First step for any Magento error; combines logs, DI context, and plugin chain analysis
+2. **Run `check-class`** — If the error involves a specific class, check its full runtime picture (plugins, DI, preferences)
+3. **Check `system-status`** — Verify cache, indexers, cron status
+4. **Run `diagnose-performance`** — Identify performance bottlenecks
+5. **Use `log action=search`** — Search for specific patterns across all log files
+6. **Use `code-runner`** — Execute targeted PHP to inspect runtime state

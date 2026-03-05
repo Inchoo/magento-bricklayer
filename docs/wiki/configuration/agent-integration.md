@@ -44,10 +44,10 @@ For containerized environments (DDEV, Warden), the command is adjusted automatic
 
 Each agent's guidelines file contains:
 
-- MCP server instructions (5 actionable lines)
+- MCP server instructions with behavioral triggers (check runtime state before modifying code)
+- "Before Modifying Magento Code" decision matrix (task → tool → development-context category)
 - `development-context` tool category reference table
 - Token efficiency patterns for the agent
-- Magento architecture guidelines (module structure, DI, coding standards)
 - Shell command reference (DDEV/Warden-aware)
 
 ## Generating Configuration

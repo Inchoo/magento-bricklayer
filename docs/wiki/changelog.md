@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.13.0
+
+- New `check-class` Tier 1 tool — combined plugin-list, di-configuration, and preference-list in one call
+- Behavioral triggers in server instructions — agents are told WHY to check runtime state before modifying code
+- "Before Modifying Magento Code" decision matrix in generated agent guidelines (CLAUDE.md, .cursorrules, etc.)
+- `_skill_hint` in introspection tool responses — points agents to the relevant `development-context` category
+- `_next_steps` in `development-context` responses — suggests introspection tools to call before writing code
+- Rewrote Tier 1 tool descriptions with "Check BEFORE..." behavioral triggers
+- Removed generic architecture section from generated agent guidelines
+- Simplified Context Quick Reference to point at the new decision matrix
+- README rewritten with "How Agents Use Bricklayer" section and check→learn→write workflow
+
+## 1.12.1
+
+- Fixed preamble duplication in `code-runner` `mode=define`
+- Fixed `$mode` variable shadowing in `CodeRunnerTools`
+- Added `diagnose-performance` to search indexes
+- Added config gating to `diagnose-performance`
+- Removed phantom Integration test suite from `phpunit.xml.dist`
+- Reduced coupling in `PerformanceTools`
+- Added unit tests for `FiltersFields`, `RequiresMagento`, and `ToolScanner`
+
 ## 1.12.0
 
 - Config staleness detection via `.bricklayer.json` mtime tracking with automatic hot reload
