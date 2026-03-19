@@ -109,7 +109,7 @@ define([
         },
 
         isVisible: ko.observable(true),
-        isLogedIn: customer.isLoggedIn(),
+        isLoggedIn: customer.isLoggedIn(),
         stepCode: 'custom-step',
         stepTitle: 'Custom Step',
 
@@ -209,6 +209,8 @@ define([
 
 ### Adding Fields via Layout Processor
 
+Use `Magento\Framework\Stdlib\ArrayManager` to manipulate `jsLayout` — it provides convenient path-based access (`get`, `set`, `merge`, `remove`) and makes checkout field modifications easier to read and maintain than manual deep array traversal.
+
 ```php
 <?php
 
@@ -217,9 +219,22 @@ declare(strict_types=1);
 namespace Vendor\Module\Block\Checkout;
 
 use Magento\Checkout\Block\Checkout\LayoutProcessorInterface;
+use Magento\Framework\Stdlib\ArrayManager;
 
 class ShippingLayoutProcessor implements LayoutProcessorInterface
 {
+    private const SHIPPING_FIELDS_PATH = 'components/checkout/children/steps/children/'
+        . 'shipping-step/children/shippingAddress/children/'
+        . 'shipping-address-fieldset/children';
+
+    /**
+     * @param ArrayManager $arrayManager
+     */
+    public function __construct(
+        private readonly ArrayManager $arrayManager
+    ) {
+    }
+
     /**
      * @param array $jsLayout
      * @return array
@@ -230,7 +245,6 @@ class ShippingLayoutProcessor implements LayoutProcessorInterface
             'component' => 'Magento_Ui/js/form/element/abstract',
             'config' => [
                 'customScope' => 'shippingAddress.custom_attributes',
-                'customEntry' => null,
                 'template' => 'ui/form/field',
                 'elementTmpl' => 'ui/form/element/input',
             ],
@@ -241,15 +255,22 @@ class ShippingLayoutProcessor implements LayoutProcessorInterface
             'validation' => [
                 'required-entry' => true,
             ],
-            'options' => [],
-            'filterBy' => null,
-            'customEntry' => null,
             'visible' => true,
         ];
 
-        $jsLayout['components']['checkout']['children']['steps']['children']
-            ['shipping-step']['children']['shippingAddress']['children']
-            ['shipping-address-fieldset']['children']['custom_field'] = $customField;
+        // Add a new field
+        $jsLayout = $this->arrayManager->set(
+            self::SHIPPING_FIELDS_PATH . '/custom_field', $jsLayout, $customField
+        );
+
+        // Modify an existing field configuration
+        $vatPath = self::SHIPPING_FIELDS_PATH . '/vat_id';
+        if ($this->arrayManager->exists($vatPath, $jsLayout)) {
+            $jsLayout = $this->arrayManager->merge(
+                $vatPath, $jsLayout,
+                ['validation' => ['required-entry' => true]]
+            );
+        }
 
         return $jsLayout;
     }

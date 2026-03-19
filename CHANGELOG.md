@@ -1,3 +1,6 @@
+# 1.13.1
+* Added ArrayManager for checkout jsLayout manipulation in LayoutProcessor skill example
+
 # 1.13.0
 * **`check-class` tool** — New Tier 1 tool combining plugin-list, di-configuration, and preference-list in one call for any class. The essential pre-modification check.
 * **Behavioral triggers in server instructions** — Server instructions now explain WHY agents should check runtime state before modifying code, not just how to use tools
