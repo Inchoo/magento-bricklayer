@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -173,12 +174,12 @@ HELP
             ];
 
             $choices = array_values($availableAgents);
-            $selected = $io->choice(
+            $question = new ChoiceQuestion(
                 'Which AI agents do you want to configure? (comma-separated numbers for multiple)',
-                $choices,
-                null,
-                true  // multiSelect
+                $choices
             );
+            $question->setMultiselect(true);
+            $selected = $io->askQuestion($question);
 
             // Map selected labels back to agent keys
             $labelToKey = array_flip($availableAgents);
