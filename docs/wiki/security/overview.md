@@ -60,7 +60,7 @@ The `code-runner` tool has multiple safeguards:
 
 - **Line limits** — `max_lines` config prevents reading unbounded log data
 - **Entry truncation** — `max_entry_length` parameter truncates long stack traces
-- **Sensitive data** — Log content is returned as-is (no filtering) but access is controlled via `tools.log-reader.enabled`
+- **Sensitive data** — Log content is returned as-is (no filtering) but access is controlled via `tools.log.enabled`
 
 ## Recommended Production Configuration
 

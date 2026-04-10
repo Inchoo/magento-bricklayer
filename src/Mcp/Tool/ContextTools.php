@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
+use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -259,6 +261,17 @@ class ContextTools
         ],
     ];
 
+    private readonly string $packageRoot;
+    private readonly ?string $magentoRootOverride;
+
+    public function __construct(?string $magentoRoot = null, ?string $packageRoot = null)
+    {
+        $this->magentoRootOverride = $magentoRoot !== null ? rtrim($magentoRoot, '/\\') : null;
+        $this->packageRoot = $packageRoot !== null
+            ? rtrim($packageRoot, '/\\')
+            : dirname(__DIR__, 3);
+    }
+
     /**
      * Returns development context (guidelines and skills) for a given task category.
      *
@@ -277,8 +290,15 @@ class ContextTools
             return $this->listCategories();
         }
 
-        if (!isset(self::CATEGORY_MAP[$category])) {
+        $isKnownCategory = isset(self::CATEGORY_MAP[$category]);
+        $localSkillPath = $this->localSkillPath($category);
+
+        if (!$isKnownCategory && $localSkillPath === null) {
             $available = implode(', ', array_keys(self::CATEGORY_MAP));
+            $localExtras = $this->listLocalOnlyCategories();
+            if ($localExtras !== []) {
+                $available .= ', ' . implode(', ', $localExtras);
+            }
             return [
                 'error' => true,
                 'message' => "Unknown category: '$category'. Available categories: $available. Use category 'list' for descriptions.",
@@ -286,30 +306,31 @@ class ContextTools
         }
 
         try {
-            $mapping = self::CATEGORY_MAP[$category];
-            $configDir = dirname(__DIR__, 3) . '/config';
+            if ($isKnownCategory) {
+                $mapping = self::CATEGORY_MAP[$category];
+                $description = $mapping['description'];
+                $skillNames = $mapping['skills'];
+                $guidelineNames = $mapping['guidelines'];
+            } else {
+                // At this point $localSkillPath is non-null (guarded above).
+                $meta = LocalOverrideHelper::parseSkillFrontmatter($localSkillPath);
+                $description = $meta['description']
+                    ?? 'Project-specific skill: ' . LocalOverrideHelper::defaultDisplayName($category);
+                $skillNames = [$category];
+                $guidelineNames = [];
+            }
 
             $loadedSkills = 0;
-            $skillsContent = $this->loadFiles(
-                $configDir . '/skills',
-                $mapping['skills'],
-                'SKILL.md',
-                $loadedSkills
-            );
+            $skillsContent = $this->loadSkillSections($skillNames, $loadedSkills);
 
             $loadedGuidelines = 0;
-            $guidelinesContent = $this->loadFiles(
-                $configDir . '/guidelines',
-                $mapping['guidelines'],
-                '.md',
-                $loadedGuidelines
-            );
+            $guidelinesContent = $this->loadGuidelineSections($guidelineNames, $loadedGuidelines);
 
             $nextSteps = $this->getNextSteps($category);
 
             return [
                 'category' => $category,
-                'description' => $mapping['description'],
+                'description' => $description,
                 'skills' => $skillsContent,
                 'guidelines' => $guidelinesContent,
                 '_next_steps' => !empty($nextSteps) ? $nextSteps : null,
@@ -326,6 +347,51 @@ class ContextTools
     }
 
     /**
+     * Resolve the skill file path for a category, preferring a local override
+     * at `.bricklayer/skills/{category}/SKILL.md` and falling back to the
+     * bundled file at `config/skills/{category}/SKILL.md`. Returns null when
+     * neither file exists.
+     */
+    public function resolveSkillPath(string $category): ?string
+    {
+        $localPath = $this->localSkillPath($category);
+        if ($localPath !== null) {
+            return $localPath;
+        }
+
+        $bundledPath = $this->packageRoot . '/config/skills/' . $category . '/SKILL.md';
+        if (file_exists($bundledPath)) {
+            return $bundledPath;
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve a guideline file path, preferring a local override at
+     * `.bricklayer/guidelines/{relativePath}` and falling back to the bundled
+     * file at `config/guidelines/{relativePath}`. Returns null when neither
+     * file exists. `$relativePath` should include the `.md` extension.
+     */
+    public function resolveGuidelinePath(string $relativePath): ?string
+    {
+        $magentoRoot = $this->resolveMagentoRoot();
+        if ($magentoRoot !== null) {
+            $localPath = $magentoRoot . '/.bricklayer/guidelines/' . $relativePath;
+            if (file_exists($localPath)) {
+                return $localPath;
+            }
+        }
+
+        $bundledPath = $this->packageRoot . '/config/guidelines/' . $relativePath;
+        if (file_exists($bundledPath)) {
+            return $bundledPath;
+        }
+
+        return null;
+    }
+
+    /**
      * List all available categories with descriptions
      *
      * @return array<string, mixed>
@@ -334,11 +400,28 @@ class ContextTools
     {
         $categories = [];
         foreach (self::CATEGORY_MAP as $name => $mapping) {
+            $localOverride = $this->localSkillPath($name) !== null;
             $categories[] = [
                 'name' => $name,
                 'description' => $mapping['description'],
                 'skills_count' => count($mapping['skills']),
                 'guidelines_count' => count($mapping['guidelines']),
+                'local_override' => $localOverride,
+            ];
+        }
+
+        foreach ($this->listLocalOnlyCategories() as $category) {
+            $skillPath = $this->localSkillPath($category);
+            $meta = $skillPath !== null
+                ? LocalOverrideHelper::parseSkillFrontmatter($skillPath)
+                : ['name' => null, 'description' => null];
+            $categories[] = [
+                'name' => $category,
+                'description' => $meta['description']
+                    ?? ('Project-specific skill: ' . LocalOverrideHelper::defaultDisplayName($category)),
+                'skills_count' => 1,
+                'guidelines_count' => 0,
+                'local_only' => true,
             ];
         }
 
@@ -408,39 +491,148 @@ class ContextTools
     }
 
     /**
-     * Load and compile markdown files from a base directory.
+     * Load skill markdown sections, applying local-first path resolution and
+     * stripping any YAML frontmatter from the returned content.
      *
-     * For skills, suffix is 'SKILL.md' and names map to {baseDir}/{name}/SKILL.md.
-     * For guidelines, suffix is '.md' and names map to {baseDir}/{name}.md.
-     *
-     * @param string $baseDir Base directory path
-     * @param string[] $names File or directory names
-     * @param string $suffix File suffix (e.g., 'SKILL.md' or '.md')
-     * @param int &$loadedCount Reference counter for successfully loaded files
-     * @return string Compiled markdown content
+     * @param string[] $skillNames
      */
-    private function loadFiles(string $baseDir, array $names, string $suffix, int &$loadedCount): string
+    private function loadSkillSections(array $skillNames, int &$loadedCount): string
     {
-        if (empty($names)) {
+        if (empty($skillNames)) {
             return '';
         }
 
-        $isSkill = $suffix === 'SKILL.md';
         $sections = [];
-
-        foreach ($names as $name) {
-            $filePath = $isSkill
-                ? $baseDir . '/' . $name . '/SKILL.md'
-                : $baseDir . '/' . $name . '.md';
-
-            $content = file_exists($filePath) ? file_get_contents($filePath) : false;
-            if ($content !== false) {
-                $relativePath = $isSkill ? "skills/$name/SKILL.md" : "guidelines/$name.md";
-                $sections[] = "<!-- source: $relativePath -->\n\n$content";
-                $loadedCount++;
+        foreach ($skillNames as $name) {
+            $skillPath = $this->resolveSkillPath($name);
+            if ($skillPath === null) {
+                continue;
             }
+            $content = file_get_contents($skillPath);
+            if ($content === false) {
+                continue;
+            }
+            $content = LocalOverrideHelper::stripFrontmatter($content);
+
+            $isLocal = $this->isLocalPath($skillPath);
+            $label = ($isLocal ? '[Project] ' : '') . "skills/$name/SKILL.md";
+            $sections[] = "<!-- source: $label -->\n\n" . $content;
+            $loadedCount++;
         }
 
         return implode("\n\n---\n\n", $sections);
+    }
+
+    /**
+     * Load guideline markdown sections, applying local-first path resolution.
+     *
+     * @param string[] $guidelineNames Category-style paths without extension (e.g. "patterns/plugin")
+     */
+    private function loadGuidelineSections(array $guidelineNames, int &$loadedCount): string
+    {
+        if (empty($guidelineNames)) {
+            return '';
+        }
+
+        $sections = [];
+        foreach ($guidelineNames as $name) {
+            $guidelinePath = $this->resolveGuidelinePath($name . '.md');
+            if ($guidelinePath === null) {
+                continue;
+            }
+            $content = file_get_contents($guidelinePath);
+            if ($content === false) {
+                continue;
+            }
+
+            $isLocal = $this->isLocalPath($guidelinePath);
+            $label = ($isLocal ? '[Project] ' : '') . "guidelines/$name.md";
+            $sections[] = "<!-- source: $label -->\n\n" . $content;
+            $loadedCount++;
+        }
+
+        return implode("\n\n---\n\n", $sections);
+    }
+
+    /**
+     * Resolve the effective Magento root path, preferring an override passed
+     * into the constructor (used in CLI/test contexts) and falling back to
+     * MagentoBootstrap::getMagentoRoot() for live MCP invocations.
+     */
+    private function resolveMagentoRoot(): ?string
+    {
+        if ($this->magentoRootOverride !== null) {
+            return $this->magentoRootOverride;
+        }
+
+        $root = MagentoBootstrap::getMagentoRoot();
+        return $root !== null ? rtrim($root, '/\\') : null;
+    }
+
+    /**
+     * Return the local skill SKILL.md path for a category if it exists, or null.
+     */
+    private function localSkillPath(string $category): ?string
+    {
+        $magentoRoot = $this->resolveMagentoRoot();
+        if ($magentoRoot === null) {
+            return null;
+        }
+        $path = $magentoRoot . '/.bricklayer/skills/' . $category . '/SKILL.md';
+        return file_exists($path) ? $path : null;
+    }
+
+    /**
+     * Discover local-only skill category names (those without a bundled
+     * equivalent in CATEGORY_MAP). Used to surface new project skills in
+     * the `list` response and error messages.
+     *
+     * @return list<string>
+     */
+    private function listLocalOnlyCategories(): array
+    {
+        $magentoRoot = $this->resolveMagentoRoot();
+        if ($magentoRoot === null) {
+            return [];
+        }
+        $dir = $magentoRoot . '/.bricklayer/skills/';
+        if (!is_dir($dir)) {
+            return [];
+        }
+
+        $entries = @scandir($dir);
+        if ($entries === false) {
+            return [];
+        }
+        sort($entries);
+
+        $result = [];
+        foreach ($entries as $entryName) {
+            if ($entryName === '.' || $entryName === '..') {
+                continue;
+            }
+            if (isset(self::CATEGORY_MAP[$entryName])) {
+                continue;
+            }
+            $skillFile = $dir . $entryName . '/SKILL.md';
+            if (is_dir($dir . $entryName) && file_exists($skillFile)) {
+                $result[] = $entryName;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * True if the given absolute path lives under the project's `.bricklayer/`
+     * directory (i.e. it is a local override or addition).
+     */
+    private function isLocalPath(string $absolutePath): bool
+    {
+        $magentoRoot = $this->resolveMagentoRoot();
+        if ($magentoRoot === null) {
+            return false;
+        }
+        $prefix = $magentoRoot . '/.bricklayer/';
+        return str_starts_with($absolutePath, $prefix);
     }
 }

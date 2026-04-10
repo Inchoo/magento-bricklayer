@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Guidelines\GuidelinesCompiler;
+use Inchoo\MagentoBricklayer\Mcp\Tool\SearchTools;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -75,7 +76,7 @@ HELP
         $io->section('Regenerating configuration files...');
 
         try {
-            $compiler = new GuidelinesCompiler();
+            $compiler = new GuidelinesCompiler($magentoRoot);
             $envType = $detector->getEnvironmentType($magentoRoot);
 
             $agentFiles = [
@@ -87,6 +88,7 @@ HELP
             ];
 
             $regenerated = [];
+            $appliedOverrides = [];
 
             foreach ($agentFiles as $file => $agent) {
                 $filepath = $magentoRoot . '/' . $file;
@@ -94,6 +96,7 @@ HELP
                     $content = $compiler->compile($agent, $envType);
                     file_put_contents($filepath, $content);
                     $regenerated[] = $file;
+                    $appliedOverrides = $compiler->getAppliedOverrides();
                 }
             }
 
@@ -104,6 +107,22 @@ HELP
             } else {
                 $io->text('  <comment>No configuration files found to regenerate</comment>');
                 $io->text('  Run <info>bricklayer install</info> to create configuration files');
+            }
+
+            if (!empty($appliedOverrides)) {
+                $io->text('  <info>Applied local overrides:</info>');
+                foreach ($appliedOverrides as $path) {
+                    $io->text('    - ' . $path);
+                }
+            }
+
+            $searchTools = new SearchTools($magentoRoot);
+            $localEntryCount = $searchTools->getLocalDocumentationEntryCount();
+            if ($localEntryCount > 0) {
+                $io->text(sprintf(
+                    '  <info>Indexed %d local file(s) into docs index</info>',
+                    $localEntryCount
+                ));
             }
         } catch (\Throwable $e) {
             $io->error('Failed to regenerate configuration: ' . $e->getMessage());

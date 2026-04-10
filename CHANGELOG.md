@@ -1,3 +1,18 @@
+# 1.14.0
+* **Project-local overrides** — A new `.bricklayer/` directory at the Magento root lets projects add or replace bundled content without forking the package. The path is the contract; no registration in `.bricklayer.json` required.
+  * `.bricklayer/project-context.md` — free-form markdown appended to every generated agent file under a `## Project-Specific Context` heading
+  * `.bricklayer/decision-matrix.md` — extra rows merged into the "Before Modifying Magento Code" table; malformed lines skipped
+  * `.bricklayer/guidelines/{path}.md` — files matching a bundled path override it; files with no bundled counterpart are compiled as new sections with headings derived from the directory and filename
+  * `.bricklayer/skills/{category}/SKILL.md` — overrides by category, or new local-only categories directly callable via `development-context category={directory-name}` and listed under a **Project-specific** row in the CLAUDE.md categories table
+  * Optional YAML frontmatter (`name:` and `description:`) for SKILL.md files — stripped before content is returned to agents, used as display metadata in `search-docs` and the categories table
+  * Local entries tagged `[Project]` in `search-docs` results; override entries replace bundled ones in the merged index, no duplicates
+* **`bricklayer update` reports local changes** — after regenerating agent files, the command lists every applied local override/addition and the number of local docs-index entries
+* **`bricklayer init` creates `.bricklayer/`** — the project override directory is created automatically so developers know where to drop local content; subdirectories are created on first use, no placeholder files generated
+* **New `Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper`** — shared static helpers for parsing SKILL.md YAML frontmatter and stripping it from content. Used by `GuidelinesCompiler`, `ContextTools`, and `SearchTools` (no duplicated parser code)
+* `GuidelinesCompiler`, `ContextTools`, and `SearchTools` constructors now accept optional `$magentoRoot` and `$packageRoot` arguments for testability (defaults preserve previous behavior)
+* Added `vendor/bricklayer config:set` interactive command to easily set and change config values in `.bricklayer.json`
+* Added Bricklayer SKILL.md file for agents to understand how Bricklayer works
+
 # 1.13.2
 * Fixed array_map error in InstallCommand when single AI agent is selected
 

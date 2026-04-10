@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
+use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper;
 use Mcp\Capability\Attribute\McpTool;
 
 class SearchTools
@@ -335,8 +337,19 @@ class SearchTools
         ],
     ];
 
-    /** @var array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>|null */
+    /** @var array<string, array<string, mixed>>|null */
     private ?array $documentationIndex = null;
+
+    private readonly string $packageRoot;
+    private readonly ?string $magentoRootOverride;
+
+    public function __construct(?string $magentoRoot = null, ?string $packageRoot = null)
+    {
+        $this->magentoRootOverride = $magentoRoot !== null ? rtrim($magentoRoot, '/\\') : null;
+        $this->packageRoot = $packageRoot !== null
+            ? rtrim($packageRoot, '/\\')
+            : dirname(__DIR__, 3);
+    }
 
     #[McpTool(
         name: 'search-docs',
@@ -372,12 +385,19 @@ class SearchTools
             }
 
             if ($score > 0) {
+                $label = $category;
+                if (($data['source'] ?? null) === 'local') {
+                    $label = '[Project] ' . ($data['display_name'] ?? $category);
+                }
                 $results[] = [
-                    'category' => $category,
+                    'category' => $label,
                     'score' => $score,
                     'keywords' => $data['keywords'],
                     'topics' => $data['topics'],
                 ];
+                if (($data['source'] ?? null) === 'local') {
+                    $results[count($results) - 1]['source'] = 'local';
+                }
             }
         }
 
@@ -467,9 +487,24 @@ class SearchTools
     }
 
     /**
+     * Public entry point used by UpdateCommand to get a count of local
+     * entries merged into the documentation index for its summary line.
+     */
+    public function getLocalDocumentationEntryCount(): int
+    {
+        $count = 0;
+        foreach ($this->getDocumentationIndex() as $entry) {
+            if (($entry['source'] ?? null) === 'local') {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    /**
      * Get the documentation index, building it from CATEGORY_MAP on first access.
      *
-     * @return array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>
+     * @return array<string, array<string, mixed>>
      */
     private function getDocumentationIndex(): array
     {
@@ -477,10 +512,10 @@ class SearchTools
     }
 
     /**
-     * Build the documentation index by deriving entries from ContextTools::CATEGORY_MAP
-     * and merging in supplementary entries for aliases and operational categories.
+     * Build the documentation index by deriving entries from ContextTools::CATEGORY_MAP,
+     * merging in supplementary entries, and overlaying local `.bricklayer/` content.
      *
-     * @return array<string, array{keywords: string[], topics: string[], tools?: string[], dev_context?: string}>
+     * @return array<string, array<string, mixed>>
      */
     private function buildDocumentationIndex(): array
     {
@@ -542,7 +577,216 @@ class SearchTools
             $index[$category] = $data;
         }
 
+        // Overlay local `.bricklayer/` content — local entries replace bundled
+        // ones that share a category/path key (override case) and add new
+        // entries otherwise.
+        foreach ($this->collectLocalDocumentationEntries() as $key => $entry) {
+            $index[$key] = $entry;
+        }
+
         return $index;
+    }
+
+    /**
+     * Scan `.bricklayer/skills/` and `.bricklayer/guidelines/` and produce
+     * documentation index entries. Skill directories become categories keyed
+     * by their directory name; guideline files become entries keyed by their
+     * relative path under `.bricklayer/guidelines/`.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function collectLocalDocumentationEntries(): array
+    {
+        $magentoRoot = $this->resolveMagentoRoot();
+        if ($magentoRoot === null) {
+            return [];
+        }
+
+        $entries = [];
+
+        // --- Local skills ---
+        $skillsDir = $magentoRoot . '/.bricklayer/skills/';
+        if (is_dir($skillsDir)) {
+            $scan = @scandir($skillsDir);
+            if ($scan !== false) {
+                foreach ($scan as $entryName) {
+                    if ($entryName === '.' || $entryName === '..') {
+                        continue;
+                    }
+                    $categoryPath = $skillsDir . $entryName;
+                    $skillFile = $categoryPath . '/SKILL.md';
+                    if (!is_dir($categoryPath) || !file_exists($skillFile)) {
+                        continue;
+                    }
+
+                    $category = $entryName;
+                    $meta = LocalOverrideHelper::parseSkillFrontmatter($skillFile);
+                    $displayName = $meta['name'] ?? LocalOverrideHelper::defaultDisplayName($category);
+                    $description = $meta['description'] ?? $displayName;
+
+                    $keywords = [
+                        strtolower(str_replace('-', ' ', $category)),
+                        strtolower($displayName),
+                    ];
+                    foreach (explode('-', $category) as $part) {
+                        if (strlen($part) > 3) {
+                            $keywords[] = strtolower($part);
+                        }
+                    }
+                    $descTokens = preg_split(
+                        '/[\s,()]+/',
+                        strtolower($description),
+                        -1,
+                        PREG_SPLIT_NO_EMPTY
+                    ) ?: [];
+                    foreach ($descTokens as $word) {
+                        if (strlen($word) > 3) {
+                            $keywords[] = $word;
+                        }
+                    }
+
+                    $override = isset(ContextTools::CATEGORY_MAP[$category]);
+
+                    $entries[$category] = [
+                        'keywords' => array_values(array_unique($keywords)),
+                        'topics' => [$description],
+                        'dev_context' => $category,
+                        'source' => 'local',
+                        'override' => $override,
+                        'display_name' => $displayName,
+                        'path' => '.bricklayer/skills/' . $category . '/SKILL.md',
+                    ];
+                }
+            }
+        }
+
+        // --- Local guidelines ---
+        $guidelinesDir = $magentoRoot . '/.bricklayer/guidelines/';
+        if (is_dir($guidelinesDir)) {
+            $realDir = realpath($guidelinesDir);
+            if ($realDir !== false) {
+                $realDir = rtrim($realDir, '/\\') . '/';
+                try {
+                    $iterator = new \RecursiveIteratorIterator(
+                        new \RecursiveDirectoryIterator($realDir, \FilesystemIterator::SKIP_DOTS)
+                    );
+                } catch (\UnexpectedValueException) {
+                    $iterator = [];
+                }
+
+                $bundledGuidelinePaths = $this->getBundledGuidelineRelativePaths();
+
+                foreach ($iterator as $file) {
+                    if (!$file instanceof \SplFileInfo || !$file->isFile()) {
+                        continue;
+                    }
+                    if (strtolower($file->getExtension()) !== 'md') {
+                        continue;
+                    }
+                    $relativePath = str_replace(
+                        '\\',
+                        '/',
+                        substr($file->getPathname(), strlen($realDir))
+                    );
+                    if ($relativePath === '') {
+                        continue;
+                    }
+
+                    $content = file_get_contents($file->getPathname());
+                    if ($content === false) {
+                        continue;
+                    }
+                    $content = LocalOverrideHelper::stripFrontmatter($content);
+
+                    $leaf = basename($relativePath, '.md');
+                    $dir = dirname($relativePath);
+                    $categoryGroup = $dir === '.' ? 'project' : basename($dir);
+                    $displayName = LocalOverrideHelper::defaultDisplayName($leaf);
+
+                    $keywords = [
+                        strtolower(str_replace('-', ' ', $leaf)),
+                        strtolower(str_replace('-', ' ', $categoryGroup)),
+                    ];
+                    foreach (explode('-', $leaf) as $part) {
+                        if (strlen($part) > 3) {
+                            $keywords[] = strtolower($part);
+                        }
+                    }
+                    // Pull meaningful words from the first 200 chars of content
+                    $contentHead = strtolower(strip_tags(substr($content, 0, 200)));
+                    foreach (preg_split('/[\s,()]+/', $contentHead, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+                        if (strlen($word) > 3) {
+                            $keywords[] = $word;
+                        }
+                    }
+
+                    $override = in_array($relativePath, $bundledGuidelinePaths, true);
+                    $key = 'local-guideline:' . $relativePath;
+
+                    $entries[$key] = [
+                        'keywords' => array_values(array_unique($keywords)),
+                        'topics' => [$displayName],
+                        'source' => 'local',
+                        'override' => $override,
+                        'display_name' => $displayName,
+                        'path' => '.bricklayer/guidelines/' . $relativePath,
+                    ];
+                }
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getBundledGuidelineRelativePaths(): array
+    {
+        $bundledDir = $this->packageRoot . '/config/guidelines/';
+        if (!is_dir($bundledDir)) {
+            return [];
+        }
+        $realBundledDir = realpath($bundledDir);
+        if ($realBundledDir === false) {
+            return [];
+        }
+        $realBundledDir = rtrim($realBundledDir, '/\\') . '/';
+
+        $paths = [];
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($realBundledDir, \FilesystemIterator::SKIP_DOTS)
+            );
+        } catch (\UnexpectedValueException) {
+            return [];
+        }
+        foreach ($iterator as $file) {
+            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
+                continue;
+            }
+            if (strtolower($file->getExtension()) !== 'md') {
+                continue;
+            }
+            $relative = str_replace(
+                '\\',
+                '/',
+                substr($file->getPathname(), strlen($realBundledDir))
+            );
+            if ($relative !== '') {
+                $paths[] = $relative;
+            }
+        }
+        return $paths;
+    }
+
+    private function resolveMagentoRoot(): ?string
+    {
+        if ($this->magentoRootOverride !== null) {
+            return $this->magentoRootOverride;
+        }
+        $root = MagentoBootstrap::getMagentoRoot();
+        return $root !== null ? rtrim($root, '/\\') : null;
     }
 
     private function generateGuidance(string $query, array $results): string
@@ -564,10 +808,25 @@ class SearchTools
         $index = $this->getDocumentationIndex();
 
         foreach (array_slice($results, 0, 3) as $result) {
-            $category = $result['category'];
-            $indexData = $index[$category];
+            $label = $result['category'];
+            $lookupKey = preg_replace('/^\[Project\]\s*/', '', $label) ?? $label;
 
-            $guidance .= "**{$category}**: " . implode('; ', array_slice($result['topics'], 0, 2)) . "\n";
+            // The index may have entries keyed by display name (for local guidelines/skills)
+            // or by category slug (for bundled). Try direct lookup first, then fall back.
+            $indexData = $index[$lookupKey] ?? null;
+            if ($indexData === null) {
+                foreach ($index as $key => $data) {
+                    if (($data['display_name'] ?? null) === $lookupKey) {
+                        $indexData = $data;
+                        break;
+                    }
+                }
+            }
+            if ($indexData === null) {
+                continue;
+            }
+
+            $guidance .= "**{$label}**: " . implode('; ', array_slice($result['topics'], 0, 2)) . "\n";
 
             if (!empty($indexData['tools'])) {
                 $guidance .= "  Relevant tools: " . implode(', ', $indexData['tools']) . "\n";

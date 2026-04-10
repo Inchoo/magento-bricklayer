@@ -29,7 +29,8 @@ wiki/
 ├── configuration/
 │   ├── bricklayer-json.md          # .bricklayer.json reference
 │   ├── environment-variables.md    # Environment variable overrides
-│   └── agent-integration.md        # AI agent configuration
+│   ├── agent-integration.md        # AI agent configuration
+│   └── local-overrides.md          # Project-local overrides (.bricklayer/)
 ├── guidelines/
 │   └── overview.md                 # Guidelines and skills catalog
 ├── code-generation/

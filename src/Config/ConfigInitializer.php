@@ -16,6 +16,26 @@ class ConfigInitializer
     private const CONFIG_FILE = '.bricklayer.json';
 
     /**
+     * Tools that are destructive or hard to reverse. Disabled by default
+     * in both developer and production modes — must be explicitly enabled.
+     */
+    private const DESTRUCTIVE_TOOLS = [
+        'product-delete',
+        'category-delete',
+        'customer-delete',
+        'customer-address-delete',
+        'order-cancel',
+        'creditmemo-create',
+        'generate-module',
+        'generate-model',
+        'generate-controller',
+        'generate-api',
+    ];
+
+    /** @var array<string>|null */
+    private static ?array $configurableToolsCache = null;
+
+    /**
      * Generate .bricklayer.json if it does not exist.
      *
      * @return array{created: bool, path: string, deploy_mode: string, disabled_tools: int}
@@ -82,42 +102,112 @@ class ConfigInitializer
     /**
      * Build configuration array based on deploy mode.
      *
+     * Generates one entry per runtime-configurable tool (discovered by
+     * scanning source for `requireToolEnabled()` call sites), so every key
+     * the file contains is one the runtime actually honors.
+     *
      * @return array<string, mixed>
      */
     public function buildConfig(string $deployMode): array
     {
-        if ($deployMode === 'production') {
-            return [
-                'tools' => [
-                    'code-runner' => [
-                        'enabled' => false,
-                        'allow_write' => false,
-                    ],
-                    'database-query' => [
-                        'max_rows' => 50,
-                    ],
-                    'product-delete' => ['enabled' => false],
-                    'category-delete' => ['enabled' => false],
-                    'customer-delete' => ['enabled' => false],
-                    'customer-address-delete' => ['enabled' => false],
-                    'order-cancel' => ['enabled' => false],
-                    'creditmemo-create' => ['enabled' => false],
-                    'generate-module' => ['enabled' => false],
-                    'generate-model' => ['enabled' => false],
-                    'generate-controller' => ['enabled' => false],
-                    'generate-api' => ['enabled' => false],
-                ],
-            ];
+        $isProduction = $deployMode === 'production';
+        $tools = [];
+
+        foreach (self::discoverConfigurableTools() as $tool) {
+            $tools[$tool] = $this->buildToolEntry($tool, $isProduction);
         }
 
-        // developer / default mode — permissive defaults
-        return [
-            'tools' => [
-                'code-runner' => [
+        return ['tools' => $tools];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildToolEntry(string $tool, bool $isProduction): array
+    {
+        $enabled = !in_array($tool, self::DESTRUCTIVE_TOOLS, true);
+
+        switch ($tool) {
+            case 'code-runner':
+                return [
+                    'enabled' => !$isProduction,
                     'allow_write' => false,
-                ],
-            ],
-        ];
+                    'max_timeout' => 60,
+                ];
+            case 'database-query':
+                return [
+                    'enabled' => true,
+                    'max_rows' => $isProduction ? 50 : 100,
+                ];
+            case 'log':
+                return [
+                    'enabled' => true,
+                    'max_lines' => 500,
+                ];
+            default:
+                return ['enabled' => $enabled];
+        }
+    }
+
+    /**
+     * Discovers tool names that honor the `enabled` config flag by scanning
+     * `Mcp/Tool/**\/*.php` for `requireToolEnabled('name')` call sites.
+     *
+     * Only called at install-time (never on the MCP hot path), so the
+     * scan cost is irrelevant.
+     *
+     * @return array<string>
+     */
+    public static function discoverConfigurableTools(): array
+    {
+        if (self::$configurableToolsCache !== null) {
+            return self::$configurableToolsCache;
+        }
+
+        $toolDir = __DIR__ . '/../Mcp/Tool';
+
+        if (!is_dir($toolDir)) {
+            return self::$configurableToolsCache = [];
+        }
+
+        $tools = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $contents = file_get_contents($file->getPathname());
+            if ($contents === false) {
+                continue;
+            }
+
+            if (preg_match_all(
+                '/requireToolEnabled\(\s*[\'"]([^\'"]+)[\'"]\s*\)/',
+                $contents,
+                $matches
+            )) {
+                foreach ($matches[1] as $name) {
+                    $tools[$name] = true;
+                }
+            }
+        }
+
+        $tools = array_keys($tools);
+        sort($tools);
+
+        return self::$configurableToolsCache = $tools;
+    }
+
+    /**
+     * Reset the cached configurable-tools list. Intended for tests.
+     */
+    public static function clearConfigurableToolsCache(): void
+    {
+        self::$configurableToolsCache = null;
     }
 
     /**

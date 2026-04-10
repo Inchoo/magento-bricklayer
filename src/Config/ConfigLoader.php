@@ -116,7 +116,7 @@ class ConfigLoader
                     'enabled' => true,
                     'max_rows' => 100,
                 ],
-                'log-reader' => [
+                'log' => [
                     'enabled' => true,
                     'max_lines' => 500,
                 ],

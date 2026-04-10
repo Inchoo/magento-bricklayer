@@ -76,12 +76,25 @@ HELP
             return Command::FAILURE;
         }
 
+        $magentoRoot = rtrim($magentoRoot, '/\\');
+
         $force = $input->getOption('force');
         $initializer = new ConfigInitializer();
         $result = $initializer->generate($magentoRoot, $force);
 
+        $bricklayerDir = $magentoRoot . '/.bricklayer';
+        $createdDir = false;
+        if (!is_dir($bricklayerDir)) {
+            if (@mkdir($bricklayerDir, 0755, true) || is_dir($bricklayerDir)) {
+                $createdDir = true;
+            }
+        }
+
         if (!$result['created']) {
             $io->text('  <comment>⊘</comment> .bricklayer.json already exists (use --force to overwrite)');
+            if ($createdDir) {
+                $io->text('  <info>✓</info> Created .bricklayer/ directory for project overrides');
+            }
             return Command::SUCCESS;
         }
 
@@ -89,6 +102,10 @@ HELP
             '  <info>✓</info> Created .bricklayer.json (based on <comment>%s</comment> mode)',
             $result['deploy_mode']
         ));
+
+        if ($createdDir) {
+            $io->text('  <info>✓</info> Created .bricklayer/ directory for project overrides');
+        }
 
         return Command::SUCCESS;
     }

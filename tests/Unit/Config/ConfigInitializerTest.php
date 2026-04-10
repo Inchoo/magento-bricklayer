@@ -69,7 +69,7 @@ class ConfigInitializerTest extends TestCase
         $this->assertEquals(50, $config['tools']['database-query']['max_rows']);
     }
 
-    public function testBuildConfigDeveloperDoesNotDisableDestructiveTools(): void
+    public function testBuildConfigDeveloperExplicitlyDisablesDestructiveTools(): void
     {
         $config = $this->initializer->buildConfig('developer');
 
@@ -77,24 +77,63 @@ class ConfigInitializerTest extends TestCase
             'product-delete',
             'category-delete',
             'customer-delete',
+            'customer-address-delete',
             'order-cancel',
+            'creditmemo-create',
             'generate-module',
+            'generate-model',
+            'generate-controller',
+            'generate-api',
         ];
 
         foreach ($destructiveTools as $tool) {
-            $this->assertArrayNotHasKey(
+            $this->assertArrayHasKey(
                 $tool,
                 $config['tools'],
-                "Destructive tool '$tool' should not appear in developer config"
+                "Destructive tool '$tool' should appear in developer config"
+            );
+            $this->assertFalse(
+                $config['tools'][$tool]['enabled'],
+                "Destructive tool '$tool' should be explicitly disabled in developer config"
             );
         }
     }
 
-    public function testBuildConfigDeveloperSetsCodeRunnerReadOnly(): void
+    public function testBuildConfigDeveloperEnablesNonDestructiveWriteTools(): void
     {
         $config = $this->initializer->buildConfig('developer');
 
+        $nonDestructive = [
+            'product-create',
+            'product-update',
+            'category-create',
+            'customer-create',
+            'order-add-comment',
+            'invoice-create',
+            'shipment-create',
+        ];
+
+        foreach ($nonDestructive as $tool) {
+            $this->assertArrayHasKey($tool, $config['tools']);
+            $this->assertTrue($config['tools'][$tool]['enabled']);
+        }
+    }
+
+    public function testBuildConfigDeveloperEnablesCodeRunnerReadOnly(): void
+    {
+        $config = $this->initializer->buildConfig('developer');
+
+        $this->assertTrue($config['tools']['code-runner']['enabled']);
         $this->assertFalse($config['tools']['code-runner']['allow_write']);
+        $this->assertEquals(60, $config['tools']['code-runner']['max_timeout']);
+    }
+
+    public function testBuildConfigDeveloperSetsLogAndDatabaseDefaults(): void
+    {
+        $config = $this->initializer->buildConfig('developer');
+
+        $this->assertEquals(100, $config['tools']['database-query']['max_rows']);
+        $this->assertEquals(500, $config['tools']['log']['max_lines']);
     }
 
     public function testBuildConfigDefaultModeMatchesDeveloper(): void
@@ -166,12 +205,12 @@ class ConfigInitializerTest extends TestCase
         $this->assertEquals(11, $result['disabled_tools']);
     }
 
-    public function testGenerateDeveloperHasZeroDisabledTools(): void
+    public function testGenerateDeveloperDisablesDestructiveTools(): void
     {
         $result = $this->initializer->generate($this->tempDir);
 
-        // Developer/default mode has no disabled tools
-        $this->assertEquals(0, $result['disabled_tools']);
+        // Developer mode disables the 10 destructive tools by default
+        $this->assertEquals(10, $result['disabled_tools']);
     }
 
     public function testDetectDeployModeReadsEnvPhp(): void

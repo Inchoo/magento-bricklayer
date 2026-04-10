@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.14.0
+
+- **Project-local overrides** — New `.bricklayer/` directory at the Magento root lets projects add or replace bundled content without forking the package:
+  - `project-context.md` — appended to every generated agent file under a `## Project-Specific Context` heading
+  - `decision-matrix.md` — extra rows merged into the "Before Modifying" table
+  - `guidelines/{path}.md` — override bundled guidelines by matching relative path, or add new sections with no bundled counterpart
+  - `skills/{category}/SKILL.md` — override bundled skills, or add new local-only categories directly callable via `development-context category={directory}`
+  - Optional YAML frontmatter (`name:`, `description:`) on local SKILL.md files for rich display; stripped before content is returned to agents
+  - Local entries tagged `[Project]` in `search-docs` results
+- `bricklayer update` now reports applied local overrides/additions and the number of local docs-index entries
+- `bricklayer init` now creates `.bricklayer/` automatically
+- New `LocalOverrideHelper` utility — shared static helpers for YAML frontmatter parsing and stripping, used by `GuidelinesCompiler`, `ContextTools`, and `SearchTools`
+- `GuidelinesCompiler`, `ContextTools`, and `SearchTools` constructors now accept optional `$magentoRoot` / `$packageRoot` for testability
+- 29 new unit tests across `LocalOverridesTest`, `LocalGuidelineAdditionsTest`, `LocalSkillResolutionTest`, `LocalDocsIndexTest` — suite total: 353 tests, 999 assertions
+- Documentation audit — removed stale `--config-only` / `--docs-only` flag references (neither exists in `UpdateCommand`), removed stale "documentation index" phrasing, added missing `verify` command documentation to the README, corrected `contributing.md` class counts (19 tool classes, 5 resource providers), added new `configuration/local-overrides.md` wiki page
+
+## 1.13.2
+
+- Fixed array_map error in InstallCommand when a single AI agent is selected
+
+## 1.13.1
+
+- Added ArrayManager for checkout jsLayout manipulation in the LayoutProcessor skill example
+
 ## 1.13.0
 
 - New `check-class` Tier 1 tool — combined plugin-list, di-configuration, and preference-list in one call

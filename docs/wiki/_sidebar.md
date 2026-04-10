@@ -26,6 +26,7 @@
 - [.bricklayer.json](configuration/bricklayer-json)
 - [Environment Variables](configuration/environment-variables)
 - [Agent Integration](configuration/agent-integration)
+- [Project-Local Overrides](configuration/local-overrides)
 
 **Guidelines & Skills**
 - [Overview](guidelines/overview)

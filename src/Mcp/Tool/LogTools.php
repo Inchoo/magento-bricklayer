@@ -81,7 +81,7 @@ class LogTools
             return $error;
         }
 
-        if ($error = $this->requireToolEnabled('log-reader')) {
+        if ($error = $this->requireToolEnabled('log')) {
             return $error;
         }
 
@@ -105,7 +105,7 @@ class LogTools
     private function performRead(string $logType, int $lines, string $filter, int $max_entry_length): array
     {
         try {
-            $configMaxLines = (int) $this->getConfigLoader()->get('tools.log-reader.max_lines', 500);
+            $configMaxLines = (int) $this->getConfigLoader()->get('tools.log.max_lines', 500);
             if ($lines > $configMaxLines) {
                 $lines = $configMaxLines;
             }
