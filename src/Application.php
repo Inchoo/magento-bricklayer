@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer;
 
+use Inchoo\MagentoBricklayer\Command\ConfigSetCommand;
 use Inchoo\MagentoBricklayer\Command\InitCommand;
 use Inchoo\MagentoBricklayer\Command\InspectCommand;
 use Inchoo\MagentoBricklayer\Command\InstallCommand;
@@ -41,6 +42,7 @@ class Application extends ConsoleApplication
 
     private function registerCommands(): void
     {
+        $this->add(new ConfigSetCommand());
         $this->add(new InitCommand());
         $this->add(new InstallCommand());
         $this->add(new McpServerCommand());

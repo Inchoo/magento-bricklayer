@@ -12,19 +12,48 @@ use Inchoo\MagentoBricklayer\Mcp\Tool\ContextTools;
 
 class GuidelinesCompiler
 {
+    private readonly string $packageRoot;
+    private readonly ?string $magentoRoot;
+
+    /** @var list<string> */
+    private array $appliedLocalOverrides = [];
+
+    /** @var list<string> */
+    private array $appliedLocalAdditions = [];
+
     public function __construct(
+        ?string $magentoRoot = null,
+        ?string $packageRoot = null,
         private readonly ToolScanner $toolScanner = new ToolScanner(),
     ) {
+        $this->magentoRoot = $magentoRoot !== null ? rtrim($magentoRoot, '/\\') : null;
+        $this->packageRoot = $packageRoot !== null
+            ? rtrim($packageRoot, '/\\')
+            : dirname(__DIR__, 2);
     }
 
     public function compile(string $agent, string $envType = 'native'): string
     {
+        $this->appliedLocalOverrides = [];
+        $this->appliedLocalAdditions = [];
+
         $sections = [];
         $sections[] = $this->buildHeader();
         $sections[] = $this->buildIntrospectionSection();
         $sections[] = $this->buildContextCategoriesSection();
         $sections[] = $this->buildEfficiencySection();
         $sections[] = $this->getShellCommandsSection($envType);
+
+        $localGuidelineSection = $this->compileLocalGuidelineAdditions();
+        if ($localGuidelineSection !== '') {
+            $sections[] = $localGuidelineSection;
+        }
+
+        $projectContext = $this->getProjectContext();
+        if ($projectContext !== null) {
+            $sections[] = "## Project-Specific Context\n\n" . $projectContext;
+        }
+
         $sections[] = $this->buildFooter($agent);
 
         return implode("\n\n", array_filter($sections));
@@ -41,6 +70,19 @@ class GuidelinesCompiler
         ];
 
         return $fileMap[$agent] ?? 'AGENTS.md';
+    }
+
+    /**
+     * List of local files (relative to magentoRoot) that were applied as
+     * overrides or additions during the most recent compile() call.
+     *
+     * @return list<string>
+     */
+    public function getAppliedOverrides(): array
+    {
+        return array_values(array_unique(
+            array_merge($this->appliedLocalOverrides, $this->appliedLocalAdditions)
+        ));
     }
 
     private function buildHeader(): string
@@ -64,7 +106,7 @@ MARKDOWN;
 
     private function buildIntrospectionSection(): string
     {
-        return <<<'MARKDOWN'
+        $base = <<<'MARKDOWN'
 ### Before Modifying Magento Code
 
 Magento resolves DI, plugins, preferences, and events at runtime across many modules.
@@ -87,6 +129,13 @@ state before writing code that touches existing classes.**
 | Investigating performance | `diagnose-performance` | `development-context category=performance` |
 | Writing **any** PHP file | — | `development-context category=coding-standards` (always) |
 MARKDOWN;
+
+        $extraRows = $this->getExtraDecisionMatrixRows();
+        if ($extraRows !== '') {
+            $base .= "\n" . rtrim($extraRows, "\n");
+        }
+
+        return $base;
     }
 
     private function buildContextCategoriesSection(): string
@@ -111,6 +160,16 @@ MARKDOWN;
             $lines[] = "| **{$groupTitle}** | |";
             foreach ($categories as $name => $description) {
                 $lines[] = "| `{$name}` | {$description} |";
+            }
+        }
+
+        $localRows = $this->buildLocalSkillsTableRows();
+        if ($localRows !== '') {
+            $lines[] = '| **Project-specific** | |';
+            foreach (explode("\n", rtrim($localRows, "\n")) as $row) {
+                if ($row !== '') {
+                    $lines[] = $row;
+                }
             }
         }
 
@@ -241,5 +300,296 @@ Common commands after code changes:
 - `{$composerInstall}` - Install dependencies
 - `{$composerRequire}` - Add new dependencies
 SECTION;
+    }
+
+    /**
+     * Read `.bricklayer/project-context.md` and return its trimmed content,
+     * or null when the file is missing or empty.
+     */
+    private function getProjectContext(): ?string
+    {
+        if ($this->magentoRoot === null) {
+            return null;
+        }
+
+        $path = $this->magentoRoot . '/.bricklayer/project-context.md';
+        if (!file_exists($path)) {
+            return null;
+        }
+
+        $content = file_get_contents($path);
+        if ($content === false) {
+            return null;
+        }
+
+        $content = trim($content);
+        if ($content === '') {
+            return null;
+        }
+
+        $this->appliedLocalAdditions[] = '.bricklayer/project-context.md';
+        return $content;
+    }
+
+    /**
+     * Read `.bricklayer/decision-matrix.md` and return additional Markdown
+     * table rows. Only lines that look like table rows are accepted.
+     */
+    private function getExtraDecisionMatrixRows(): string
+    {
+        if ($this->magentoRoot === null) {
+            return '';
+        }
+
+        $path = $this->magentoRoot . '/.bricklayer/decision-matrix.md';
+        if (!file_exists($path)) {
+            return '';
+        }
+
+        $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) {
+            return '';
+        }
+
+        $rows = '';
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (str_starts_with($line, '|') && str_ends_with($line, '|')) {
+                // Skip the header separator row if it was accidentally included.
+                if (preg_match('/^\|[-:\s|]+\|$/', $line)) {
+                    continue;
+                }
+                $rows .= $line . "\n";
+            }
+        }
+
+        if ($rows !== '') {
+            $this->appliedLocalAdditions[] = '.bricklayer/decision-matrix.md';
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Scan `.bricklayer/guidelines/` for local guideline files. Files whose
+     * relative path matches a bundled guideline are recorded as overrides and
+     * skipped (the override takes effect in ContextTools at load time). Files
+     * with no bundled counterpart are compiled into additional sections in
+     * the generated agent file.
+     */
+    private function compileLocalGuidelineAdditions(): string
+    {
+        if ($this->magentoRoot === null) {
+            return '';
+        }
+
+        $localDir = $this->magentoRoot . '/.bricklayer/guidelines/';
+        if (!is_dir($localDir)) {
+            return '';
+        }
+
+        $realLocalDir = realpath($localDir);
+        if ($realLocalDir === false) {
+            return '';
+        }
+        $realLocalDir = rtrim($realLocalDir, '/\\') . '/';
+
+        $bundledRelativePaths = $this->getBundledGuidelineRelativePaths();
+
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($realLocalDir, \FilesystemIterator::SKIP_DOTS)
+            );
+        } catch (\UnexpectedValueException) {
+            return '';
+        }
+
+        $grouped = [];
+        foreach ($iterator as $file) {
+            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
+                continue;
+            }
+            if (strtolower($file->getExtension()) !== 'md') {
+                continue;
+            }
+
+            $absolute = $file->getPathname();
+            $relativePath = str_replace('\\', '/', substr($absolute, strlen($realLocalDir)));
+            if ($relativePath === '') {
+                continue;
+            }
+
+            if (in_array($relativePath, $bundledRelativePaths, true)) {
+                $this->appliedLocalOverrides[] = '.bricklayer/guidelines/' . $relativePath;
+                continue;
+            }
+
+            $categoryDir = dirname($relativePath);
+            if ($categoryDir === '.' || $categoryDir === '') {
+                $categoryDir = 'project';
+            }
+            $categoryDir = basename($categoryDir);
+
+            $sectionName = LocalOverrideHelper::defaultDisplayName($categoryDir);
+            $filenameBase = (string) preg_replace('/\.md$/i', '', basename($relativePath));
+            $subHeading = LocalOverrideHelper::defaultDisplayName($filenameBase);
+
+            $content = file_get_contents($absolute);
+            if ($content === false) {
+                continue;
+            }
+            $content = trim($content);
+
+            $grouped[$sectionName][] = [
+                'heading' => $subHeading,
+                'content' => $content,
+                'path' => '.bricklayer/guidelines/' . $relativePath,
+            ];
+        }
+
+        if ($grouped === []) {
+            return '';
+        }
+
+        ksort($grouped);
+        $output = '';
+        foreach ($grouped as $sectionName => $entries) {
+            usort($entries, fn($a, $b) => strcmp($a['heading'], $b['heading']));
+            $output .= "## {$sectionName}\n\n";
+            foreach ($entries as $entry) {
+                $output .= "### {$entry['heading']}\n\n{$entry['content']}\n\n";
+                $this->appliedLocalAdditions[] = $entry['path'];
+            }
+        }
+
+        return rtrim($output, "\n");
+    }
+
+    /**
+     * Build extra rows for the context categories table from local skill
+     * directories that have no bundled equivalent.
+     */
+    private function buildLocalSkillsTableRows(): string
+    {
+        if ($this->magentoRoot === null) {
+            return '';
+        }
+
+        $localSkillsDir = $this->magentoRoot . '/.bricklayer/skills/';
+        if (!is_dir($localSkillsDir)) {
+            return '';
+        }
+
+        $bundledCategories = $this->getBundledSkillCategories();
+        $rows = '';
+
+        $entries = @scandir($localSkillsDir);
+        if ($entries === false) {
+            return '';
+        }
+        sort($entries);
+
+        foreach ($entries as $entryName) {
+            if ($entryName === '.' || $entryName === '..') {
+                continue;
+            }
+            $entryPath = $localSkillsDir . $entryName;
+            if (!is_dir($entryPath)) {
+                continue;
+            }
+            $skillFile = $entryPath . '/SKILL.md';
+            if (!file_exists($skillFile)) {
+                continue;
+            }
+
+            $category = $entryName;
+            if (in_array($category, $bundledCategories, true)) {
+                // Override case: bundled row already covers it.
+                $this->appliedLocalOverrides[] = '.bricklayer/skills/' . $category . '/SKILL.md';
+                continue;
+            }
+
+            $meta = LocalOverrideHelper::parseSkillFrontmatter($skillFile);
+            $description = $meta['description'] ?? LocalOverrideHelper::defaultDisplayName($category);
+
+            $rows .= "| `{$category}` | {$description} |\n";
+            $this->appliedLocalAdditions[] = '.bricklayer/skills/' . $category . '/SKILL.md';
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Collect the set of bundled guideline relative paths (e.g. "patterns/plugin.md").
+     * Used to distinguish override files from additions in the local guidelines directory.
+     *
+     * @return list<string>
+     */
+    private function getBundledGuidelineRelativePaths(): array
+    {
+        $bundledDir = $this->packageRoot . '/config/guidelines/';
+        if (!is_dir($bundledDir)) {
+            return [];
+        }
+
+        $realBundledDir = realpath($bundledDir);
+        if ($realBundledDir === false) {
+            return [];
+        }
+        $realBundledDir = rtrim($realBundledDir, '/\\') . '/';
+
+        $paths = [];
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($realBundledDir, \FilesystemIterator::SKIP_DOTS)
+            );
+        } catch (\UnexpectedValueException) {
+            return [];
+        }
+
+        foreach ($iterator as $file) {
+            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
+                continue;
+            }
+            if (strtolower($file->getExtension()) !== 'md') {
+                continue;
+            }
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($realBundledDir)));
+            if ($relative !== '') {
+                $paths[] = $relative;
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getBundledSkillCategories(): array
+    {
+        $bundledDir = $this->packageRoot . '/config/skills/';
+        if (!is_dir($bundledDir)) {
+            return [];
+        }
+
+        $categories = [];
+        $entries = @scandir($bundledDir);
+        if ($entries === false) {
+            return [];
+        }
+        foreach ($entries as $entryName) {
+            if ($entryName === '.' || $entryName === '..') {
+                continue;
+            }
+            if (is_dir($bundledDir . $entryName)) {
+                $categories[] = $entryName;
+            }
+        }
+
+        return $categories;
     }
 }

@@ -16,6 +16,7 @@ An MCP server that gives AI coding agents runtime visibility into Magento 2. Age
   - [mcp](#mcp)
   - [inspect](#inspect)
   - [update](#update)
+  - [verify](#verify)
 - [Docker / Container Environments](#docker--container-environments)
   - [Automatic Container Detection](#automatic-container-detection)
 - [MCP Tools Overview](#mcp-tools-overview)
@@ -48,6 +49,11 @@ An MCP server that gives AI coding agents runtime visibility into Magento 2. Age
 - [Architecture](#architecture)
   - [Auto-Reinitialize](#auto-reinitialize)
   - [Config Hot-Reload](#config-hot-reload)
+- [Project-Local Overrides](#project-local-overrides)
+  - [Directory layout](#directory-layout)
+  - [Override vs addition semantics](#override-vs-addition-semantics)
+  - [Optional SKILL.md frontmatter](#optional-skillmd-frontmatter)
+  - [Typical workflow](#typical-workflow)
 - [Extending Bricklayer](#extending-bricklayer)
   - [Add a tool to an existing class](#add-a-tool-to-an-existing-class)
   - [Add a new tool class](#add-a-new-tool-class)
@@ -176,11 +182,47 @@ Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
 - `--force` - Overwrite existing `.bricklayer.json`
 
-The generated config varies by deploy mode:
-- **production** — Destructive tools and code generation disabled, code-runner disabled, query limits reduced
-- **developer/default** — All tools enabled, code-runner read-only
+The generated config contains **one entry per runtime-configurable tool** (32 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
+
+Deploy-mode behavior:
+- **production** — 11 tools disabled (code-runner + all 10 destructive/code-generation tools), `database-query.max_rows` lowered to 50
+- **developer/default** — 10 destructive tools (`*-delete`, `order-cancel`, `creditmemo-create`, 4 `generate-*`) disabled by default, everything else enabled, `code-runner` read-only
 
 This command is also called automatically during `bricklayer install`. Additionally, `bricklayer verify` will auto-generate the file if it's missing.
+
+### config:set
+Update a single value in `.bricklayer.json` with full validation, round-trip verification, and a guided interactive mode for discoverability.
+
+```bash
+# Interactive — walks you through tool selection, setting, and value
+vendor/bin/bricklayer config:set
+
+# Scripted — dot-notation key + value
+vendor/bin/bricklayer config:set tools.product-delete.enabled true
+vendor/bin/bricklayer config:set tools.database-query.max_rows 250
+vendor/bin/bricklayer config:set tools.code-runner.allow_write false
+```
+
+Options:
+- `--magento-root=PATH` — Specify Magento root directory (auto-detected by default)
+
+**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 32 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
+
+**Scripted mode** (positional arguments) is for automation. Values are parsed automatically: `true`/`false` → bool, `null` → null, numeric → int/float, `[...]`/`{...}` → JSON-decoded, anything else → string.
+
+**Safety checks** on every successful set:
+- **Validation** — refuses to write if the resulting config fails `ConfigValidator` (e.g. negative `max_rows`, non-bool `enabled`)
+- **Round-trip verification** — re-loads the file through `ConfigLoader` and confirms the new value is readable
+- **Non-configurable tool warning** — warns if you try to set `enabled` on a read-only introspection tool that does not honor the flag at runtime
+- **Environment-variable shadow warning** — warns if a matching `BRICKLAYER_*` env var is set that would override your file change
+- **Hot-reload note** — reminds you that the running MCP server picks up changes on its next tool call, so no agent restart is required
+
+Auto-creates `.bricklayer.json` with deploy-mode-aware defaults if the file is missing.
+
+Negative integer values need the `--` separator (standard Symfony Console behavior):
+```bash
+vendor/bin/bricklayer config:set -- tools.database-query.max_rows -1  # will fail validation
+```
 
 ### mcp
 Starts the MCP server (invoked automatically by AI agents).
@@ -204,16 +246,29 @@ Options:
 - `--no-bootstrap` - Skip full Magento bootstrap (faster, limited info)
 
 ### update
-Regenerates agent configuration files (CLAUDE.md, .cursorrules, etc.) and documentation index.
+Regenerates agent configuration files (CLAUDE.md, .cursorrules, etc.) from the current bundled content plus any project-local overrides in `.bricklayer/`.
 
 ```bash
 vendor/bin/bricklayer update [options]
 ```
 
 Options:
-- `--config-only` - Only regenerate configuration files (CLAUDE.md, .cursorrules, etc.)
-- `--docs-only` - Only update documentation index
-- `--magento-root=PATH` - Specify Magento root directory
+- `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
+
+When the project has files under `.bricklayer/` (see [Project-Local Overrides](#project-local-overrides)), the command reports which local files were applied alongside the regenerated agent files.
+
+### verify
+Runs a post-install health check against your Bricklayer installation.
+
+```bash
+vendor/bin/bricklayer verify [options]
+```
+
+Options:
+- `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
+- `--json` - Output results as JSON
+
+Checks performed: Magento bootstrap, deploy mode detection, MCP server creation and tool count, agent configuration files, PsySH availability for `code-runner`, database connectivity, log directory writability, and `.bricklayer.json` validation. If `.bricklayer.json` is missing, `verify` auto-generates it with deploy-mode-aware defaults.
 
 ## Docker / Container Environments
 
@@ -500,7 +555,17 @@ Code templates for common patterns (`magento://templates/module`, `magento://tem
 
 ## Configuration
 
-Create `.bricklayer.json` in your Magento root:
+`.bricklayer.json` lives at your Magento root. The easiest way to create or edit it is:
+
+```bash
+# Generate with deploy-mode-aware defaults (also runs during `install`)
+vendor/bin/bricklayer init
+
+# Tweak individual values interactively (no need to memorize keys)
+vendor/bin/bricklayer config:set
+```
+
+A generated developer-mode config looks like this (32 entries total — one per runtime-configurable tool):
 
 ```json
 {
@@ -508,27 +573,31 @@ Create `.bricklayer.json` in your Magento root:
         "code-runner": {
             "enabled": true,
             "allow_write": false,
-            "max_timeout": 30
+            "max_timeout": 60
         },
         "database-query": {
             "enabled": true,
             "max_rows": 100
         },
-        "log-reader": {
+        "log": {
             "enabled": true,
             "max_lines": 500
         },
+        "diagnose-performance": { "enabled": true },
+        "product-create": { "enabled": true },
+        "product-update": { "enabled": true },
         "product-delete": { "enabled": false },
+        "product-stock-update": { "enabled": true },
+        "category-create": { "enabled": true },
+        "category-delete": { "enabled": false },
+        "order-cancel": { "enabled": false },
         "customer-delete": { "enabled": false },
-        "category-delete": { "enabled": false }
-    },
-    "guidelines": {
-        "include": ["core", "modules", "patterns"],
-        "exclude": ["ecosystem/adobe-commerce"]
-    },
-    "agents": ["claude-code", "cursor"]
+        "generate-module": { "enabled": false }
+    }
 }
 ```
+
+Every key in a generated config maps to a `requireToolEnabled()` call site in the source, so the file never contains dead keys. If you add keys that the runtime does not honor (e.g. `product-get.enabled`), `config:set` will warn you before writing.
 
 ### Per-Tool Configuration
 
@@ -600,9 +669,84 @@ A manual `reinitialize` tool is also available for edge cases where sentinel fil
 
 Bricklayer also tracks the modification time of `.bricklayer.json`. When the file is edited while the MCP server is running (e.g. enabling a tool), the change is detected automatically on the next tool call — no server restart required. The staleness check costs a single `filemtime()` call per config access.
 
+## Project-Local Overrides
+
+Bricklayer ships with a bundled library of guidelines, skills, and a category map — but every Magento project has conventions that deviate from the bundled defaults (custom ERP integrations, CSP rules, payment quirks, house style). Project-local overrides let you add or replace content without forking the package.
+
+Any file the project places under `.bricklayer/` at the Magento root is picked up automatically by `bricklayer update`, `development-context`, and `search-docs`. Nothing needs to be registered in `.bricklayer.json` — the path is the contract, modelled after Laravel Boost.
+
+### Directory layout
+
+```
+{magento_root}/
+└── .bricklayer/
+    ├── project-context.md          # Free-form markdown appended to every generated agent file
+    ├── decision-matrix.md          # Extra rows for the "Before Modifying" table (rows only, no header)
+    ├── guidelines/
+    │   ├── patterns/
+    │   │   └── plugin.md           # OVERRIDE: replaces config/guidelines/patterns/plugin.md
+    │   └── project/                # NEW CATEGORY: no bundled equivalent
+    │       └── csp-scripts.md      # → compiled into CLAUDE.md as its own section
+    └── skills/
+        ├── plugin/
+        │   └── SKILL.md            # OVERRIDE: replaces config/skills/plugin/SKILL.md
+        └── csp-scripts/            # NEW SKILL: no bundled equivalent
+            └── SKILL.md            # → callable via development-context category=csp-scripts
+```
+
+### Override vs addition semantics
+
+- **Override** — a local file whose relative path matches a bundled file (`.bricklayer/guidelines/patterns/plugin.md` ↔ `config/guidelines/patterns/plugin.md`, or `.bricklayer/skills/plugin/SKILL.md` ↔ `config/skills/plugin/SKILL.md`). The local file replaces the bundled one wherever it would otherwise appear — `development-context` loads the local version, `search-docs` serves the local entry instead of the bundled one, and the override is reported in `bricklayer update` output.
+- **Addition** — a local file with no bundled counterpart. New guideline files are compiled into the generated agent file as extra sections (heading derived from parent directory, sub-heading from filename). New skill directories become directly callable: `development-context category={directory-name}` returns the local SKILL.md content, and the category appears under a **Project-specific** group in the CLAUDE.md categories table.
+
+### Optional SKILL.md frontmatter
+
+Local `SKILL.md` files may start with a small YAML frontmatter block for richer display names and descriptions. The block is stripped before the content is handed to an agent.
+
+```markdown
+---
+name: CSP Scripts
+description: Patterns for managing Content Security Policy inline scripts in Magento 2.
+---
+
+# CSP Scripts
+
+...skill content...
+```
+
+Only `name` and `description` are consumed — any other keys are ignored. Files with no frontmatter fall back to the directory name as display name.
+
+### Typical workflow
+
+```bash
+# 1. Create the directory (bricklayer init also creates it for you)
+mkdir -p .bricklayer/guidelines/project .bricklayer/skills/csp-scripts
+
+# 2. Drop your project-specific content in
+$EDITOR .bricklayer/project-context.md
+$EDITOR .bricklayer/guidelines/project/csp-scripts.md
+$EDITOR .bricklayer/skills/csp-scripts/SKILL.md
+
+# 3. Regenerate agent files
+vendor/bin/bricklayer update
+```
+
+`bricklayer update` reports which local files were applied:
+
+```
+  ✓ Regenerated CLAUDE.md
+  Applied local overrides:
+    - .bricklayer/project-context.md
+    - .bricklayer/guidelines/project/csp-scripts.md
+    - .bricklayer/skills/csp-scripts/SKILL.md
+  Indexed 2 local file(s) into docs index
+```
+
+Local skills and guidelines are also tagged `[Project]` in `search-docs` results so agents can tell project conventions apart from bundled Magento knowledge.
+
 ## Extending Bricklayer
 
-Bricklayer uses auto-discovery for tools, guidelines, skills, and categories. Adding new capabilities requires editing only the source file — documentation (CLAUDE.md, .cursorrules, etc.) and MCP resource indexes are regenerated automatically when you run `vendor/bin/bricklayer update --config-only`.
+Bricklayer uses auto-discovery for tools, guidelines, skills, and categories. Adding new capabilities requires editing only the source file — agent documentation (CLAUDE.md, .cursorrules, etc.) is regenerated automatically when you run `vendor/bin/bricklayer update`. MCP resources (guidelines, skills, templates) are served dynamically on each agent request and need no separate build step.
 
 ### Add a tool to an existing class
 
@@ -649,7 +793,7 @@ The `group` key determines which heading it falls under in the generated documen
 After making changes, regenerate agent configuration files:
 
 ```bash
-vendor/bin/bricklayer update --config-only
+vendor/bin/bricklayer update
 ```
 
 ## Security
@@ -658,7 +802,7 @@ vendor/bin/bricklayer update --config-only
 - Database queries are read-only (SELECT only) with dangerous pattern detection
 - Table names in schema queries are validated against actual database tables to prevent SQL injection
 - Configurable row limits via `tools.database-query.max_rows`
-- Configurable log line limits via `tools.log-reader.max_lines`
+- Configurable log line limits via `tools.log.max_lines`
 - Sensitive configuration values (payment/\*, carriers/\*, oauth/\*, etc.) are automatically masked in query results
 
 ### Production Mode Protection

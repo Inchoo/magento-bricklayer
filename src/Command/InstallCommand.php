@@ -195,7 +195,7 @@ HELP
 
         // Check for existing files and ask about overwriting if --force not specified
         if (!$force) {
-            $compiler = new GuidelinesCompiler();
+            $compiler = new GuidelinesCompiler($magentoRoot);
             $existingFiles = [];
 
             // Check MCP config
@@ -305,7 +305,7 @@ HELP
 
     private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array
     {
-        $compiler = new GuidelinesCompiler();
+        $compiler = new GuidelinesCompiler($projectRoot);
         $filename = $compiler->getFilename($agent);
         $filepath = $projectRoot . '/' . $filename;
 

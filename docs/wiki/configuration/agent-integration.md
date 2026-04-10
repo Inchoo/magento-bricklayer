@@ -56,12 +56,11 @@ Each agent's guidelines file contains:
 # Generate all config files
 vendor/bin/bricklayer install
 
-# Regenerate after changes
+# Regenerate after bundled content or project-local overrides change
 vendor/bin/bricklayer update
-
-# Regenerate config only
-vendor/bin/bricklayer update --config-only
 ```
+
+`update` regenerates every agent file that already exists in the project and applies any overrides/additions from `.bricklayer/` (see [Project-Local Overrides](local-overrides.md)).
 
 ## Custom Agent Support
 

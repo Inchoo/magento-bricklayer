@@ -23,7 +23,7 @@
             "homepage": "https://inchoo.net"
         }
     ],
-    "version": "1.13.2",
+    "version": "1.14.0",
     "require": {
         "php": ">=8.1",
         "mcp/sdk": "^0.3 || ^1.0",

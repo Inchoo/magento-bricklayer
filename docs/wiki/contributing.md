@@ -34,14 +34,14 @@ vendor/bin/phpcs --standard=PSR12 src/
 ```
 src/                  # Main PHP source code
 ├── Bootstrap/        # Magento initialization
-├── Command/          # CLI commands
+├── Command/          # 6 CLI commands
 ├── Config/           # Configuration management
 ├── Exception/        # Custom exceptions
-├── Guidelines/       # Guidelines compilation
+├── Guidelines/       # Guidelines compilation + local override helper
 ├── Integration/      # Agent config writers
 └── Mcp/              # MCP server + tools
-    ├── Tool/         # 21 tool classes
-    ├── Resource/     # 6 resource providers
+    ├── Tool/         # 19 tool classes (+ ToolRegistry)
+    ├── Resource/     # 5 resource providers (+ FileLoaderTrait)
     └── Prompt/       # 8 prompt providers
 
 config/               # Auto-discovered content
@@ -107,7 +107,7 @@ Then add the category mapping in `ContextTools::CATEGORY_MAP`.
 
 1. Add the mapping in `src/Mcp/Tool/ContextTools.php` `CATEGORY_MAP` array
 2. Ensure the guideline/skill files exist in `config/`
-3. Run `vendor/bin/bricklayer update --config-only` to regenerate agent documentation
+3. Run `vendor/bin/bricklayer update` in a consuming project to regenerate agent documentation
 
 ## Code Standards
 

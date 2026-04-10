@@ -8,92 +8,12 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Config;
 
+use Mcp\Capability\Attribute\McpTool;
+
 class ConfigValidator
 {
-    private const KNOWN_TOOLS = [
-        // Introspection
-        'application-info',
-        'module-list',
-        'module-structure',
-        'validate-module',
-        'database-schema',
-        'database-query',
-        'eav-attributes',
-        'eav-entity-types',
-        'configuration-get',
-        'configuration-list',
-        'di-configuration',
-        'plugin-list',
-        'preference-list',
-        'event-list',
-        'route-list',
-        'route-info',
-        'api-endpoints',
-        'url-rewrites',
-        // Catalog
-        'product-get',
-        'product-list',
-        'product-create',
-        'product-update',
-        'product-delete',
-        'product-stock-get',
-        'product-stock-update',
-        'product-media-list',
-        'product-media-add',
-        'product-link-list',
-        'product-link-set',
-        'category-tree',
-        'category-get',
-        'category-create',
-        'category-update',
-        'category-delete',
-        'category-products',
-        'category-assign-products',
-        // Orders
-        'order-get',
-        'order-list',
-        'order-items',
-        'order-comments',
-        'order-add-comment',
-        'order-cancel',
-        'order-hold',
-        'order-unhold',
-        'invoice-create',
-        'invoice-list',
-        'shipment-create',
-        'shipment-list',
-        'shipment-track-add',
-        'creditmemo-create',
-        'creditmemo-list',
-        // Customers
-        'customer-get',
-        'customer-list',
-        'customer-create',
-        'customer-update',
-        'customer-delete',
-        'customer-validate',
-        'customer-groups-list',
-        'customer-orders',
-        'customer-addresses',
-        'customer-address-create',
-        'customer-address-update',
-        'customer-address-delete',
-        // Database & Logs
-        'log',
-        'diagnose-error',
-        // GraphQL
-        'graphql-inspect',
-        // System
-        'system-status',
-        'search-docs',
-        'code-runner',
-        'development-context',
-        // Code Generation
-        'generate-module',
-        'generate-model',
-        'generate-controller',
-        'generate-api',
-    ];
+    /** @var array<string>|null */
+    private static ?array $knownToolsCache = null;
 
     private const KNOWN_AGENTS = [
         'claude-code',
@@ -160,7 +80,7 @@ class ConfigValidator
                 continue;
             }
 
-            if (!in_array($toolName, self::KNOWN_TOOLS, true)) {
+            if (!in_array($toolName, self::getKnownTools(), true)) {
                 $this->warnings[] = "Unknown tool: '$toolName'";
             }
 
@@ -262,10 +182,69 @@ class ConfigValidator
         }
     }
 
-    /** @return array<string> */
+    /**
+     * Discovers tool names by reflecting over #[McpTool] attributes on the
+     * Mcp\Tool\* classes — the single source of truth for registered tools.
+     *
+     * @return array<string>
+     */
     public static function getKnownTools(): array
     {
-        return self::KNOWN_TOOLS;
+        if (self::$knownToolsCache !== null) {
+            return self::$knownToolsCache;
+        }
+
+        $tools = [];
+        $toolDir = __DIR__ . '/../Mcp/Tool';
+
+        if (!is_dir($toolDir)) {
+            return self::$knownToolsCache = [];
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($toolDir) + 1, -4);
+            $class = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\'
+                . str_replace('/', '\\', $relative);
+
+            if (!class_exists($class)) {
+                continue;
+            }
+
+            try {
+                $reflection = new \ReflectionClass($class);
+            } catch (\ReflectionException) {
+                continue;
+            }
+
+            foreach ($reflection->getMethods() as $method) {
+                foreach ($method->getAttributes(McpTool::class) as $attr) {
+                    $args = $attr->getArguments();
+                    $name = $args['name'] ?? $args[0] ?? null;
+                    if (is_string($name) && $name !== '') {
+                        $tools[] = $name;
+                    }
+                }
+            }
+        }
+
+        sort($tools);
+        return self::$knownToolsCache = array_values(array_unique($tools));
+    }
+
+    /**
+     * Reset the cached tool list. Intended for tests.
+     */
+    public static function clearKnownToolsCache(): void
+    {
+        self::$knownToolsCache = null;
     }
 
     /** @return array<string> */
