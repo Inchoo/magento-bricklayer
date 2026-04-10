@@ -1,3 +1,6 @@
+# 1.13.2
+* Fixed array_map error in InstallCommand when single AI agent is selected
+
 # 1.13.1
 * Added ArrayManager for checkout jsLayout manipulation in LayoutProcessor skill example
 
