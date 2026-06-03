@@ -253,3 +253,122 @@ When multiple plugins exist:
 <plugin name="first_plugin" type="..." sortOrder="10"/>
 <plugin name="second_plugin" type="..." sortOrder="20"/>
 ```
+
+## Plugin Chain on Repositories
+
+A powerful pattern is chaining multiple `beforeSave` plugins on a repository to handle cross-cutting concerns. Each plugin handles one responsibility, and the repository stays clean (CRUD only).
+
+### Example: Repository Plugin Chain
+
+```xml
+<type name="Vendor\Module\Api\CustomEntityRepositoryInterface">
+    <plugin name="validate_max_entities"
+            type="Vendor\Module\Plugin\ValidateMaxEntitiesPlugin"
+            sortOrder="10"/>
+    <plugin name="set_timestamps"
+            type="Vendor\Module\Plugin\SetTimestampsPlugin"
+            sortOrder="20"/>
+    <plugin name="encrypt_sensitive_data"
+            type="Vendor\Module\Plugin\EncryptSensitiveDataPlugin"
+            sortOrder="30"/>
+</type>
+```
+
+**Plugin 1 — Validation (sortOrder 10):**
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Plugin;
+
+use Vendor\Module\Api\CustomEntityRepositoryInterface;
+use Vendor\Module\Api\Data\CustomEntityInterface;
+use Vendor\Module\Model\ConfigInterface;
+use Vendor\Module\Model\ResourceModel\CustomEntity\CollectionFactory;
+use Magento\Framework\Exception\LocalizedException;
+
+class ValidateMaxEntitiesPlugin
+{
+    public function __construct(
+        private readonly ConfigInterface $config,
+        private readonly CollectionFactory $collectionFactory
+    ) {
+    }
+
+    /**
+     * Enforce maximum entity limit before saving new entities.
+     */
+    public function beforeSave(
+        CustomEntityRepositoryInterface $subject,
+        CustomEntityInterface $entity
+    ): array {
+        // Only validate new entities (no ID yet)
+        if ($entity->getId()) {
+            return [$entity];
+        }
+
+        // Use CollectionFactory instead of repository to avoid circular plugin chain
+        $count = $this->collectionFactory->create()
+            ->addFieldToFilter('customer_id', $entity->getCustomerId())
+            ->getSize();
+
+        if ($count >= $this->config->getMaxEntities()) {
+            throw new LocalizedException(
+                __('Maximum of %1 entities allowed.', $this->config->getMaxEntities())
+            );
+        }
+
+        return [$entity];
+    }
+}
+```
+
+**Plugin 2 — Timestamps (sortOrder 20):**
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Plugin;
+
+use Vendor\Module\Api\CustomEntityRepositoryInterface;
+use Vendor\Module\Api\Data\CustomEntityInterface;
+
+class SetTimestampsPlugin
+{
+    public function beforeSave(
+        CustomEntityRepositoryInterface $subject,
+        CustomEntityInterface $entity
+    ): array {
+        $now = date('Y-m-d H:i:s');
+
+        if (!$entity->getId()) {
+            $entity->setCreatedAt($now);
+        }
+
+        $entity->setUpdatedAt($now);
+
+        return [$entity];
+    }
+}
+```
+
+**Execution flow:**
+
+```
+$repository->save($entity)
+    → sortOrder 10: ValidateMaxEntitiesPlugin (reject if limit exceeded)
+    → sortOrder 20: SetTimestampsPlugin (set created_at / updated_at)
+    → sortOrder 30: EncryptSensitiveDataPlugin (encrypt passwords)
+    → Repository::save() (clean CRUD — no validation, no timestamps)
+```
+
+### Benefits of Plugin Chain on Repository
+
+- **Repository stays clean** — only CRUD logic, no cross-cutting concerns
+- **Each plugin is testable in isolation**
+- **Third-party modules can add their own plugins** with higher sortOrder
+- **Plugins can be disabled individually** in `di.xml` without touching others
