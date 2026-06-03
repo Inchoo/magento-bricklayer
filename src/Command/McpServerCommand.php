@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Command;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,17 +20,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Starts the Magento Bricklayer MCP server for AI agent communication.
  * This command is typically invoked by AI agents, not directly by users.
  */
+#[AsCommand(
+    name: 'mcp',
+    description: 'Start the MCP server for AI agent communication'
+)]
 class McpServerCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'mcp';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Start the MCP server for AI agent communication';
 
     /**
      * @return void

@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,17 +22,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Displays information about the current Magento installation.
  */
+#[AsCommand(
+    name: 'inspect',
+    description: 'Display information about the current Magento installation'
+)]
 class InspectCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'inspect';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Display information about the current Magento installation';
 
     /**
      * @return void

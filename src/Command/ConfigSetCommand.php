@@ -12,6 +12,7 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Config\ConfigValidator;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,6 +25,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Updates a single value in .bricklayer.json using dot-notation keys.
  */
+#[AsCommand(
+    name: 'config:set',
+    description: 'Set a value in .bricklayer.json using dot-notation'
+)]
 class ConfigSetCommand extends Command
 {
     private const CONFIG_FILE = '.bricklayer.json';
@@ -62,16 +67,6 @@ class ConfigSetCommand extends Command
             ],
         ],
     ];
-
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'config:set';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Set a value in .bricklayer.json using dot-notation';
 
     protected function configure(): void
     {

@@ -11,6 +11,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Guidelines\GuidelinesCompiler;
 use Inchoo\MagentoBricklayer\Integration\McpConfigWriter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,17 +25,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Generates agent configuration files for AI tools integration.
  */
+#[AsCommand(
+    name: 'install',
+    description: 'Generate agent configuration files for AI tools integration'
+)]
 class InstallCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'install';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Generate agent configuration files for AI tools integration';
 
     /**
      * @return void
