@@ -1,3 +1,6 @@
+# 1.14.1
+* Added Symfony Console 7 compatibility
+
 # 1.14.0
 * **Project-local overrides** — A new `.bricklayer/` directory at the Magento root lets projects add or replace bundled content without forking the package. The path is the contract; no registration in `.bricklayer.json` required.
   * `.bricklayer/project-context.md` — free-form markdown appended to every generated agent file under a `## Project-Specific Context` heading

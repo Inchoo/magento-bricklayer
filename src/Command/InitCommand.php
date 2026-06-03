@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,17 +22,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Generates .bricklayer.json configuration file with smart defaults.
  */
+#[AsCommand(
+    name: 'init',
+    description: 'Generate .bricklayer.json configuration file'
+)]
 class InitCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'init';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Generate .bricklayer.json configuration file';
 
     protected function configure(): void
     {

@@ -14,6 +14,7 @@ use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Mcp\McpServerFactory;
 use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -25,10 +26,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Post-install verification that checks all Bricklayer components are correctly
  * configured and operational. Runs a checklist and reports pass/warn/fail for each item.
  */
+#[AsCommand(
+    name: 'verify',
+    description: 'Verify Bricklayer installation and configuration'
+)]
 class VerifyCommand extends Command
 {
-    protected static $defaultName = 'verify';
-    protected static $defaultDescription = 'Verify Bricklayer installation and configuration';
 
     /** @var array<array{name: string, status: string, message: string}> */
     private array $results = [];

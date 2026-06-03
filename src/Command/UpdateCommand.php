@@ -11,6 +11,7 @@ namespace Inchoo\MagentoBricklayer\Command;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Guidelines\GuidelinesCompiler;
 use Inchoo\MagentoBricklayer\Mcp\Tool\SearchTools;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,17 +23,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Regenerates agent configuration files.
  */
+#[AsCommand(
+    name: 'update',
+    description: 'Regenerate agent configuration files'
+)]
 class UpdateCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected static $defaultName = 'update';
-
-    /**
-     * @var string
-     */
-    protected static $defaultDescription = 'Regenerate agent configuration files';
 
     /**
      * @return void
