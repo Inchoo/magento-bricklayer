@@ -189,6 +189,50 @@ public function getById(int $id): EntityInterface
 }
 ```
 
+## Constants as Final Classes
+
+Group related constants in `final class` instead of scattering them across interfaces or using hardcoded strings:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Vendor\Module\Model\Enum;
+
+final class EntityStatus
+{
+    public const ACTIVE = 1;
+    public const INACTIVE = 0;
+}
+
+final class Availability
+{
+    public const ALL_CUSTOMERS = '0';
+    public const LOGGED_IN = '1';
+    public const COMPANY_ONLY = '2';
+    public const ALL = [self::ALL_CUSTOMERS, self::LOGGED_IN, self::COMPANY_ONLY];
+}
+```
+
+Usage:
+
+```php
+// Instead of: if ($status === 1)
+if ($status === EntityStatus::ACTIVE) { ... }
+
+// Validation:
+if (!in_array($value, Availability::ALL, true)) {
+    throw new InputException(__('Invalid availability value.'));
+}
+```
+
+**Why `final class` instead of interface constants:**
+- Interface should define method contracts, not enum values
+- `final` prevents meaningless inheritance
+- `ALL` array constant enables validation
+- Single location for all related values
+
 ## Magento Framework Property Exceptions
 
 Some Magento framework properties require underscore-prefixed names. These are the ONLY acceptable exceptions to the "no underscore prefix" rule:

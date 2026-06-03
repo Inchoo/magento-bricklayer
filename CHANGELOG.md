@@ -1,3 +1,10 @@
+# 1.14.2
+* **New guideline: Pool pattern** (`patterns/pool.md`) — DI-based strategy resolution with extensible array injection, replacing if/else branching on type identifiers. Covers implementation, third-party extensibility, and chain of responsibility with sortOrder.
+* **New guideline: Value Object / DTO** (`patterns/value-object.md`) — Immutable data carriers with `public readonly` properties, `fromJson()`/`toJson()` serialization for JSON columns, and comparison with Data Interfaces.
+* **New guideline: Context Object** (`patterns/context-object.md`) — Bundling repeated request-scoped parameters (customerId, storeId, currencyCode) into a single immutable object with a Builder.
+* **Updated: Plugin pattern** (`patterns/plugin.md`) — Added "Plugin Chain on Repositories" section showing how to chain multiple `beforeSave` plugins with sortOrder for cross-cutting concerns (validation, timestamps, encryption).
+* **Updated: Coding Standards** (`core/coding-standards-quality.md`) — Added "Constants as Final Classes" section for grouping enum-like constants in `final class` instead of interfaces.
+
 # 1.14.1
 * Added Symfony Console 7 compatibility
 
