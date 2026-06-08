@@ -6,6 +6,29 @@ Any file the project places under `.bricklayer/` at the Magento root is picked u
 
 ## Directory Layout
 
+**Every entry is optional.** Bricklayer scans for whatever exists and ignores the rest — there is no required file and no manifest. `bricklayer init` creates the empty `.bricklayer/` directory; you add only the pieces you need, and create subdirectories yourself on first use.
+
+### Minimal (the common case)
+
+Most projects only ever use two things: a project map and a few skills documenting their custom code. This is the shape of a typical real-world `.bricklayer/`:
+
+```
+{magento_root}/
+└── .bricklayer/
+    ├── project-context.md              # Project map appended to every generated agent file
+    └── skills/
+        ├── erp-integration/
+        │   └── SKILL.md                # NEW category → development-context category=erp-integration
+        ├── company-conventions/
+        │   └── SKILL.md                # NEW category → development-context category=company-conventions
+        └── vendor-theme-stack/
+            └── SKILL.md                # NEW category → development-context category=vendor-theme-stack
+```
+
+No `guidelines/` and no `decision-matrix.md` are present here — and that is fine. They are advanced extras, not requirements.
+
+### Full (every feature)
+
 ```
 {magento_root}/
 └── .bricklayer/
@@ -31,7 +54,34 @@ Any file the project places under `.bricklayer/` at the Magento root is picked u
 
 Free-form markdown that `bricklayer update` appends verbatim to every regenerated agent file under a `## Project-Specific Context` heading. Empty or missing files produce no section.
 
-Use it for project-wide context agents should always know — e.g. "This store uses a custom ERP sync queue, prefer async writes when touching orders."
+In practice this is a **project map** — the orientation an agent needs before touching anything, expressed as compact prose and tables. A useful `project-context.md` covers:
+
+- **What the store is** — brand, markets/store views, a one-line summary.
+- **Frontend stack** — Hyvä vs Luma, theme inheritance chain and where each theme lives (`app/design/...`, `vendor/...`).
+- **Key custom modules** — vendor vs local (`app/code`), what each owns, and which to reach for.
+- **Integrations** — ERPs, payment/shipping providers, queues, and the modules that wrap them.
+- **House rules** — conventions that deviate from Magento defaults (async writes, scope assumptions, naming).
+
+```markdown
+# Project Context — acme-store
+
+Magento 2 storefront for **Acme** (DE + AT). Luma-based custom theme stack.
+
+## Frontend
+
+| Theme | Parent | Location |
+|---|---|---|
+| `Acme/storefront` | `Vendor/base` | `app/design/frontend/Acme/storefront` |
+
+## Key modules
+
+| Module | Location | Role |
+|---|---|---|
+| `Vendor_ErpSync` | vendor | Pulls order status from ERP via cron |
+| `Acme_ErpStock` | `app/code/Acme/ErpStock` | Local stock pull, reuses Vendor's client |
+```
+
+Keep it current — it is regenerated into the agent file on every `bricklayer update`, so the agent always sees the latest map.
 
 ### `.bricklayer/decision-matrix.md`
 
@@ -51,27 +101,41 @@ A mirror of `config/guidelines/` inside the package. Files here either override 
 
 ### `.bricklayer/skills/`
 
-A mirror of `config/skills/`. Same override/addition semantics as guidelines, but applied per skill directory.
+A mirror of `config/skills/`. Same override/addition semantics as guidelines, but applied per skill directory (`{category}/SKILL.md`).
 
-- **Override** (`.bricklayer/skills/plugin/SKILL.md`) — replaces the bundled skill content wherever `development-context category=plugin` would otherwise load it.
-- **Addition** (`.bricklayer/skills/csp-scripts/SKILL.md`) — the directory name becomes a new callable category: `development-context category=csp-scripts`. It also appears in the CLAUDE.md categories table under a **Project-specific** group, and in `search-docs` results prefixed with `[Project]`.
+- **Override** (`.bricklayer/skills/plugin/SKILL.md`) — the directory name matches a bundled category, so it replaces the bundled skill content wherever `development-context category=plugin` would otherwise load it.
+- **Addition** (`.bricklayer/skills/erp-integration/SKILL.md`) — the directory name has no bundled equivalent, so it becomes a **new callable category**: `development-context category=erp-integration`. It also appears in the CLAUDE.md categories table under a **Project-specific** group, and in `search-docs` results with a `source: local` field.
+
+**This is the main reason to use `.bricklayer/`.** Local-only skills are how you teach an agent about code that isn't in the bundled library — a custom ERP/e-invoicing integration, a vendor + local-override module pair, payment quirks, company/house conventions. One skill directory per concern, each callable on demand. The `SKILL.md` body is the deep documentation; write it the way you'd brief a new developer: which modules, where they live, how the data flows, what to load before touching them.
+
+The category name (directory name) is what the agent types, so keep it short and kebab-case (`erp-integration`, not `Our ERP Integration`).
 
 ## Optional SKILL.md Frontmatter
 
-Local SKILL.md files may start with a small YAML frontmatter block for richer display names and descriptions. The block is stripped before the content is handed to an agent.
+Local SKILL.md files may start with a small YAML frontmatter block. The block is stripped before the content is handed to an agent.
 
 ```markdown
 ---
-name: CSP Scripts
-description: Patterns for managing Content Security Policy inline scripts in Magento 2.
+name: ERP integration
+description: Two-module stack — Vendor_ErpSync pulls order status from the ERP via cron; Acme_ErpStock adds a local stock pull reusing the vendor client. Default-scope only. Load before touching either module.
+type: skill
 ---
 
-# CSP Scripts
+# ERP integration
 
 ...skill content...
 ```
 
-Only `name` and `description` keys are consumed — any other keys are ignored. Files without frontmatter fall back to the directory name as display name.
+What each key does:
+
+| Key | Effect | Fallback if absent |
+|-----|--------|--------------------|
+| `name` | Display name in `search-docs` results | Title-cased directory name (`erp-integration` → `Erp Integration`) |
+| `description` | Shown as the category's row in the CLAUDE.md categories table **and** tokenized into search keywords for `search-docs` / `development-context category=list` | Falls back to the display name |
+
+Only `name` and `description` are read — **any other keys (like `type:`) are silently ignored**, so a richer block from another tool causes no harm. Files without frontmatter still work; they just fall back to the directory name.
+
+> **Write a real `description`.** Its words become the search keywords that let an agent *discover* the skill via `search-docs` before it knows the category exists. A vague one-liner is hard to find; a specific sentence naming the modules, ERP, and scope is easy to surface. The `description` must be a **single line** — only the first line after `description:` is parsed, so don't wrap it across multiple lines.
 
 ## Workflow
 
