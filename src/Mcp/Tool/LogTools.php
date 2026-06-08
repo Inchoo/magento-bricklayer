@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -12,6 +13,7 @@ use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ReadsLogFiles;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -24,17 +26,7 @@ class LogTools
     use ChecksConfig;
     use ReadsLogFiles;
     use RequiresMagento;
-
-    /**
-     * Available Magento log files
-     */
-    private const LOG_FILES = [
-        'system' => 'var/log/system.log',
-        'exception' => 'var/log/exception.log',
-        'debug' => 'var/log/debug.log',
-        'cron' => 'var/log/cron.log',
-        'support_report' => 'var/log/support_report.log',
-    ];
+    use RespondsWithErrors;
 
     /**
      * Read, list, search, or analyze Magento logs.
@@ -113,25 +105,25 @@ class LogTools
             // proceed with parameter default
         }
 
-        if (!isset(self::LOG_FILES[$logType])) {
+        if (!isset(self::logFiles()[$logType])) {
             return [
                 'error' => true,
                 'message' => sprintf(
                     'Invalid log type "%s". Available: %s',
                     $logType,
-                    implode(', ', array_keys(self::LOG_FILES))
+                    implode(', ', array_keys(self::logFiles()))
                 ),
             ];
         }
 
         try {
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
-            $logPath = $magentoRoot . '/' . self::LOG_FILES[$logType];
+            $logPath = $magentoRoot . '/' . self::logFiles()[$logType];
 
             if (!file_exists($logPath)) {
                 return [
                     'log_type' => $logType,
-                    'file' => self::LOG_FILES[$logType],
+                    'file' => self::logFiles()[$logType],
                     'exists' => false,
                     'entries' => [],
                 ];
@@ -154,30 +146,18 @@ class LogTools
 
             // Limit to requested number
             $parsedEntries = array_slice($parsedEntries, -$lines);
-
-            // Apply truncation if max_entry_length is set
-            if ($max_entry_length > 0) {
-                foreach ($parsedEntries as &$entry) {
-                    if (isset($entry['message']) && strlen($entry['message']) > $max_entry_length) {
-                        $truncated = $this->truncateText($entry['message'], $max_entry_length);
-                        $entry['message'] = $truncated['text'];
-                        $entry['truncated'] = true;
-                        $entry['original_length'] = $truncated['original_length'];
-                    }
-                }
-                unset($entry);
-            }
+            $parsedEntries = $this->truncateEntries($parsedEntries, $max_entry_length);
 
             return [
                 'log_type' => $logType,
-                'file' => self::LOG_FILES[$logType],
+                'file' => self::logFiles()[$logType],
                 'exists' => true,
                 'filter' => $filter ?: null,
                 'total_entries' => count($parsedEntries),
                 'entries' => $parsedEntries,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -195,38 +175,36 @@ class LogTools
             $logs = [];
 
             // Check predefined logs
-            foreach (self::LOG_FILES as $type => $relativePath) {
+            foreach (self::logFiles() as $type => $relativePath) {
                 $path = $magentoRoot . '/' . $relativePath;
                 if (file_exists($path)) {
-                    $logs[] = [
-                        'type' => $type,
-                        'file' => $relativePath,
-                        'size' => filesize($path),
-                        'size_human' => $this->formatFileSize(filesize($path)),
-                        'modified' => date('Y-m-d H:i:s', filemtime($path)),
-                    ];
+                    $entry = $this->buildLogEntry($type, $relativePath, $path);
+                    if ($entry !== null) {
+                        $logs[] = $entry;
+                    }
                 }
             }
 
             // Find additional log files
             if (is_dir($logDir)) {
-                $files = glob($logDir . '/*.log');
+                $files = glob($logDir . '/*.log') ?: [];
                 foreach ($files as $file) {
                     $filename = basename($file);
                     $relativePath = 'var/log/' . $filename;
 
                     // Skip if already in predefined list
-                    if (in_array($relativePath, self::LOG_FILES)) {
+                    if (in_array($relativePath, self::logFiles())) {
                         continue;
                     }
 
-                    $logs[] = [
-                        'type' => pathinfo($filename, PATHINFO_FILENAME),
-                        'file' => $relativePath,
-                        'size' => filesize($file),
-                        'size_human' => $this->formatFileSize(filesize($file)),
-                        'modified' => date('Y-m-d H:i:s', filemtime($file)),
-                    ];
+                    $entry = $this->buildLogEntry(
+                        pathinfo($filename, PATHINFO_FILENAME),
+                        $relativePath,
+                        $file
+                    );
+                    if ($entry !== null) {
+                        $logs[] = $entry;
+                    }
                 }
             }
 
@@ -239,8 +217,34 @@ class LogTools
                 'logs' => $logs,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Build a log file entry array from file stat; returns null if stat fails.
+     *
+     * Guards against filesize()/filemtime() returning false (TOCTOU race or
+     * inaccessible file) to prevent TypeError under strict_types.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function buildLogEntry(string $type, string $relativePath, string $absolutePath): ?array
+    {
+        $size = @filesize($absolutePath);
+        $mtime = @filemtime($absolutePath);
+
+        if ($size === false || $mtime === false) {
+            return null;
+        }
+
+        return [
+            'type' => $type,
+            'file' => $relativePath,
+            'size' => $size,
+            'size_human' => $this->formatFileSize($size),
+            'modified' => date('Y-m-d H:i:s', $mtime),
+        ];
     }
 
     /**
@@ -261,7 +265,7 @@ class LogTools
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
             $results = [];
 
-            foreach (self::LOG_FILES as $type => $relativePath) {
+            foreach (self::logFiles() as $type => $relativePath) {
                 $path = $magentoRoot . '/' . $relativePath;
                 if (!file_exists($path)) {
                     continue;
@@ -281,19 +285,7 @@ class LogTools
 
                 if (!empty($matches)) {
                     $limitedMatches = array_slice($matches, -$maxResults);
-
-                    // Apply truncation if max_entry_length is set
-                    if ($max_entry_length > 0) {
-                        foreach ($limitedMatches as &$match) {
-                            if (isset($match['message']) && strlen($match['message']) > $max_entry_length) {
-                                $truncated = $this->truncateText($match['message'], $max_entry_length);
-                                $match['message'] = $truncated['text'];
-                                $match['truncated'] = true;
-                                $match['original_length'] = $truncated['original_length'];
-                            }
-                        }
-                        unset($match);
-                    }
+                    $limitedMatches = $this->truncateEntries($limitedMatches, $max_entry_length);
 
                     $results[$type] = [
                         'file' => $relativePath,
@@ -305,11 +297,11 @@ class LogTools
 
             return [
                 'query' => $query,
-                'files_searched' => count(self::LOG_FILES),
+                'files_searched' => count(self::logFiles()),
                 'results' => $results,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -319,24 +311,26 @@ class LogTools
      * Public so it can be called from DiagnosticTools without being a registered MCP tool.
      *
      * @param int $hours Analyze entries from the last N hours
+     * @param string $source Log file source key (system, exception, debug, cron); defaults to 'exception'
      * @return array<string, mixed> Error analysis
      */
-    public function analyzeExceptionLog(int $hours): array
+    public function analyzeExceptionLog(int $hours, string $source = 'exception'): array
     {
-        return $this->performAnalyze($hours);
+        return $this->performAnalyze($hours, $source);
     }
 
     /**
      * Analyzes exception log for error patterns (internal implementation).
      *
      * @param int $hours Analyze entries from the last N hours
+     * @param string $source Log file source key (system, exception, debug, cron); defaults to 'exception'
      * @return array<string, mixed> Error analysis
      */
-    private function performAnalyze(int $hours): array
+    private function performAnalyze(int $hours, string $source = 'exception'): array
     {
         try {
             $magentoRoot = MagentoBootstrap::getMagentoRoot();
-            $logPath = $magentoRoot . '/' . self::LOG_FILES['exception'];
+            $logPath = $magentoRoot . '/' . (self::logFiles()[$source] ?? self::logFiles()['exception']);
 
             if (!file_exists($logPath)) {
                 return [
@@ -396,7 +390,7 @@ class LogTools
                 'recent_unique_errors' => $uniqueErrors,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

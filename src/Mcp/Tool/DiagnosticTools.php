@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -11,7 +12,10 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ReadsLogFiles;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresValidVerbosity;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic\ExceptionParser;
+use Inchoo\MagentoBricklayer\Mcp\Tool\TimeUnits;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -25,16 +29,8 @@ class DiagnosticTools
 {
     use ReadsLogFiles;
     use RequiresMagento;
-
-    /**
-     * Log file sources mapped to their relative paths.
-     */
-    private const LOG_FILES = [
-        'exception' => 'var/log/exception.log',
-        'system' => 'var/log/system.log',
-        'debug' => 'var/log/debug.log',
-        'cron' => 'var/log/cron.log',
-    ];
+    use RequiresValidVerbosity;
+    use RespondsWithErrors;
 
     /**
      * Known Magento error patterns with regex, category, relevant caches, and suggestions.
@@ -347,7 +343,6 @@ class DiagnosticTools
     private DevelopmentTools $devTools;
     private ConfigurationTools $configTools;
     private ModuleTools $moduleTools;
-    private ApplicationTools $appTools;
     private ExceptionParser $exceptionParser;
 
     public function __construct()
@@ -356,7 +351,6 @@ class DiagnosticTools
         $this->devTools = new DevelopmentTools();
         $this->configTools = new ConfigurationTools();
         $this->moduleTools = new ModuleTools();
-        $this->appTools = new ApplicationTools();
         $this->exceptionParser = new ExceptionParser();
     }
 
@@ -388,12 +382,12 @@ class DiagnosticTools
         string $pattern = '',
         string $verbosity = 'standard'
     ): array {
-        if ($error = $this->requireMagento()) {
+        if ($error = $this->requireValidVerbosity($verbosity)) {
             return $error;
         }
 
-        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
-            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -407,7 +401,10 @@ class DiagnosticTools
 
             if (file_exists($logPath)) {
                 $rawLines = $this->readLastLines($logPath, 5000);
-                $exceptions = $this->exceptionParser->parse($rawLines, $since, $pattern);
+                $exceptions = $this->tagSource(
+                    $this->exceptionParser->parse($rawLines, $since, $pattern),
+                    $source
+                );
             }
 
             // FALLBACK — try additional sources when the primary log has no match at $index.
@@ -415,7 +412,7 @@ class DiagnosticTools
             // var/report catches errors that Magento's Bootstrap::terminate() handles
             // without logging (e.g., TypeError and other \Error subclasses in developer mode).
             $fallbackSources = $source === 'exception'
-                ? ['system' => self::LOG_FILES['system'], 'var/report' => null]
+                ? ['system' => self::logFiles()['system'], 'var/report' => null]
                 : ['var/report' => null];
 
             foreach ($fallbackSources as $fallbackName => $fallbackFile) {
@@ -438,6 +435,7 @@ class DiagnosticTools
                     continue;
                 }
 
+                $additional = $this->tagSource($additional, $fallbackName);
                 $searchedSources[] = $fallbackName;
                 $exceptions = array_merge($exceptions, $additional);
                 $this->sortByTimestampDescending($exceptions);
@@ -496,15 +494,9 @@ class DiagnosticTools
                 'generated_code_age' => $this->getGeneratedCodeAge($magentoRoot),
             ];
 
-            // 6. GATHER HISTORY
-            $analysisHours = $this->sinceToHours($since);
-            $analysis = $this->logTools->analyzeExceptionLog($analysisHours);
-
-            $history = [
-                'total_errors_in_period' => $analysis['total_errors'] ?? 0,
-                'error_types' => array_slice($analysis['error_types'] ?? [], 0, 5, true),
-                'this_error_count' => $this->countMatchingErrors($analysis, $error),
-            ];
+            // 6. GATHER HISTORY — count occurrences in the log the matched error came from,
+            // not always the requested $source (the error may have come from a fallback log).
+            $history = $this->buildHistory($error, $source, $this->sinceToHours($since));
 
             // 7. MATCH PATTERN + BUILD SUGGESTIONS
             $matched = $this->matchPattern($error);
@@ -569,7 +561,7 @@ class DiagnosticTools
                         'message' => $diagnosis['error']['message'] ?? null,
                     ],
                     'category' => $diagnosis['category'] ?? null,
-                    'suggestions' => array_slice($diagnosis['suggestions'] ?? [], 0, 1),
+                    'suggestions' => array_slice($diagnosis['suggestions'], 0, 1),
                 ];
                 if (isset($diagnosis['_hint'])) {
                     $minimal['_hint'] = $diagnosis['_hint'];
@@ -585,7 +577,7 @@ class DiagnosticTools
             $diagnosis['verbosity'] = 'standard';
             return $diagnosis;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -594,7 +586,7 @@ class DiagnosticTools
      */
     private function resolveLogFile(string $source): string
     {
-        return self::LOG_FILES[$source] ?? self::LOG_FILES['exception'];
+        return self::logFiles()[$source] ?? self::logFiles()['exception'];
     }
 
     /**
@@ -744,15 +736,7 @@ class DiagnosticTools
      */
     private function sinceToHours(string $since): int
     {
-        if (preg_match('/^(\d+)([mhd])$/', $since, $m)) {
-            return match ($m[2]) {
-                'm' => max(1, (int) ceil((int) $m[1] / 60)),
-                'h' => (int) $m[1],
-                'd' => (int) $m[1] * 24,
-                default => 1,
-            };
-        }
-        return 1;
+        return TimeUnits::toHours($since) ?? 1;
     }
 
     /**
@@ -761,6 +745,60 @@ class DiagnosticTools
      * @param array<string, mixed> $analysis
      * @param array<string, mixed> $error
      */
+    /**
+     * Tag each parsed exception with the log source it was read from, so the history
+     * step can count occurrences in the correct log. Does not overwrite an existing tag
+     * (preserves the earliest source through later merges/sorts).
+     *
+     * @param array<int, array<string, mixed>> $exceptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function tagSource(array $exceptions, string $sourceName): array
+    {
+        foreach ($exceptions as &$exception) {
+            if (is_array($exception) && !isset($exception['_diag_source'])) {
+                $exception['_diag_source'] = $sourceName;
+            }
+        }
+        unset($exception);
+
+        return $exceptions;
+    }
+
+    /**
+     * Build the occurrence-history block for the matched error.
+     *
+     * Counts occurrences in the log the error actually came from (its tagged source),
+     * not always the requested $requestedSource. Sources without an aggregate log file
+     * (e.g. 'var/report', where developer-mode \Error subclasses surface) have no
+     * countable history, so it is reported as unavailable rather than backfilled with
+     * counts from an unrelated log.
+     *
+     * @param array<string, mixed> $error
+     * @return array<string, mixed>
+     */
+    private function buildHistory(array $error, string $requestedSource, int $analysisHours): array
+    {
+        $matchedSource = $error['_diag_source'] ?? $requestedSource;
+        if (!is_string($matchedSource) || !isset(self::logFiles()[$matchedSource])) {
+            return [
+                'available' => false,
+                'source' => is_string($matchedSource) ? $matchedSource : $requestedSource,
+                'reason' => 'No aggregate log for this source; occurrence history is unavailable.',
+            ];
+        }
+
+        $analysis = $this->logTools->analyzeExceptionLog($analysisHours, $matchedSource);
+
+        return [
+            'available' => true,
+            'source' => $matchedSource,
+            'total_errors_in_period' => $analysis['total_errors'] ?? 0,
+            'error_types' => array_slice($analysis['error_types'] ?? [], 0, 5, true),
+            'this_error_count' => $this->countMatchingErrors($analysis, $error),
+        ];
+    }
+
     private function countMatchingErrors(array $analysis, array $error): int
     {
         $errorClass = $error['class'] ?? '';

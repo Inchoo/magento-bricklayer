@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento plugins (interceptors).
  */
-class PluginPrompts
+class PluginPrompts extends AbstractPrompt
 {
     /**
      * Creates a before plugin.
@@ -36,12 +37,7 @@ class PluginPrompts
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a before plugin:
 
 **Module:** {$moduleName}
@@ -79,10 +75,7 @@ di.xml configuration:
             sortOrder="10"/>
 </type>
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -106,12 +99,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create an after plugin:
 
 **Module:** {$moduleName}
@@ -147,10 +135,7 @@ Common patterns:
 - Filtering/transforming return arrays
 - Wrapping return values
 - Logging return values
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -174,12 +159,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create an around plugin:
 
 **Module:** {$moduleName}
@@ -226,10 +206,7 @@ Use cases for around plugins:
 
 WARNING: Around plugins have performance overhead.
 Prefer before/after plugins when possible.
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -253,12 +230,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a comprehensive plugin for {$targetClass}:
 
 **Module:** {$moduleName}
@@ -287,9 +259,6 @@ Best practices to follow:
 - Don't create infinite loops by calling subject methods
 - Consider sort order for multiple plugins
 - Document any assumptions about original method behavior
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 }

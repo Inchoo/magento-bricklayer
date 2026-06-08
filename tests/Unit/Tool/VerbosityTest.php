@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -31,14 +32,12 @@ class VerbosityTest extends TestCase
 
     public function testListModulesRejectsInvalidVerbosity(): void
     {
-        // Without Magento bootstrap, the initialization check fires first.
-        // Verify via reflection that the validation logic exists in the method body.
-        $method = new \ReflectionMethod(ModuleTools::class, 'listModules');
-        $file = file_get_contents($method->getFileName());
-        $this->assertStringContainsString(
-            "if (!in_array(\$verbosity, ['minimal', 'standard', 'detailed'], true))",
-            $file
-        );
+        // Verbosity is pure input validation and runs before the Magento bootstrap check,
+        // so an invalid value is rejected without a live Magento install.
+        $result = (new ModuleTools())->listModules(verbosity: 'bogus');
+
+        $this->assertTrue($result['error'] ?? false, 'invalid verbosity must return an error envelope');
+        $this->assertStringContainsString('verbosity', $result['message'] ?? '');
     }
 
     public function testGetEavAttributesVerbosityParameterExists(): void

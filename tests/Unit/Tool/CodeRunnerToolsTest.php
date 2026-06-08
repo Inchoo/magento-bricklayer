@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -24,6 +25,35 @@ class CodeRunnerToolsTest extends TestCase
     protected function setUp(): void
     {
         $this->runner = new CodeRunnerTools();
+    }
+
+    // ─── PsySH execution path ───
+
+    /**
+     * Regression: PsySH must actually execute code and return the value. Previously
+     * executeWithPsySH() constructed a Shell without setting an output, so
+     * Shell::execute() threw "Typed property Psy\Shell::$output must not be accessed
+     * before initialization" and code-runner silently fell back to eval while reporting
+     * "PsySH not available" (contradicting verify, which detects PsySH as available).
+     */
+    public function testRunPsyshExecutesCodeAndReturnsValue(): void
+    {
+        if (!class_exists(\Psy\Shell::class)) {
+            $this->markTestSkipped('PsySH not installed');
+        }
+
+        $method = new \ReflectionMethod(CodeRunnerTools::class, 'runPsysh');
+        $method->setAccessible(true);
+
+        // Empty scope vars → no Magento bootstrap needed for plain arithmetic.
+        $result = $method->invoke($this->runner, 'return 6 * 7;', 'execute', []);
+
+        $this->assertTrue(
+            $result['success'],
+            'PsySH path must succeed; error: ' . json_encode($result['error'] ?? null)
+        );
+        $this->assertSame('psysh', $result['runtime']);
+        $this->assertSame(42, $result['return']);
     }
 
     // ─── Validation: existing dangerous patterns ───
@@ -325,6 +355,88 @@ class CodeRunnerToolsTest extends TestCase
         $this->assertCount(9, $patterns, 'Should have 9 dangerous patterns (6 original + 3 new)');
     }
 
+    // ─── B3: Production fail-closed guard ───
+
+    public function testItBlocksCodeRunnerWhenDeployModeCannotBeDetermined(): void
+    {
+        if (\Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap::isInitialized()) {
+            $this->markTestSkipped('Magento is initialized — cannot test "cannot determine mode" path.');
+        }
+
+        // isProductionMode() is private in the trait; access via reflection on the runner.
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $method = $ref->getMethod('isProductionMode');
+        $result = $method->invoke($this->runner);
+
+        // Without a Magento bootstrap, getMode() throws, so isProductionMode() must return true (fail-closed).
+        $this->assertTrue($result, 'isProductionMode() must return true (fail-closed) when mode cannot be determined');
+    }
+
+    public function testItDoesNotAllowAConfigFlagToBypassTheProductionBlockForCodeRunner(): void
+    {
+        // Read the source of CodeRunnerTools::execute and assert the guard uses isProductionMode()
+        // as an actual method call — NOT requireNonProduction() which has a config escape hatch.
+        // The old (buggy) code had an inline try/catch that fell through on Throwable (fail-open).
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $method = $ref->getMethod('execute');
+        $startLine = $method->getStartLine();
+        $endLine = $method->getEndLine();
+
+        $fileName = $ref->getFileName();
+        $this->assertIsString($fileName, 'Could not determine source file path for CodeRunnerTools');
+        $lines = file($fileName);
+        $this->assertIsArray($lines, 'Could not read source file for CodeRunnerTools');
+        $body = implode('', array_slice($lines, $startLine - 1, $endLine - $startLine + 1));
+
+        // Must call $this->isProductionMode() — not just mention it in a comment
+        $this->assertMatchesRegularExpression(
+            '/\$this\s*->\s*isProductionMode\s*\(\s*\)/',
+            $body,
+            'execute() must call $this->isProductionMode() as the production guard'
+        );
+        $this->assertStringNotContainsString(
+            'requireNonProduction',
+            $body,
+            'execute() must NOT use requireNonProduction() — it has a config escape hatch that bypasses the hard block'
+        );
+        // The fail-open catch pattern must be gone
+        $this->assertStringNotContainsString(
+            'Cannot determine deploy mode — proceed',
+            $body,
+            'The misleading fail-open comment must be removed'
+        );
+    }
+
+    // ─── B12: formatArray off-by-one ───
+
+    public function testItTruncatesAFormattedArrayAtExactly100Items(): void
+    {
+        $input = array_fill(0, 150, 'x');
+
+        $result = $this->invokeFormatArray($input);
+
+        // Remove the __truncated__ marker to count real items
+        $marker = $result['__truncated__'] ?? null;
+        unset($result['__truncated__']);
+
+        $this->assertNotNull($marker, '__truncated__ marker must be present for arrays > 100 items');
+        $this->assertCount(100, $result, 'formatArray must keep exactly 100 items (not 101)');
+    }
+
+    public function testItReportsTheTruncationCountMatchingTheItemsActuallyKept(): void
+    {
+        $input = array_fill(0, 150, 'x');
+
+        $result = $this->invokeFormatArray($input);
+
+        $this->assertArrayHasKey('__truncated__', $result);
+        $this->assertStringContainsString('100', $result['__truncated__'], 'Truncation marker must mention "100"');
+
+        // The kept items count must equal 100
+        $kept = count($result) - 1; // subtract __truncated__ entry
+        $this->assertEquals(100, $kept, 'Items kept must equal what the marker says (100)');
+    }
+
     /**
      * Invoke the private validateCode method via reflection.
      */
@@ -334,5 +446,20 @@ class CodeRunnerToolsTest extends TestCase
         $method = $ref->getMethod('validateCode');
 
         return $method->invoke($this->runner, $code);
+    }
+
+    /**
+     * Invoke the private formatArray method via reflection.
+     *
+     * @param array<mixed> $input
+     * @return array<mixed>
+     */
+    private function invokeFormatArray(array $input): array
+    {
+        $ref = new \ReflectionClass(CodeRunnerTools::class);
+        $method = $ref->getMethod('formatArray');
+
+        /** @var array<mixed> */
+        return $method->invoke($this->runner, $input);
     }
 }

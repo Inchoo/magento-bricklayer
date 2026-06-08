@@ -18,6 +18,15 @@ class TruncationTest extends TestCase
             {
                 return $this->truncateText($text, $maxLength);
             }
+
+            /**
+             * @param array<int, array<string, mixed>> $entries
+             * @return array<int, array<string, mixed>>
+             */
+            public function callTruncateEntries(array $entries, int $maxEntryLength): array
+            {
+                return $this->truncateEntries($entries, $maxEntryLength);
+            }
         };
     }
 
@@ -61,5 +70,89 @@ class TruncationTest extends TestCase
         $result = $this->reader->testTruncate($text, 100);
         $this->assertFalse($result['truncated']);
         $this->assertEquals($text, $result['text']);
+    }
+
+    public function testItReturnsTruncatedTextNoLongerThanTheMaxLength(): void
+    {
+        $maxLength = 500;
+        $longText = str_repeat('a', 2000);
+        /** @phpstan-ignore-next-line */
+        $result = $this->reader->testTruncate($longText, $maxLength);
+
+        $this->assertTrue($result['truncated']);
+        $this->assertLessThanOrEqual($maxLength, strlen($result['text']));
+    }
+
+    public function testItKeepsHeadAndTailWithinTheMaxLengthBudgetForSmallCaps(): void
+    {
+        $maxLength = 50;
+        $longText = str_repeat('b', 200);
+        /** @phpstan-ignore-next-line */
+        $result = $this->reader->testTruncate($longText, $maxLength);
+
+        $this->assertTrue($result['truncated']);
+        $this->assertLessThanOrEqual($maxLength, strlen($result['text']));
+    }
+
+    /**
+     * B11: output must never exceed maxLength even when the cap is smaller than the
+     * descriptive separator, and even when the tail budget rounds down to zero
+     * (a naive substr($text, -0) would otherwise return the whole string).
+     *
+     * @dataProvider smallCapProvider
+     */
+    public function testItNeverExceedsMaxLengthForAnyCap(int $maxLength): void
+    {
+        $longText = str_repeat('z', 200);
+        /** @phpstan-ignore-next-line */
+        $result = $this->reader->testTruncate($longText, $maxLength);
+
+        $this->assertTrue($result['truncated']);
+        $this->assertLessThanOrEqual(
+            $maxLength,
+            strlen($result['text']),
+            "truncated output exceeded maxLength={$maxLength}"
+        );
+    }
+
+    public function testTruncateEntriesLeavesEntriesUnchangedWhenNoLimit(): void
+    {
+        $entries = [['message' => str_repeat('a', 500)], ['message' => 'short']];
+        /** @phpstan-ignore-next-line */
+        $result = $this->reader->callTruncateEntries($entries, 0);
+
+        $this->assertSame($entries, $result);
+    }
+
+    public function testTruncateEntriesTruncatesOnlyOversizeMessages(): void
+    {
+        $entries = [
+            ['message' => str_repeat('a', 500)],
+            ['message' => 'short message'],
+            ['level' => 'ERROR'], // no 'message' key — must be left intact
+        ];
+        /** @phpstan-ignore-next-line */
+        $result = $this->reader->callTruncateEntries($entries, 100);
+
+        // Oversize entry truncated + flagged
+        $this->assertTrue($result[0]['truncated']);
+        $this->assertSame(500, $result[0]['original_length']);
+        $this->assertLessThanOrEqual(100, strlen($result[0]['message']));
+        // Short entry untouched
+        $this->assertSame('short message', $result[1]['message']);
+        $this->assertArrayNotHasKey('truncated', $result[1]);
+        // No 'message' key — untouched
+        $this->assertSame(['level' => 'ERROR'], $result[2]);
+    }
+
+    /** @return array<string, array{int}> */
+    public static function smallCapProvider(): array
+    {
+        $caps = [1, 5, 10, 20, 30, 38, 39, 40, 41, 42, 45, 50, 60];
+        $out = [];
+        foreach ($caps as $c) {
+            $out["cap_{$c}"] = [$c];
+        }
+        return $out;
     }
 }

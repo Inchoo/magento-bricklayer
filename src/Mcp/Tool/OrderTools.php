@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -11,14 +12,19 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\PaginatesResults;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class OrderTools
 {
     use ChecksConfig;
     use FiltersFields;
+    use PaginatesResults;
     use RequiresMagento;
+    use RespondsWithErrors;
+
     #[McpTool(
         name: 'order-get',
         description: 'Get order by increment ID. Use fields to limit response.'
@@ -30,7 +36,7 @@ class OrderTools
         }
 
         if ($incrementId === '') {
-            return ['error' => true, 'message' => 'Order increment ID is required'];
+            return $this->errorResponse('Order increment ID is required');
         }
 
         try {
@@ -44,13 +50,13 @@ class OrderTools
             $orders = $orderRepository->getList($searchCriteria)->getItems();
 
             if (empty($orders)) {
-                return ['error' => true, 'message' => "Order not found: $incrementId"];
+                return $this->errorResponse("Order not found: $incrementId");
             }
 
             $order = reset($orders);
             return $this->formatOrderData($order, true, $fields);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -91,10 +97,7 @@ class OrderTools
             $result = $orderRepository->getList($searchCriteria);
 
             if ($count_only) {
-                return [
-                    'total' => $result->getTotalCount(),
-                    'count_only' => true,
-                ];
+                return $this->countOnlyResponse($result->getTotalCount());
             }
 
             $orders = [];
@@ -102,15 +105,9 @@ class OrderTools
                 $orders[] = $this->formatOrderData($order, false, $fields);
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $orders,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $orders);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -159,7 +156,7 @@ class OrderTools
                 'status' => $order->getStatus(),
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -191,7 +188,7 @@ class OrderTools
                 'message' => $result ? 'Order cancelled' : 'Failed to cancel order',
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -220,7 +217,7 @@ class OrderTools
                 'message' => 'Order placed on hold',
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -249,7 +246,7 @@ class OrderTools
                 'message' => 'Order released from hold',
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -279,7 +276,7 @@ class OrderTools
                 'captured' => $capture,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -308,7 +305,7 @@ class OrderTools
                 'order_id' => $orderId,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -340,7 +337,7 @@ class OrderTools
                 'order_id' => $orderId,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -387,9 +384,9 @@ class OrderTools
                 'items' => $items,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Order not found: $orderId"];
+            return $this->errorResponse("Order not found: $orderId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -428,9 +425,9 @@ class OrderTools
                 'comments' => $comments,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Order not found: $orderId"];
+            return $this->errorResponse("Order not found: $orderId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -477,15 +474,9 @@ class OrderTools
                 ];
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $invoices,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $invoices);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -540,15 +531,9 @@ class OrderTools
                 ];
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $shipments,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $shipments);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -595,9 +580,9 @@ class OrderTools
                 'track_number' => $trackNumber,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Shipment not found: $shipmentId"];
+            return $this->errorResponse("Shipment not found: $shipmentId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -646,15 +631,9 @@ class OrderTools
                 ];
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $creditmemos,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $creditmemos);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -698,5 +677,4 @@ class OrderTools
 
         return $this->filterFields($data, $fields);
     }
-
 }

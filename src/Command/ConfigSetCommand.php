@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -8,7 +9,6 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Command;
 
-use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Config\ConfigValidator;
@@ -16,7 +16,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -29,7 +28,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'config:set',
     description: 'Set a value in .bricklayer.json using dot-notation'
 )]
-class ConfigSetCommand extends Command
+class ConfigSetCommand extends AbstractBricklayerCommand
 {
     private const CONFIG_FILE = '.bricklayer.json';
 
@@ -70,6 +69,7 @@ class ConfigSetCommand extends Command
 
     protected function configure(): void
     {
+        parent::configure();
         $this
             ->addArgument(
                 'key',
@@ -80,12 +80,6 @@ class ConfigSetCommand extends Command
                 'value',
                 InputArgument::OPTIONAL,
                 'Value to set (true|false|null|integer|float|string|JSON). If omitted, the command prompts you.'
-            )
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
             )
             ->setHelp(<<<'HELP'
 The <info>%command.name%</info> command updates a single value in <comment>.bricklayer.json</comment>.
@@ -256,25 +250,6 @@ HELP
             $envKey,
             $envKey
         ));
-    }
-
-    private function resolveMagentoRoot(InputInterface $input, SymfonyStyle $io): ?string
-    {
-        $magentoRoot = $input->getOption('magento-root') ?? (new MagentoDetector())->detect();
-
-        if ($magentoRoot === null) {
-            $io->error('Could not detect Magento installation. Please specify --magento-root option.');
-            return null;
-        }
-
-        $magentoRoot = rtrim((string) $magentoRoot, '/\\');
-
-        if (!is_dir($magentoRoot)) {
-            $io->error("Directory does not exist: {$magentoRoot}");
-            return null;
-        }
-
-        return $magentoRoot;
     }
 
     /**

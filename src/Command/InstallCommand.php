@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -29,21 +30,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'install',
     description: 'Generate agent configuration files for AI tools integration'
 )]
-class InstallCommand extends Command
+class InstallCommand extends AbstractBricklayerCommand
 {
-
     /**
      * @return void
      */
     protected function configure(): void
     {
+        parent::configure();
         $this
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
-            )
             ->addOption(
                 'agents',
                 'a',
@@ -100,14 +95,12 @@ HELP
 
         $io->title('Magento Bricklayer Installation');
 
-        $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
-
+        $magentoRoot = $this->resolveMagentoRoot($input, $io);
         if ($magentoRoot === null) {
-            $io->error('Could not detect Magento installation. Please specify --magento-root option.');
             return Command::FAILURE;
         }
 
+        $detector = new MagentoDetector();
         if (!$detector->isValidMagentoRoot($magentoRoot)) {
             $io->error("Invalid Magento root: $magentoRoot");
             return Command::FAILURE;
@@ -128,14 +121,7 @@ HELP
         $envType = $input->getOption('env');
 
         if ($envType === null) {
-            $availableEnvTypes = [
-                'native' => 'Native (no containers)',
-                'ddev' => 'DDEV',
-                'hooli' => 'Hooli',
-                'warden' => 'Warden',
-                'docker-compose' => 'Docker Compose',
-                'docker' => 'Docker',
-            ];
+            $availableEnvTypes = $this->buildEnvTypeLabels();
 
             $choices = array_values($availableEnvTypes);
             $defaultLabel = $availableEnvTypes[$detectedEnvType] ?? $availableEnvTypes['native'];
@@ -161,13 +147,8 @@ HELP
 
         // If no agents specified, ask the user which ones to install
         if (empty($agents)) {
-            $availableAgents = [
-                'claude-code' => 'Claude Code (CLAUDE.md)',
-                'cursor' => 'Cursor (.cursorrules)',
-                'copilot' => 'GitHub Copilot (.github/copilot-instructions.md)',
-                'phpstorm' => 'PhpStorm/JetBrains (.junie/guidelines.md)',
-                'gemini' => 'Google Gemini (AGENTS.md)',
-            ];
+            $compiler = new GuidelinesCompiler($magentoRoot);
+            $availableAgents = $this->buildAgentLabels($compiler);
 
             $choices = array_values($availableAgents);
             $question = new ChoiceQuestion(
@@ -247,6 +228,17 @@ HELP
         }
         $initCommand->run(new ArrayInput($initArgs), $output);
 
+        // Generate PhpStorm MCP config when phpstorm agent is selected
+        if (in_array('phpstorm', $agents, true)) {
+            $phpStormConfigPath = $magentoRoot . '/.idea/mcp.json';
+            if ($force || !file_exists($phpStormConfigPath)) {
+                $configWriter->writePhpStormConfig($envType);
+                $createdFiles[] = '.idea/mcp.json' . ($envType !== 'native' ? " (configured for $envType)" : '');
+            } else {
+                $skippedFiles[] = '.idea/mcp.json (exists, use --force to overwrite)';
+            }
+        }
+
         // Generate agent-specific files
         foreach ($agents as $agent) {
             $result = $this->generateAgentConfig($magentoRoot, $agent, $force, $envType);
@@ -297,6 +289,38 @@ HELP
         $verifyCommand->run($verifyInput, $output);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Build env-type key→label map from the single authoritative source.
+     *
+     * @return array<string, string>
+     */
+    private function buildEnvTypeLabels(): array
+    {
+        return McpConfigWriter::getEnvironmentTypeLabels();
+    }
+
+    /**
+     * Build agent key→label map from GuidelinesCompiler as the single source for filenames.
+     *
+     * @return array<string, string>
+     */
+    private function buildAgentLabels(GuidelinesCompiler $compiler): array
+    {
+        $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini'];
+        $map = [];
+        foreach ($agents as $agent) {
+            $filename = $compiler->getFilename($agent);
+            $map[$agent] = match ($agent) {
+                'claude-code' => "Claude Code ($filename)",
+                'cursor' => "Cursor ($filename)",
+                'copilot' => "GitHub Copilot ($filename)",
+                'phpstorm' => "PhpStorm/JetBrains ($filename)",
+                'gemini' => "Google Gemini ($filename)",
+            };
+        }
+        return $map;
     }
 
     private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array

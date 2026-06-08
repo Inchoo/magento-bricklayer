@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for order processing operations.
  */
-class OrderPrompts
+class OrderPrompts extends AbstractPrompt
 {
     /**
      * Guides through order processing workflow.
@@ -21,7 +22,7 @@ class OrderPrompts
      * @param string $orderIncrementId Order increment ID
      * @param string $action Action to perform (invoice, ship, refund, cancel)
      * @param string $notes Additional notes or instructions
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'process-order',
@@ -32,10 +33,7 @@ class OrderPrompts
         string $action = 'invoice',
         string $notes = ''
     ): array {
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Process order #{$orderIncrementId} with action: {$action}
 
 **Order:** {$orderIncrementId}
@@ -90,9 +88,7 @@ Guide me through the complete order processing workflow:
    - Common issues and solutions
    - Partial action scenarios
    - Payment gateway considerations
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -101,7 +97,7 @@ PROMPT
      * @param string $segmentName Segment name
      * @param string $conditions Segment conditions description
      * @param string $description Segment description
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-customer-segment',
@@ -112,10 +108,7 @@ PROMPT
         string $conditions = '',
         string $description = ''
     ): array {
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a customer segment with the following specifications:
 
 **Segment Name:** {$segmentName}
@@ -169,8 +162,6 @@ Note: Customer Segments are an Adobe Commerce (Enterprise) feature. For Communit
    - Sync segments back to Magento
 
 Provide the most appropriate solution based on the Magento edition being used.
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -10,13 +11,17 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\MasksSensitiveConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class DatabaseTools
 {
     use ChecksConfig;
+    use MasksSensitiveConfig;
     use RequiresMagento;
+    use RespondsWithErrors;
 
     #[McpTool(
         name: 'database-schema',
@@ -28,7 +33,7 @@ class DatabaseTools
             return $error;
         }
 
-        if ($error = $this->requireToolEnabled('database-query')) {
+        if ($error = $this->requireToolEnabled('database-schema')) {
             return $error;
         }
 
@@ -52,7 +57,7 @@ class DatabaseTools
                 'tables' => $tables,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -124,10 +129,7 @@ class DatabaseTools
                 'results' => $results,
             ];
         } catch (\Throwable $e) {
-            return [
-                'error' => true,
-                'message' => $e->getMessage(),
-            ];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -195,7 +197,7 @@ class DatabaseTools
         } catch (\Throwable $e) {
         }
 
-        $tableInfo = $connection->fetchRow("SHOW TABLE STATUS LIKE '$tableName'");
+        $tableInfo = $connection->fetchRow("SHOW TABLE STATUS WHERE Name = ?", [$tableName]);
 
         $result = [
             'table' => $tableName,
@@ -213,17 +215,6 @@ class DatabaseTools
         return $result;
     }
 
-    private const SENSITIVE_PATH_PREFIXES = [
-        'payment/',
-        'carriers/',
-        'system/smtp',
-        'trans_email/',
-        'oauth/',
-        'admin/security/',
-        'catalog/search/elasticsearch',
-        'catalog/search/opensearch',
-    ];
-
     /**
      * Mask sensitive configuration values in query results.
      *
@@ -240,11 +231,8 @@ class DatabaseTools
                 continue;
             }
 
-            foreach (self::SENSITIVE_PATH_PREFIXES as $prefix) {
-                if (str_starts_with($row['path'], $prefix)) {
-                    $row['value'] = '***MASKED***';
-                    break;
-                }
+            if ($this->isSensitivePath($row['path'])) {
+                $row['value'] = $this->maskValue();
             }
         }
         unset($row);

@@ -21,7 +21,6 @@ class MagentoBootstrap
     private static ?object $objectManager = null;
     private static ?string $magentoRoot = null;
     private static ?MagentoDetector $detector = null;
-    private static ?AreaEmulator $areaEmulator = null;
 
     /** @var array<string, int|false> mtime snapshot of sentinel files at last (re)init */
     private static array $sentinelMtimes = [];
@@ -77,8 +76,8 @@ class MagentoBootstrap
             $bootstrap = \Magento\Framework\App\Bootstrap::create(BP, $params);
             self::$objectManager = $bootstrap->getObjectManager();
 
-            self::$areaEmulator = new AreaEmulator();
-            self::$areaEmulator->setArea($areaCode);
+            $areaEmulator = new AreaEmulator();
+            $areaEmulator->setArea($areaCode);
 
             self::snapshotSentinels();
 
@@ -129,16 +128,6 @@ class MagentoBootstrap
     public static function isInitialized(): bool
     {
         return self::$objectManager !== null;
-    }
-
-    public static function getDetector(): MagentoDetector
-    {
-        return self::$detector ??= new MagentoDetector();
-    }
-
-    public static function getAreaEmulator(): ?AreaEmulator
-    {
-        return self::$areaEmulator;
     }
 
     /**
@@ -217,8 +206,7 @@ class MagentoBootstrap
 
         // Clear cached ObjectManager so initialize() will re-create it
         self::$objectManager = null;
-        self::$areaEmulator = null;
-        // Keep $magentoRoot and $detector — they're still valid
+        // Keep $magentoRoot — still valid; $detector will be re-created by initialize()
 
         // Note: initialize() uses require_once for the bootstrap file, which won't
         // re-execute on reinit. This is intentional — autoloading from the first
@@ -231,6 +219,5 @@ class MagentoBootstrap
         self::$objectManager = null;
         self::$magentoRoot = null;
         self::$detector = null;
-        self::$areaEmulator = null;
     }
 }

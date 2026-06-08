@@ -29,7 +29,7 @@ class ToolScanner
         $toolDir = dirname(__DIR__) . '/Mcp/Tool';
         $totalCount = 0;
 
-        foreach (glob($toolDir . '/*.php') as $file) {
+        foreach ($this->globToolFiles($toolDir . '/*.php') ?: [] as $file) {
             $className = pathinfo($file, PATHINFO_FILENAME);
             $fqcn = self::TOOL_NAMESPACE . $className;
 
@@ -51,5 +51,19 @@ class ToolScanner
         }
 
         return ['totalCount' => $totalCount];
+    }
+
+    /**
+     * Return the list of files matching the given glob pattern.
+     *
+     * Extracted as a protected method to allow test doubles to inject a
+     * controlled return value (including `false`) without touching the
+     * filesystem.
+     *
+     * @return array<string>|false
+     */
+    protected function globToolFiles(string $pattern): array|false
+    {
+        return glob($pattern);
     }
 }

@@ -80,6 +80,7 @@ trait ChecksConfig
     {
         if ($this->configLoader === null) {
             $this->configLoader = new ConfigLoader();
+            $this->configLoader->load();
             $this->configLoader->snapshotConfigMtime();
         } else {
             $this->configLoader->reloadIfStale();

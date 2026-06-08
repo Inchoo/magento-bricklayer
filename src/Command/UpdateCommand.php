@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -14,7 +15,6 @@ use Inchoo\MagentoBricklayer\Mcp\Tool\SearchTools;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -27,21 +27,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'update',
     description: 'Regenerate agent configuration files'
 )]
-class UpdateCommand extends Command
+class UpdateCommand extends AbstractBricklayerCommand
 {
-
     /**
      * @return void
      */
     protected function configure(): void
     {
+        parent::configure();
         $this
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
-            )
             ->setHelp(<<<'HELP'
 The <info>%command.name%</info> command regenerates agent configuration files:
 
@@ -61,11 +55,8 @@ HELP
 
         $io->title('Magento Bricklayer Update');
 
-        $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
-
+        $magentoRoot = $this->resolveMagentoRoot($input, $io);
         if ($magentoRoot === null) {
-            $io->error('Could not detect Magento installation. Please specify --magento-root option.');
             return Command::FAILURE;
         }
 
@@ -73,20 +64,16 @@ HELP
 
         try {
             $compiler = new GuidelinesCompiler($magentoRoot);
+            $detector = new MagentoDetector();
             $envType = $detector->getEnvironmentType($magentoRoot);
 
-            $agentFiles = [
-                'CLAUDE.md' => 'claude-code',
-                '.cursorrules' => 'cursor',
-                '.github/copilot-instructions.md' => 'copilot',
-                '.junie/guidelines.md' => 'phpstorm',
-                'AGENTS.md' => 'gemini',
-            ];
+            $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini'];
 
             $regenerated = [];
             $appliedOverrides = [];
 
-            foreach ($agentFiles as $file => $agent) {
+            foreach ($agents as $agent) {
+                $file = $compiler->getFilename($agent);
                 $filepath = $magentoRoot . '/' . $file;
                 if (file_exists($filepath)) {
                     $content = $compiler->compile($agent, $envType);

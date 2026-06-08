@@ -235,13 +235,94 @@ class ConfigLoader
      */
     private function applyEnvironmentOverrides(array $config): array
     {
-        $envVars = $this->envResolver->getAll();
+        $rawEnvVars = $this->envResolver->getAllRaw();
 
-        foreach ($envVars as $key => $value) {
-            $config = $this->setNestedValue($config, $key, $value);
+        if (empty($rawEnvVars)) {
+            return $config;
+        }
+
+        $forwardMap = $this->buildEnvForwardMap($config);
+
+        foreach ($rawEnvVars as $envName => $value) {
+            $upperEnvName = strtoupper($envName);
+
+            if (isset($forwardMap[$upperEnvName])) {
+                $configKey = $forwardMap[$upperEnvName];
+            } else {
+                // Fall back to the lossy reverse mapping for env vars not in the known-keys map
+                $prefix = 'BRICKLAYER_';
+                $suffix = substr($envName, strlen($prefix));
+                $configKey = strtolower(str_replace('_', '.', $suffix));
+            }
+
+            $config = $this->setNestedValue($config, $configKey, $value);
         }
 
         return $config;
+    }
+
+    /**
+     * Build a forward map from uppercase env var name to the true dot-notation config key.
+     * Covers all existing config keys (flattened) plus synthesised .enabled paths for tools
+     * whose defaults are empty arrays (product-delete, category-delete, etc.).
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, string>
+     */
+    private function buildEnvForwardMap(array $config): array
+    {
+        $map = [];
+
+        // Flatten all real config keys (scalar leaves)
+        foreach ($this->flattenConfigKeys($config) as $configKey) {
+            $envName = strtoupper($this->envResolver->toEnvKey($configKey));
+            $map[$envName] = $configKey;
+        }
+
+        // Synthesise tools.<name>.enabled for every tool, including empty-array tools
+        if (isset($config['tools']) && is_array($config['tools'])) {
+            foreach (array_keys($config['tools']) as $toolName) {
+                $configKey = "tools.{$toolName}.enabled";
+                $envName = strtoupper($this->envResolver->toEnvKey($configKey));
+                if (!isset($map[$envName])) {
+                    $map[$envName] = $configKey;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Flatten a nested config array to a list of dot-notation keys for all scalar leaves.
+     *
+     * @param array<string, mixed> $config
+     * @param string $prefix
+     * @return list<string>
+     */
+    private function flattenConfigKeys(array $config, string $prefix = ''): array
+    {
+        $keys = [];
+
+        foreach ($config as $key => $value) {
+            $fullKey = $prefix !== '' ? "{$prefix}.{$key}" : (string) $key;
+
+            if (is_array($value) && $this->isAssociativeArray($value)) {
+                // Recurse into associative arrays. An empty array (isAssociativeArray([])
+                // is true) yields no keys, so a tool with no overrides like
+                // 'product-delete' => [] does NOT emit a bare tools.product-delete key —
+                // which would otherwise let BRICKLAYER_TOOLS_PRODUCT_DELETE write a scalar
+                // that shadows the tools.product-delete.enabled read path. The synthesised
+                // tools.<name>.enabled entry in buildEnvForwardMap covers these tools.
+                foreach ($this->flattenConfigKeys($value, $fullKey) as $nested) {
+                    $keys[] = $nested;
+                }
+            } else {
+                $keys[] = $fullKey;
+            }
+        }
+
+        return $keys;
     }
 
     /**

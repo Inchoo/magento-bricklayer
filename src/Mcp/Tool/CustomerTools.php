@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -11,7 +12,9 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\PaginatesResults;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
 use Mcp\Capability\Attribute\McpTool;
 
@@ -24,8 +27,11 @@ class CustomerTools
 {
     use ChecksConfig;
     use FiltersFields;
+    use PaginatesResults;
     use RequiresMagento;
+    use RespondsWithErrors;
     use SecureArea;
+
     /**
      * Retrieves customer data by email.
      *
@@ -43,7 +49,7 @@ class CustomerTools
         }
 
         if ($email === '') {
-            return ['error' => true, 'message' => 'Email is required'];
+            return $this->errorResponse('Email is required');
         }
 
         try {
@@ -63,9 +69,9 @@ class CustomerTools
 
             return $result;
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Customer not found: $email"];
+            return $this->errorResponse("Customer not found: $email");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -110,10 +116,7 @@ class CustomerTools
             $result = $customerRepository->getList($searchCriteria);
 
             if ($count_only) {
-                return [
-                    'total' => $result->getTotalCount(),
-                    'count_only' => true,
-                ];
+                return $this->countOnlyResponse($result->getTotalCount());
             }
 
             $customers = [];
@@ -121,15 +124,9 @@ class CustomerTools
                 $customers[] = $this->formatCustomerData($customer, false, $fields);
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $customers,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $customers);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -178,7 +175,7 @@ class CustomerTools
 
             return ['success' => true, 'customer' => $this->formatCustomerData($savedCustomer, true)];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -228,9 +225,9 @@ class CustomerTools
 
             return ['success' => true, 'customer' => $this->formatCustomerData($savedCustomer, true)];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Customer not found: $customerId"];
+            return $this->errorResponse("Customer not found: $customerId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -266,7 +263,7 @@ class CustomerTools
                 return ['success' => true, 'message' => "Customer $customerId deleted"];
             });
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -303,7 +300,7 @@ class CustomerTools
 
             return ['groups' => $groups];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -352,16 +349,18 @@ class CustomerTools
                 ];
             }
 
+            $paginated = $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $orders);
+
             return [
                 'customer_id' => $customerId,
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'orders' => $orders,
+                'total_count' => $paginated['total_count'],
+                'page_size' => $paginated['page_size'],
+                'current_page' => $paginated['current_page'],
+                'has_more' => $paginated['has_more'],
+                'orders' => $paginated['items'],
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -397,9 +396,9 @@ class CustomerTools
                 'addresses' => $addresses,
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Customer not found: $customerId"];
+            return $this->errorResponse("Customer not found: $customerId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -475,7 +474,7 @@ class CustomerTools
                 'address' => $this->formatAddressData($savedAddress),
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -543,9 +542,9 @@ class CustomerTools
                 'address' => $this->formatAddressData($savedAddress),
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Address not found: $addressId"];
+            return $this->errorResponse("Address not found: $addressId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -574,14 +573,16 @@ class CustomerTools
         }
 
         try {
-            $addressRepository = MagentoBootstrap::get(\Magento\Customer\Api\AddressRepositoryInterface::class);
-            $addressRepository->deleteById($addressId);
+            return $this->withSecureArea(function () use ($addressId) {
+                $addressRepository = MagentoBootstrap::get(\Magento\Customer\Api\AddressRepositoryInterface::class);
+                $addressRepository->deleteById($addressId);
 
-            return ['success' => true, 'message' => "Address $addressId deleted"];
+                return ['success' => true, 'message' => "Address $addressId deleted"];
+            });
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Address not found: $addressId"];
+            return $this->errorResponse("Address not found: $addressId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -701,5 +702,4 @@ class CustomerTools
 
         return $this->filterFields($data, $fields);
     }
-
 }

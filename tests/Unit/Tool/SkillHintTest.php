@@ -81,9 +81,14 @@ class SkillHintTest extends TestCase
         $lines = array_slice(explode("\n", $source), $startLine - 1, $endLine - $startLine + 1);
         $methodSource = implode("\n", $lines);
 
-        // Find all error return lines and verify none contain _skill_hint
+        // Find all error return lines and verify none contain _skill_hint.
+        // Error returns are either the inline literal envelope or the centralized
+        // RespondsWithErrors helpers (errorResponse()/runGuarded()).
         $errorLines = array_filter($lines, function ($line) {
-            return str_contains($line, "'error' => true") || str_contains($line, '"error" => true');
+            return str_contains($line, "'error' => true")
+                || str_contains($line, '"error" => true')
+                || str_contains($line, 'errorResponse(')
+                || str_contains($line, 'runGuarded(');
         });
 
         foreach ($errorLines as $lineNum => $line) {
@@ -94,7 +99,12 @@ class SkillHintTest extends TestCase
             $contextStr = implode("\n", $context);
 
             // This is a soft check — error paths are typically short return statements
-            if (str_contains($contextStr, 'return') && str_contains($contextStr, "'error'")) {
+            if (
+                str_contains($contextStr, 'return')
+                && (str_contains($contextStr, "'error'")
+                    || str_contains($contextStr, 'errorResponse(')
+                    || str_contains($contextStr, 'runGuarded('))
+            ) {
                 $this->assertStringNotContainsString(
                     '_skill_hint',
                     $contextStr,

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -8,12 +9,16 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
-use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ResolvesPackagePaths;
+use Inchoo\MagentoBricklayer\Support\CollectsMarkdownFiles;
 use Mcp\Capability\Attribute\McpTool;
 
 class SearchTools
 {
+    use ResolvesPackagePaths;
+    use CollectsMarkdownFiles;
+
     /**
      * Extra search keywords and tool associations for categories in ContextTools::CATEGORY_MAP.
      * These supplement the auto-generated keywords derived from category name, description,
@@ -340,15 +345,9 @@ class SearchTools
     /** @var array<string, array<string, mixed>>|null */
     private ?array $documentationIndex = null;
 
-    private readonly string $packageRoot;
-    private readonly ?string $magentoRootOverride;
-
     public function __construct(?string $magentoRoot = null, ?string $packageRoot = null)
     {
-        $this->magentoRootOverride = $magentoRoot !== null ? rtrim($magentoRoot, '/\\') : null;
-        $this->packageRoot = $packageRoot !== null
-            ? rtrim($packageRoot, '/\\')
-            : dirname(__DIR__, 3);
+        $this->initPackagePaths($magentoRoot, $packageRoot);
     }
 
     #[McpTool(
@@ -662,77 +661,49 @@ class SearchTools
 
         // --- Local guidelines ---
         $guidelinesDir = $magentoRoot . '/.bricklayer/guidelines/';
-        if (is_dir($guidelinesDir)) {
-            $realDir = realpath($guidelinesDir);
-            if ($realDir !== false) {
-                $realDir = rtrim($realDir, '/\\') . '/';
-                try {
-                    $iterator = new \RecursiveIteratorIterator(
-                        new \RecursiveDirectoryIterator($realDir, \FilesystemIterator::SKIP_DOTS)
-                    );
-                } catch (\UnexpectedValueException) {
-                    $iterator = [];
-                }
+        $guidelineDirPrefix = rtrim($guidelinesDir, '/\\') . '/';
+        $bundledGuidelinePaths = $this->getBundledGuidelineRelativePaths();
 
-                $bundledGuidelinePaths = $this->getBundledGuidelineRelativePaths();
+        foreach ($this->collectMarkdownRelativePaths($guidelinesDir) as $relativePath) {
+            $content = file_get_contents($guidelineDirPrefix . $relativePath);
+            if ($content === false) {
+                continue;
+            }
+            $content = LocalOverrideHelper::stripFrontmatter($content);
 
-                foreach ($iterator as $file) {
-                    if (!$file instanceof \SplFileInfo || !$file->isFile()) {
-                        continue;
-                    }
-                    if (strtolower($file->getExtension()) !== 'md') {
-                        continue;
-                    }
-                    $relativePath = str_replace(
-                        '\\',
-                        '/',
-                        substr($file->getPathname(), strlen($realDir))
-                    );
-                    if ($relativePath === '') {
-                        continue;
-                    }
+            $leaf = basename($relativePath, '.md');
+            $dir = dirname($relativePath);
+            $categoryGroup = $dir === '.' ? 'project' : basename($dir);
+            $displayName = LocalOverrideHelper::defaultDisplayName($leaf);
 
-                    $content = file_get_contents($file->getPathname());
-                    if ($content === false) {
-                        continue;
-                    }
-                    $content = LocalOverrideHelper::stripFrontmatter($content);
-
-                    $leaf = basename($relativePath, '.md');
-                    $dir = dirname($relativePath);
-                    $categoryGroup = $dir === '.' ? 'project' : basename($dir);
-                    $displayName = LocalOverrideHelper::defaultDisplayName($leaf);
-
-                    $keywords = [
-                        strtolower(str_replace('-', ' ', $leaf)),
-                        strtolower(str_replace('-', ' ', $categoryGroup)),
-                    ];
-                    foreach (explode('-', $leaf) as $part) {
-                        if (strlen($part) > 3) {
-                            $keywords[] = strtolower($part);
-                        }
-                    }
-                    // Pull meaningful words from the first 200 chars of content
-                    $contentHead = strtolower(strip_tags(substr($content, 0, 200)));
-                    foreach (preg_split('/[\s,()]+/', $contentHead, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
-                        if (strlen($word) > 3) {
-                            $keywords[] = $word;
-                        }
-                    }
-
-                    $override = in_array($relativePath, $bundledGuidelinePaths, true);
-                    $key = 'local-guideline:' . $relativePath;
-
-                    $entries[$key] = [
-                        'keywords' => array_values(array_unique($keywords)),
-                        'topics' => [$displayName],
-                        'source' => 'local',
-                        'override' => $override,
-                        'display_name' => $displayName,
-                        'path' => '.bricklayer/guidelines/' . $relativePath,
-                    ];
+            $keywords = [
+                strtolower(str_replace('-', ' ', $leaf)),
+                strtolower(str_replace('-', ' ', $categoryGroup)),
+            ];
+            foreach (explode('-', $leaf) as $part) {
+                if (strlen($part) > 3) {
+                    $keywords[] = strtolower($part);
                 }
             }
+            // Pull meaningful words from the first 200 chars of content
+            $contentHead = strtolower(strip_tags(substr($content, 0, 200)));
+            foreach (preg_split('/[\s,()]+/', $contentHead, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+                if (strlen($word) > 3) {
+                    $keywords[] = $word;
+                }
+            }
+
+            $override = in_array($relativePath, $bundledGuidelinePaths, true);
+            $key = 'local-guideline:' . $relativePath;
+
+            $entries[$key] = [
+                'keywords' => array_values(array_unique($keywords)),
+                'topics' => [$displayName],
+                'source' => 'local',
+                'override' => $override,
+                'display_name' => $displayName,
+                'path' => '.bricklayer/guidelines/' . $relativePath,
+            ];
         }
 
         return $entries;
@@ -743,62 +714,62 @@ class SearchTools
      */
     private function getBundledGuidelineRelativePaths(): array
     {
-        $bundledDir = $this->packageRoot . '/config/guidelines/';
-        if (!is_dir($bundledDir)) {
-            return [];
-        }
-        $realBundledDir = realpath($bundledDir);
-        if ($realBundledDir === false) {
-            return [];
-        }
-        $realBundledDir = rtrim($realBundledDir, '/\\') . '/';
-
-        $paths = [];
-        try {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($realBundledDir, \FilesystemIterator::SKIP_DOTS)
-            );
-        } catch (\UnexpectedValueException) {
-            return [];
-        }
-        foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
-                continue;
-            }
-            if (strtolower($file->getExtension()) !== 'md') {
-                continue;
-            }
-            $relative = str_replace(
-                '\\',
-                '/',
-                substr($file->getPathname(), strlen($realBundledDir))
-            );
-            if ($relative !== '') {
-                $paths[] = $relative;
-            }
-        }
-        return $paths;
+        return $this->collectMarkdownRelativePaths($this->packageRoot . '/config/guidelines/');
     }
 
-    private function resolveMagentoRoot(): ?string
+    /**
+     * Count the total number of available `development-context` categories:
+     * the bundled CATEGORY_MAP entries plus any local-only skill categories
+     * in `.bricklayer/skills/` that have no bundled equivalent.
+     */
+    private function countAllAvailableCategories(): int
     {
-        if ($this->magentoRootOverride !== null) {
-            return $this->magentoRootOverride;
+        $baseCount = count(ContextTools::CATEGORY_MAP);
+        $magentoRoot = $this->resolveMagentoRoot();
+
+        if ($magentoRoot === null) {
+            return $baseCount;
         }
-        $root = MagentoBootstrap::getMagentoRoot();
-        return $root !== null ? rtrim($root, '/\\') : null;
+
+        $skillsDir = $magentoRoot . '/.bricklayer/skills/';
+        if (!is_dir($skillsDir)) {
+            return $baseCount;
+        }
+
+        $entries = @scandir($skillsDir);
+        if ($entries === false) {
+            return $baseCount;
+        }
+
+        $localOnlyCount = 0;
+        foreach ($entries as $entryName) {
+            if ($entryName === '.' || $entryName === '..') {
+                continue;
+            }
+            if (isset(ContextTools::CATEGORY_MAP[$entryName])) {
+                continue;
+            }
+            $skillFile = $skillsDir . $entryName . '/SKILL.md';
+            if (is_dir($skillsDir . $entryName) && file_exists($skillFile)) {
+                $localOnlyCount++;
+            }
+        }
+
+        return $baseCount + $localOnlyCount;
     }
 
     private function generateGuidance(string $query, array $results): string
     {
         if (empty($results)) {
+            $categoryCount = $this->countAllAvailableCategories();
+
             return "No direct matches found for '$query'. Try searching for:\n" .
                    "- Development: module, plugin, observer, controller, model, eav, graphql, api\n" .
                    "- Hyvä: hyva-checkout, hyva-theme\n" .
                    "- Operations: order, customer, product, category, log, cache, indexer\n" .
                    "- Advanced: payment, shipping, checkout, ui-component, message-queue, import\n" .
                    "- Quality: testing, security, performance, coding-standards\n\n" .
-                   "Tip: Use the `development-context` tool with category `list` to see all 38 coding guideline categories.";
+                   "Tip: Use the `development-context` tool with category `list` to see all {$categoryCount} coding guideline categories.";
         }
 
         $topCategories = array_slice(array_column($results, 'category'), 0, 3);

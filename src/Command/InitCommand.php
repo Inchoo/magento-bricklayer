@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -8,7 +9,6 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Command;
 
-use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -26,18 +26,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'init',
     description: 'Generate .bricklayer.json configuration file'
 )]
-class InitCommand extends Command
+class InitCommand extends AbstractBricklayerCommand
 {
-
     protected function configure(): void
     {
+        parent::configure();
         $this
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
-            )
             ->addOption(
                 'force',
                 'f',
@@ -64,15 +58,10 @@ HELP
     {
         $io = new SymfonyStyle($input, $output);
 
-        $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
-
+        $magentoRoot = $this->resolveMagentoRoot($input, $io);
         if ($magentoRoot === null) {
-            $io->error('Could not detect Magento installation. Please specify --magento-root option.');
             return Command::FAILURE;
         }
-
-        $magentoRoot = rtrim($magentoRoot, '/\\');
 
         $force = $input->getOption('force');
         $initializer = new ConfigInitializer();

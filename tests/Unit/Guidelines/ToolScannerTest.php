@@ -49,4 +49,29 @@ class ToolScannerTest extends TestCase
         $this->assertDirectoryExists($toolDir);
         $this->assertNotEmpty(glob($toolDir . '/*.php'));
     }
+
+    public function testItTreatsAFalseGlobResultAsZeroToolsWithoutWarningSpam(): void
+    {
+        $scanner = new class extends ToolScanner {
+            protected function globToolFiles(string $pattern): array|false
+            {
+                return false;
+            }
+        };
+
+        $warningTriggered = false;
+        set_error_handler(function (int $errno) use (&$warningTriggered): bool {
+            if ($errno === E_WARNING) {
+                $warningTriggered = true;
+            }
+            return true;
+        });
+
+        $result = $scanner->scan();
+
+        restore_error_handler();
+
+        $this->assertSame(0, $result['totalCount']);
+        $this->assertFalse($warningTriggered, 'No E_WARNING should be emitted when glob returns false');
+    }
 }

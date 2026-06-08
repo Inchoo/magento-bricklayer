@@ -525,4 +525,20 @@ class DiagnosticToolsTest extends TestCase
         $this->assertSame('low', $result[0]['confidence']);
         $this->assertStringContainsString('stack trace', $result[0]['action']);
     }
+
+    // ── appTools removal ───────────────────────────────────────────────
+
+    public function testItInstantiatesDiagnosticToolsWithoutTheRemovedAppToolsProperty(): void
+    {
+        $instance = new DiagnosticTools();
+        $ref = new \ReflectionClass($instance);
+
+        $this->assertFalse(
+            $ref->hasProperty('appTools'),
+            'The $appTools property must have been removed from DiagnosticTools'
+        );
+
+        // Constructor must complete without error (other tools remain).
+        $this->assertInstanceOf(DiagnosticTools::class, $instance);
+    }
 }

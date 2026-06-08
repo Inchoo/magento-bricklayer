@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -18,6 +19,7 @@ class ConfigInitializerTest extends TestCase
 
     protected function setUp(): void
     {
+        ConfigInitializer::clearConfigurableToolsCache();
         $this->initializer = new ConfigInitializer();
         $this->tempDir = sys_get_temp_dir() . '/bricklayer_initializer_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
@@ -25,6 +27,7 @@ class ConfigInitializerTest extends TestCase
 
     protected function tearDown(): void
     {
+        ConfigInitializer::clearConfigurableToolsCache();
         $this->removeDirectory($this->tempDir);
     }
 
@@ -253,6 +256,27 @@ class ConfigInitializerTest extends TestCase
     public function testExistsReturnsFalseWhenFileMissing(): void
     {
         $this->assertFalse($this->initializer->exists($this->tempDir));
+    }
+
+    public function testItReportsCreatedFalseWhenTheConfigFileWriteFails(): void
+    {
+        // Make the directory read-only so file_put_contents() fails
+        chmod($this->tempDir, 0444);
+
+        $result = $this->initializer->generate($this->tempDir);
+
+        // Restore permissions for tearDown cleanup
+        chmod($this->tempDir, 0755);
+
+        $this->assertFalse($result['created']);
+    }
+
+    public function testItReportsCreatedTrueWhenTheConfigFileWriteSucceeds(): void
+    {
+        $result = $this->initializer->generate($this->tempDir);
+
+        $this->assertTrue($result['created']);
+        $this->assertFileExists($this->tempDir . '/.bricklayer.json');
     }
 
     private function removeDirectory(string $dir): void

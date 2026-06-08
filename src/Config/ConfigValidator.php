@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -12,6 +13,8 @@ use Mcp\Capability\Attribute\McpTool;
 
 class ConfigValidator
 {
+    use IteratesToolPhpFiles;
+
     /** @var array<string>|null */
     private static ?array $knownToolsCache = null;
 
@@ -197,19 +200,7 @@ class ConfigValidator
         $tools = [];
         $toolDir = __DIR__ . '/../Mcp/Tool';
 
-        if (!is_dir($toolDir)) {
-            return self::$knownToolsCache = [];
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if (!$file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
+        foreach (self::iterateToolPhpFiles($toolDir) as $file) {
             $relative = substr($file->getPathname(), strlen($toolDir) + 1, -4);
             $class = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\'
                 . str_replace('/', '\\', $relative);
