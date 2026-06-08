@@ -1,3 +1,11 @@
+# 1.15.1
+
+A patch release fixing a `code-runner` helper-function regression. No breaking changes.
+
+**Fixes**
+* **`code-runner` bare helper functions now work in the PsySH runtime.** `get()`, `create()`, `repo()`, `config()`, `query()`, and `runLog()` — documented in `code-runner-help` and used throughout its examples — only existed as global functions in the `eval` fallback engine. Under PsySH (the default when installed) they were exposed solely as the `$get`/`$create`/… scope closures, so the documented bare form fataled with `Call to undefined function get()`. The bare functions are now declared in the global namespace for both runtimes and stay bound to the live ObjectManager across calls.
+* Fixed a latent guard bug in the `eval` fallback where the helper-function `function_exists()` check resolved against the wrong namespace, which could fatally re-declare the helpers on a second invocation in a long-lived process.
+
 # 1.15.0
 
 A code-audit release: fixes a batch of correctness and security bugs, makes `code-runner` use PsySH as intended, and consolidates duplicated internal logic. No breaking changes.

@@ -56,6 +56,39 @@ class CodeRunnerToolsTest extends TestCase
         $this->assertSame(42, $result['return']);
     }
 
+    /**
+     * Regression: the documented bare helper functions — get(), create(), config(),
+     * query() — must be callable inside the PsySH runtime, not only the eval fallback.
+     * Previously runPsysh() only exposed the $get/$create closures as scope variables,
+     * so bare get(...) fataled with "Call to undefined function get()" while the help
+     * text and every example advertised the bare form.
+     *
+     * The real gate is the SECOND call: the MCP server is long-lived, runPsysh builds a
+     * fresh Shell per call, and global PHP functions persist process-wide. Call 2 must
+     * succeed AND pick up the fresh per-call closure (bound to the current ObjectManager),
+     * not a stale one stapled to call 1.
+     */
+    public function testRunPsyshExposesBareHelperFunctionsAcrossMultipleCalls(): void
+    {
+        if (!class_exists(\Psy\Shell::class)) {
+            $this->markTestSkipped('PsySH not installed');
+        }
+
+        $method = new \ReflectionMethod(CodeRunnerTools::class, 'runPsysh');
+        $method->setAccessible(true);
+
+        $scopeA = ['get' => static fn(string $c): string => 'A:' . $c];
+        $first = $method->invoke($this->runner, 'return get("Foo");', 'execute', $scopeA);
+        $this->assertTrue($first['success'], 'call 1 error: ' . json_encode($first['error'] ?? null));
+        $this->assertSame('A:Foo', $first['return']);
+
+        // Different closure → proves $GLOBALS helper map is refreshed each call.
+        $scopeB = ['get' => static fn(string $c): string => 'B:' . $c];
+        $second = $method->invoke($this->runner, 'return get("Bar");', 'execute', $scopeB);
+        $this->assertTrue($second['success'], 'call 2 error: ' . json_encode($second['error'] ?? null));
+        $this->assertSame('B:Bar', $second['return']);
+    }
+
     // ─── Validation: existing dangerous patterns ───
 
     public function testRejectsShellExecution(): void

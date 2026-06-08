@@ -31,6 +31,9 @@ class CodeRunnerTools
     /** @var array<string, string> Named PHP functions stored for the session */
     private static array $definedFunctions = [];
 
+    /** @var bool Whether the bare helper functions have been declared in this process */
+    private static bool $helpersRegistered = false;
+
     private const DANGEROUS_PATTERNS = [
         '/\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\(/i'
             => 'Shell execution functions are not allowed',
@@ -382,6 +385,12 @@ class CodeRunnerTools
     private function runPsysh(string $code, string $mode, array $scopeVariables): array
     {
         try {
+            // Expose the bare helper functions (get/create/repo/config/query/runLog) as
+            // real global functions so the documented bare form works in PsySH, not only
+            // the $get/$create closures from setScopeVariables(). The functions delegate
+            // to $GLOBALS, refreshed here each call, so they stay bound to the live OM.
+            $this->registerHelperGlobals($scopeVariables);
+
             $config = new \Psy\Configuration([
                 'updateCheck' => 'never',
                 'usePcntl' => false,
@@ -436,23 +445,17 @@ class CodeRunnerTools
             $vars = $this->buildScopeVariables();
             extract($vars);
 
+            // Declare the bare helper functions in the global namespace (once) and refresh
+            // the $GLOBALS delegation map for this call. Shared with the PsySH path.
+            $this->registerHelperGlobals($vars);
+
             ob_start();
             $error = null;
             $returnValue = null;
 
             try {
-                $preamble = '$GLOBALS["_bricklayer_helpers"] = compact("get", "create", "repo", "config", "query", "runLog");'
-                    . 'if (!function_exists("get")) {'
-                    . '  function get(string $class) { return ($GLOBALS["_bricklayer_helpers"]["get"])($class); }'
-                    . '  function create(string $class, array $args = []) { return ($GLOBALS["_bricklayer_helpers"]["create"])($class, $args); }'
-                    . '  function repo(string $class) { return ($GLOBALS["_bricklayer_helpers"]["repo"])($class); }'
-                    . '  function config(string $path, string $scopeType = "default", int $scopeId = 0) { return ($GLOBALS["_bricklayer_helpers"]["config"])($path, $scopeType, $scopeId); }'
-                    . '  function query(string $sql, array $binds = []) { return ($GLOBALS["_bricklayer_helpers"]["query"])($sql, $binds); }'
-                    . '  function runLog($value, string $label = \'\') { ($GLOBALS["_bricklayer_helpers"]["runLog"])($value, $label); }'
-                    . '}';
-
                 $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog) { '
-                    . $preamble . ' ' . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog);';
+                    . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog);';
                 $returnValue = eval($wrappedCode);
                 $returnValue = $this->formatReturnValue($returnValue);
             } catch (\Throwable $e) {
@@ -545,6 +548,49 @@ class CodeRunnerTools
             'query' => $query,
             'runLog' => $runLog,
         ];
+    }
+
+    /**
+     * Make the bare helper functions (get/create/repo/config/query/runLog) callable as
+     * real global functions in both the PsySH and eval runtimes.
+     *
+     * The functions are declared in the GLOBAL namespace exactly once per process (the MCP
+     * server is long-lived) via an explicit `namespace { }` block — declaring them directly
+     * in this namespaced file would create Inchoo\...\Tool\get, which unqualified user calls
+     * would not resolve to in PsySH's global scope. They delegate to $GLOBALS, which is
+     * refreshed on every call so the closures stay bound to the current ObjectManager rather
+     * than a stale one captured at first declaration.
+     *
+     * @param array<string, mixed> $scopeVariables
+     */
+    private function registerHelperGlobals(array $scopeVariables): void
+    {
+        $keys = ['get', 'create', 'repo', 'config', 'query', 'runLog'];
+        $GLOBALS['_bricklayer_helpers'] = array_intersect_key($scopeVariables, array_flip($keys));
+
+        if (self::$helpersRegistered) {
+            return;
+        }
+
+        eval(
+            'namespace {'
+            . ' if (!function_exists("get")) { function get(string $class) {'
+            . ' return ($GLOBALS["_bricklayer_helpers"]["get"])($class); } }'
+            . ' if (!function_exists("create")) { function create(string $class, array $args = []) {'
+            . ' return ($GLOBALS["_bricklayer_helpers"]["create"])($class, $args); } }'
+            . ' if (!function_exists("repo")) { function repo(string $class) {'
+            . ' return ($GLOBALS["_bricklayer_helpers"]["repo"])($class); } }'
+            . ' if (!function_exists("config")) {'
+            . ' function config(string $path, string $scopeType = "default", int $scopeId = 0) {'
+            . ' return ($GLOBALS["_bricklayer_helpers"]["config"])($path, $scopeType, $scopeId); } }'
+            . ' if (!function_exists("query")) { function query(string $sql, array $binds = []) {'
+            . ' return ($GLOBALS["_bricklayer_helpers"]["query"])($sql, $binds); } }'
+            . ' if (!function_exists("runLog")) { function runLog($value, string $label = "") {'
+            . ' ($GLOBALS["_bricklayer_helpers"]["runLog"])($value, $label); } }'
+            . '}'
+        );
+
+        self::$helpersRegistered = true;
     }
 
     private function validateCode(string $code): ?string
