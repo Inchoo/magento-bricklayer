@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -10,11 +11,15 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresValidVerbosity;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class ModuleTools
 {
     use RequiresMagento;
+    use RequiresValidVerbosity;
+    use RespondsWithErrors;
 
     #[McpTool(
         name: 'module-list',
@@ -23,12 +28,12 @@ class ModuleTools
     )]
     public function listModules(bool $enabledOnly = false, string $vendor = '', bool $count_only = false, string $verbosity = 'standard'): array
     {
-        if ($error = $this->requireMagento()) {
+        if ($error = $this->requireValidVerbosity($verbosity)) {
             return $error;
         }
 
-        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
-            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -111,7 +116,7 @@ class ModuleTools
                 'modules' => $modules,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -132,7 +137,7 @@ class ModuleTools
             try {
                 $path = $moduleDir->getDir($moduleName);
             } catch (\Throwable $e) {
-                return ['error' => true, 'message' => "Module not found: $moduleName"];
+                return $this->errorResponse("Module not found: $moduleName");
             }
 
             if (!is_dir($path)) {
@@ -154,7 +159,7 @@ class ModuleTools
                 'structure' => $structure,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 

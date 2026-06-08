@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento modules and components.
  */
-class ModulePrompts
+class ModulePrompts extends AbstractPrompt
 {
     /**
      * Creates a complete Magento 2 module structure.
@@ -34,12 +35,7 @@ class ModulePrompts
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a complete Magento 2 module with the following specifications:
 
 **Module Name:** {$moduleName}
@@ -58,10 +54,7 @@ Follow these requirements:
 - Set appropriate composer type as "magento2-module"
 
 The module should be ready to install via `bin/magento setup:upgrade`.
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -87,12 +80,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 plugin with the following specifications:
 
 **Module:** {$moduleName}
@@ -110,10 +98,7 @@ Requirements:
 - Follow the correct plugin method naming convention ({$pluginType}Ucfirst({$targetMethod}))
 - Include PHPDoc with @param and @return annotations
 - Use constructor property promotion for any dependencies
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -137,12 +122,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 event observer with the following specifications:
 
 **Module:** {$moduleName}
@@ -160,10 +140,7 @@ Requirements:
 - Use constructor DI for any dependencies
 - Include appropriate error handling
 - Include PHPDoc
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -187,12 +164,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a complete Magento 2 model structure with repository pattern:
 
 **Module:** {$moduleName}
@@ -216,10 +188,7 @@ Requirements:
 - Follow Magento's repository pattern conventions
 - Include proper exception handling
 - Add @api annotation to public interface methods
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -243,12 +212,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 REST API endpoint:
 
 **Module:** {$moduleName}
@@ -268,10 +232,7 @@ Requirements:
 - Include proper PHPDoc with @api annotation
 - Handle exceptions and return appropriate responses
 - Follow REST conventions for the HTTP method
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -295,12 +256,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 console command:
 
 **Module:** {$moduleName}
@@ -319,10 +275,7 @@ Requirements:
 - Add appropriate arguments and options if needed
 - Use SymfonyStyle for formatted output
 - Include proper error handling and exit codes
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -346,12 +299,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 cron job:
 
 **Module:** {$moduleName}
@@ -370,9 +318,6 @@ Requirements:
 - Include proper logging for job execution
 - Handle exceptions gracefully
 - Add configurable schedule via system.xml if appropriate
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 }

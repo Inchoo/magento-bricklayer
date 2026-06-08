@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento blocks and templates.
  */
-class BlockPrompts
+class BlockPrompts extends AbstractPrompt
 {
     /**
      * Creates a block class with template.
@@ -23,7 +24,7 @@ class BlockPrompts
      * @param string $blockName Block class name (e.g., "ProductList")
      * @param string $area Area (frontend or adminhtml)
      * @param string $template Template path relative to templates/
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-block',
@@ -40,10 +41,7 @@ class BlockPrompts
         $namespace = "{$vendor}\\{$module}";
         $templatePath = $template ?: strtolower($blockName) . '.phtml';
 
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 block class with the following specifications:
 
 **Module:** {$moduleName}
@@ -76,9 +74,7 @@ Requirements:
 - Use proper type hints
 - Include helpful methods that templates commonly need
 - Demonstrate proper data escaping in templates
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -89,7 +85,7 @@ PROMPT
      * @param string $componentName Component name
      * @param string $componentType Type (listing, form, etc.)
      * @param string $dataSource Data source class or config
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-ui-component',
@@ -104,10 +100,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 UI Component with the following specifications:
 
 **Module:** {$moduleName}
@@ -136,9 +129,7 @@ Requirements:
 - Use appropriate column types and configurations
 - Include sorting, filtering, and pagination for listings
 - Include validation and fieldsets for forms
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -148,7 +139,7 @@ PROMPT
      * @param string $module Module name
      * @param string $entityName Entity name for the grid
      * @param string $columns Comma-separated column names
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-admin-grid',
@@ -162,10 +153,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 admin grid for entity "{$entityName}" with the following specifications:
 
 **Module:** {$moduleName}
@@ -201,9 +189,7 @@ Requirements:
 - Include text, date, and select column types as appropriate
 - Add row actions (edit, delete)
 - Configure proper data sources
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -213,7 +199,7 @@ PROMPT
      * @param string $module Module name
      * @param string $entityName Entity name for the form
      * @param string $fields Comma-separated field names
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-admin-form',
@@ -227,10 +213,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 admin form for entity "{$entityName}" with the following specifications:
 
 **Module:** {$moduleName}
@@ -265,9 +248,7 @@ Requirements:
 - Handle both create and edit scenarios
 - Add proper success/error messages
 - Implement proper redirect after save
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -278,7 +259,7 @@ PROMPT
      * @param string $patchName Patch class name
      * @param string $patchType Type: data or schema
      * @param string $description Description of what the patch does
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-setup-patch',
@@ -294,10 +275,7 @@ PROMPT
         $moduleName = "{$vendor}_{$module}";
         $patchFolder = ucfirst($patchType);
 
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 {$patchType} patch with the following specifications:
 
 **Module:** {$moduleName}
@@ -324,8 +302,6 @@ For Schema Patches:
 - Use SchemaSetupInterface
 - Create/modify tables, columns, indexes, foreign keys
 - Consider using declarative schema (db_schema.xml) instead when appropriate
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 }

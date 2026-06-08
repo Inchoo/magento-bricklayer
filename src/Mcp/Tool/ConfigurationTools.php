@@ -9,7 +9,9 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\MasksSensitiveConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -19,21 +21,9 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class ConfigurationTools
 {
+    use MasksSensitiveConfig;
     use RequiresMagento;
-
-    /**
-     * Sensitive configuration paths that should be masked
-     */
-    private const SENSITIVE_PATHS = [
-        'payment',
-        'carriers',
-        'system/smtp',
-        'trans_email',
-        'oauth',
-        'admin/security',
-        'catalog/search/elasticsearch',
-        'catalog/search/opensearch',
-    ];
+    use RespondsWithErrors;
 
     /**
      * Retrieves system configuration value for a given path.
@@ -71,7 +61,7 @@ class ConfigurationTools
             // Mask sensitive values
             if ($this->isSensitivePath($path)) {
                 if (is_string($value) && strlen($value) > 0) {
-                    $value = '***MASKED***';
+                    $value = $this->maskValue();
                 } elseif (is_array($value)) {
                     $value = $this->maskSensitiveArray($value);
                 }
@@ -84,7 +74,7 @@ class ConfigurationTools
                 'value' => $value,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -191,7 +181,7 @@ class ConfigurationTools
 
             return $config;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -253,7 +243,7 @@ class ConfigurationTools
 
             return $result;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -444,7 +434,7 @@ class ConfigurationTools
                 'paths' => $paths,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -519,24 +509,8 @@ class ConfigurationTools
 
             return $result;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
-    }
-
-    /**
-     * Check if a configuration path is sensitive
-     *
-     * @param string $path
-     * @return bool
-     */
-    private function isSensitivePath(string $path): bool
-    {
-        foreach (self::SENSITIVE_PATHS as $sensitive) {
-            if (str_starts_with($path, $sensitive)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -550,7 +524,7 @@ class ConfigurationTools
         $result = [];
         foreach ($array as $key => $value) {
             if ($this->isSensitiveKey((string) $key) && is_string($value) && $value !== '') {
-                $result[$key] = '***MASKED***';
+                $result[$key] = $this->maskValue();
             } elseif (is_array($value)) {
                 $result[$key] = $this->maskSensitiveArray($value);
             } else {

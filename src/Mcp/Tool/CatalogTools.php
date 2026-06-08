@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -11,7 +12,9 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\FiltersFields;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\PaginatesResults;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\SecureArea;
 use Mcp\Capability\Attribute\McpTool;
 
@@ -24,8 +27,11 @@ class CatalogTools
 {
     use ChecksConfig;
     use FiltersFields;
+    use PaginatesResults;
     use RequiresMagento;
+    use RespondsWithErrors;
     use SecureArea;
+
     /**
      * Retrieves product data by SKU or ID.
      *
@@ -44,7 +50,7 @@ class CatalogTools
         }
 
         if ($sku === '') {
-            return ['error' => true, 'message' => 'SKU is required'];
+            return $this->errorResponse('SKU is required');
         }
 
         try {
@@ -64,9 +70,9 @@ class CatalogTools
 
             return $result;
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Product not found: $sku"];
+            return $this->errorResponse("Product not found: $sku");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -111,10 +117,7 @@ class CatalogTools
             $result = $productRepository->getList($searchCriteria);
 
             if ($count_only) {
-                return [
-                    'total' => $result->getTotalCount(),
-                    'count_only' => true,
-                ];
+                return $this->countOnlyResponse($result->getTotalCount());
             }
 
             $products = [];
@@ -122,15 +125,9 @@ class CatalogTools
                 $products[] = $this->formatProductData($product, false, $fields);
             }
 
-            return [
-                'total_count' => $result->getTotalCount(),
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $result->getTotalCount(),
-                'items' => $products,
-            ];
+            return $this->paginatedResponse($result->getTotalCount(), $pageSize, $currentPage, $products);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -181,7 +178,7 @@ class CatalogTools
 
             return ['success' => true, 'product' => $this->formatProductData($savedProduct, true)];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -231,9 +228,9 @@ class CatalogTools
 
             return ['success' => true, 'product' => $this->formatProductData($savedProduct, true)];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Product not found: $sku"];
+            return $this->errorResponse("Product not found: $sku");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -269,7 +266,7 @@ class CatalogTools
                 'backorders' => $stockItem->getBackorders(),
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -306,7 +303,7 @@ class CatalogTools
 
             return ['success' => true, 'sku' => $sku, 'qty' => $qty, 'is_in_stock' => $isInStock];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -334,7 +331,7 @@ class CatalogTools
 
             return $this->formatCategoryTree($tree);
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -373,9 +370,9 @@ class CatalogTools
                 'product_count' => (int) $category->getProductCount(),
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Category not found: $categoryId"];
+            return $this->errorResponse("Category not found: $categoryId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -411,9 +408,9 @@ class CatalogTools
                 return ['success' => true, 'message' => "Product $sku deleted"];
             });
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Product not found: $sku"];
+            return $this->errorResponse("Product not found: $sku");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -453,7 +450,7 @@ class CatalogTools
 
             return ['sku' => $sku, 'media' => $media];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -479,16 +476,23 @@ class CatalogTools
         string $label = '',
         int $position = 0
     ): array {
+        if ($file === '') {
+            return $this->errorResponse('File is required');
+        }
+
+        if (!str_starts_with($file, 'data:image')) {
+            return $this->errorResponse(
+                'Only data-URI encoded images are supported (e.g. data:image/jpeg;base64,…). '
+                . 'File path input is not implemented.'
+            );
+        }
+
         if ($error = $this->requireMagento()) {
             return $error;
         }
 
         if ($error = $this->requireToolEnabled('product-media-add')) {
             return $error;
-        }
-
-        if ($file === '') {
-            return ['error' => true, 'message' => 'File is required'];
         }
 
         try {
@@ -503,22 +507,49 @@ class CatalogTools
                 ->setDisabled(false)
                 ->setTypes([$mediaType]);
 
-            // Handle base64 content
-            if (str_starts_with($file, 'data:image')) {
-                $content = $contentFactory->create();
-                $imageData = explode(',', $file);
-                $content->setBase64EncodedData($imageData[1] ?? $file);
-                $content->setType('image/jpeg');
-                $content->setName('product_image_' . time() . '.jpg');
-                $entry->setContent($content);
-            }
+            $mimeInfo = $this->parseMimeFromDataUri($file);
+            $content = $contentFactory->create();
+            $imageData = explode(',', $file);
+            $content->setBase64EncodedData($imageData[1] ?? $file);
+            $content->setType($mimeInfo['mime']);
+            $content->setName($mimeInfo['name']);
+            $entry->setContent($content);
 
             $id = $galleryManagement->create($sku, $entry);
 
             return ['success' => true, 'sku' => $sku, 'media_id' => $id];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Parses MIME type and derives a filename extension from a data-URI prefix.
+     *
+     * Handles common image types (jpeg, png, gif, webp, svg+xml) and falls back to
+     * image/jpeg + .jpg for unrecognised subtypes.
+     *
+     * @param string $dataUri A string of the form "data:image/<subtype>;base64,…"
+     * @return array{mime: string, name: string}
+     */
+    private function parseMimeFromDataUri(string $dataUri): array
+    {
+        $mime = 'image/jpeg';
+        $ext = '.jpg';
+
+        if (preg_match('#^data:(image/[a-z+\-]+);#', $dataUri, $m)) {
+            $mime = $m[1];
+            $extMap = [
+                'image/jpeg'   => '.jpg',
+                'image/png'    => '.png',
+                'image/gif'    => '.gif',
+                'image/webp'   => '.webp',
+                'image/svg+xml' => '.svg',
+            ];
+            $ext = $extMap[$mime] ?? '.jpg';
+        }
+
+        return ['mime' => $mime, 'name' => 'product_image_' . time() . $ext];
     }
 
     /**
@@ -541,7 +572,7 @@ class CatalogTools
 
         $validTypes = ['related', 'upsell', 'crosssell'];
         if (!in_array($linkType, $validTypes, true)) {
-            return ['error' => true, 'message' => "Invalid link type. Use: " . implode(', ', $validTypes)];
+            return $this->errorResponse("Invalid link type. Use: " . implode(', ', $validTypes));
         }
 
         try {
@@ -559,7 +590,7 @@ class CatalogTools
 
             return ['sku' => $sku, 'link_type' => $linkType, 'links' => $linkedProducts];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -588,7 +619,7 @@ class CatalogTools
 
         $validTypes = ['related', 'upsell', 'crosssell'];
         if (!in_array($linkType, $validTypes, true)) {
-            return ['error' => true, 'message' => "Invalid link type. Use: " . implode(', ', $validTypes)];
+            return $this->errorResponse("Invalid link type. Use: " . implode(', ', $validTypes));
         }
 
         try {
@@ -611,7 +642,7 @@ class CatalogTools
 
             return ['success' => true, 'sku' => $sku, 'link_type' => $linkType, 'linked_count' => count($links)];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -668,7 +699,7 @@ class CatalogTools
                 ],
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -723,9 +754,9 @@ class CatalogTools
                 ],
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Category not found: $categoryId"];
+            return $this->errorResponse("Category not found: $categoryId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -761,9 +792,9 @@ class CatalogTools
                 return ['success' => true, 'message' => "Category $categoryId deleted"];
             });
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Category not found: $categoryId"];
+            return $this->errorResponse("Category not found: $categoryId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -809,19 +840,21 @@ class CatalogTools
                 ];
             }
 
+            $paginated = $this->paginatedResponse($total, $pageSize, $currentPage, $products);
+
             return [
                 'category_id' => $categoryId,
                 'category_name' => $category->getName(),
-                'total_count' => $total,
-                'page_size' => $pageSize,
-                'current_page' => $currentPage,
-                'has_more' => ($currentPage * $pageSize) < $total,
-                'products' => $products,
+                'total_count' => $paginated['total_count'],
+                'page_size' => $paginated['page_size'],
+                'current_page' => $paginated['current_page'],
+                'has_more' => $paginated['has_more'],
+                'products' => $paginated['items'],
             ];
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-            return ['error' => true, 'message' => "Category not found: $categoryId"];
+            return $this->errorResponse("Category not found: $categoryId");
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -859,7 +892,7 @@ class CatalogTools
 
             return ['success' => true, 'category_id' => $categoryId, 'assigned_count' => count($skuList)];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -926,5 +959,4 @@ class CatalogTools
 
         return $data;
     }
-
 }

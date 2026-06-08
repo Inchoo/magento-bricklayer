@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -48,42 +49,31 @@ class GuidelinesResource
     )]
     public function getGuidelinesIndex(): string
     {
-        $guidelinesDir = dirname(__DIR__, 3) . '/config/guidelines';
+        $guidelinesDir = $this->getGuidelinesDir();
         $guidelines = [];
 
-        if (is_dir($guidelinesDir)) {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($guidelinesDir, \RecursiveDirectoryIterator::SKIP_DOTS)
-            );
+        foreach ($this->collectMarkdownRelativePaths($guidelinesDir) as $relativePath) {
+            $pathWithoutExt = preg_replace('/\.md$/', '', $relativePath);
+            $parts = explode('/', (string) $pathWithoutExt);
 
-            foreach ($iterator as $file) {
-                if ($file->getExtension() !== 'md') {
-                    continue;
-                }
-
-                $relativePath = str_replace($guidelinesDir . '/', '', $file->getPathname());
-                $pathWithoutExt = preg_replace('/\.md$/', '', $relativePath);
-                $parts = explode('/', $pathWithoutExt);
-
-                if (count($parts) !== 2) {
-                    continue;
-                }
-
-                [$category, $name] = $parts;
-
-                $content = file_get_contents($file->getPathname());
-                if ($content && preg_match('/^#\s+(.+)$/m', $content, $matches)) {
-                    $title = $matches[1];
-                } else {
-                    $title = ucwords(str_replace(['-', '_'], ' ', $name));
-                }
-
-                $guidelines[$category][] = [
-                    'name' => $name,
-                    'title' => $title,
-                    'uri' => "magento://guidelines/{$category}/{$name}",
-                ];
+            if (count($parts) !== 2) {
+                continue;
             }
+
+            [$category, $name] = $parts;
+
+            $content = file_get_contents($guidelinesDir . '/' . $relativePath);
+            if ($content !== false && preg_match('/^#\s+(.+)$/m', $content, $matches)) {
+                $title = $matches[1];
+            } else {
+                $title = $this->titleCaseName($name);
+            }
+
+            $guidelines[$category][] = [
+                'name' => $name,
+                'title' => $title,
+                'uri' => "magento://guidelines/{$category}/{$name}",
+            ];
         }
 
         ksort($guidelines);
@@ -94,7 +84,7 @@ class GuidelinesResource
             $markdown .= "No guidelines found in config/guidelines directory.\n";
         } else {
             foreach ($guidelines as $category => $items) {
-                $markdown .= "## " . ucwords(str_replace(['-', '_'], ' ', $category)) . "\n\n";
+                $markdown .= "## " . $this->titleCaseName($category) . "\n\n";
                 usort($items, fn(array $a, array $b) => $a['name'] <=> $b['name']);
                 foreach ($items as $item) {
                     $markdown .= "- **{$item['title']}** (`{$item['uri']}`)\n";
@@ -104,5 +94,16 @@ class GuidelinesResource
         }
 
         return $markdown;
+    }
+
+    /**
+     * Returns the absolute path to the guidelines configuration directory.
+     *
+     * Extracted as a protected method so that tests can substitute a temporary
+     * directory without touching the filesystem layout expected by the real package.
+     */
+    protected function getGuidelinesDir(): string
+    {
+        return dirname(__DIR__, 3) . '/config/guidelines';
     }
 }

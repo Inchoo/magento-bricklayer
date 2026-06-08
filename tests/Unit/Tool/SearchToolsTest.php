@@ -128,4 +128,57 @@ class SearchToolsTest extends TestCase
 
         $this->assertNotNull($diagnosticResult, 'diagnostic category should appear in results');
     }
+
+    public function testItDerivesTheCategoryCountFromTheCategoryMapPlusLocals(): void
+    {
+        // Explicit root with no .bricklayer/skills → only CATEGORY_MAP categories.
+        // Must pass an explicit root: relying on the resolved global root is order-dependent
+        // (a prior test can leave MagentoBootstrap pointing at a real root that has local skills).
+        $tmpDir = sys_get_temp_dir() . '/bricklayer_test_' . uniqid();
+        mkdir($tmpDir, 0777, true);
+
+        try {
+            $tools = new SearchTools($tmpDir, null);
+            $result = $tools->searchDocs('zzz_no_match_xqz');
+
+            $expectedCount = count(\Inchoo\MagentoBricklayer\Mcp\Tool\ContextTools::CATEGORY_MAP);
+
+            $this->assertStringContainsString(
+                (string) $expectedCount,
+                $result['guidance'],
+                'The tip text must derive its category count from CATEGORY_MAP'
+            );
+        } finally {
+            rmdir($tmpDir);
+        }
+    }
+
+    public function testItReportsTheCorrectCategoryCountWhenALocalCategoryIsPresent(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/bricklayer_test_' . uniqid();
+        $skillDir = $tmpDir . '/.bricklayer/skills/my-project-skill';
+        mkdir($skillDir, 0777, true);
+        $skillFrontmatter = "---\nname: My Project Skill\ndescription: A test local skill\n---\n";
+        file_put_contents($skillDir . '/SKILL.md', $skillFrontmatter);
+
+        try {
+            $tools = new SearchTools($tmpDir, null);
+            $result = $tools->searchDocs('zzz_no_match_xqz');
+
+            $expectedCount = count(\Inchoo\MagentoBricklayer\Mcp\Tool\ContextTools::CATEGORY_MAP) + 1;
+
+            $this->assertStringContainsString(
+                (string) $expectedCount,
+                $result['guidance'],
+                'The tip text must include local-only skill categories in the count'
+            );
+        } finally {
+            // Clean up
+            unlink($skillDir . '/SKILL.md');
+            rmdir($skillDir);
+            rmdir($tmpDir . '/.bricklayer/skills');
+            rmdir($tmpDir . '/.bricklayer');
+            rmdir($tmpDir);
+        }
+    }
 }

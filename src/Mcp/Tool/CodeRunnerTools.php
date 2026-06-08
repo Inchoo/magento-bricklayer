@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -12,12 +13,15 @@ use Inchoo\MagentoBricklayer\Bootstrap\AreaEmulator;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 class CodeRunnerTools
 {
     use ChecksConfig;
     use RequiresMagento;
+    use RespondsWithErrors;
 
     private const MAX_DEFINED_FUNCTIONS = 20;
 
@@ -77,20 +81,11 @@ class CodeRunnerTools
         }
 
         // Hard block in production mode (code-runner is always blocked, no config override)
-        try {
-            $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
-            $deployMode = $state->getMode();
-
-            if ($deployMode === \Magento\Framework\App\State::MODE_PRODUCTION) {
-                return [
-                    'error' => true,
-                    'message' => 'Code runner is disabled in production mode for security reasons.',
-                    'deploy_mode' => $deployMode,
-                ];
-            }
-        } catch (\Throwable $e) {
-            // Cannot determine deploy mode — proceed (production blocking is best-effort here;
-            // the hard security block is in ChecksConfig::isProductionMode which fails closed)
+        if ($this->isProductionMode()) {
+            return $this->errorResponse(
+                'Code runner is disabled in production mode for security reasons.',
+                ['deploy_mode' => 'production']
+            );
         }
 
         if ($error = $this->requireToolEnabled('code-runner')) {
@@ -338,10 +333,6 @@ class CodeRunnerTools
         try {
             if (class_exists(\Psy\Shell::class)) {
                 $result = $this->executeWithPsySH($code, $mode);
-                // If PsySH failed with an internal error, try simple fallback
-                if (!$result['success'] && isset($result['error']['class']) && str_contains($result['error']['class'], 'Error')) {
-                    $result = $this->executeSimple($code, $mode);
-                }
             } else {
                 $result = $this->executeSimple($code, $mode);
             }
@@ -372,6 +363,24 @@ class CodeRunnerTools
 
     private function executeWithPsySH(string $code, string $mode): array
     {
+        return $this->runPsysh($code, $mode, $this->buildScopeVariables());
+    }
+
+    /**
+     * Run code through a PsySH shell with the given scope variables.
+     *
+     * PsySH's Shell::execute() writes through its $output property, which is a typed
+     * property only initialised when the shell runs interactively. For programmatic use
+     * we must setOutput() first (otherwise it throws "Typed property Psy\Shell::$output
+     * must not be accessed before initialization"). We also pass throwExceptions=true so
+     * user-code exceptions propagate here for clean reporting instead of PsySH trying to
+     * write them through its output.
+     *
+     * @param array<string, mixed> $scopeVariables
+     * @return array<string, mixed>
+     */
+    private function runPsysh(string $code, string $mode, array $scopeVariables): array
+    {
         try {
             $config = new \Psy\Configuration([
                 'updateCheck' => 'never',
@@ -380,15 +389,15 @@ class CodeRunnerTools
             ]);
 
             $shell = new \Psy\Shell($config);
-
-            $shell->setScopeVariables($this->buildScopeVariables());
+            $shell->setOutput(new BufferedOutput());
+            $shell->setScopeVariables($scopeVariables);
 
             ob_start();
             $error = null;
             $returnValue = null;
 
             try {
-                $returnValue = $shell->execute($code);
+                $returnValue = $shell->execute($code, true);
                 $returnValue = $this->formatReturnValue($returnValue);
             } catch (\Throwable $e) {
                 $error = [
@@ -417,11 +426,7 @@ class CodeRunnerTools
 
             return $result;
         } catch (\Throwable $e) {
-            return [
-                'error' => true,
-                'message' => 'PsySH execution failed: ' . $e->getMessage(),
-                'mode' => $mode,
-            ];
+            return $this->errorResponse('PsySH execution failed: ' . $e->getMessage(), ['mode' => $mode]);
         }
     }
 
@@ -478,11 +483,7 @@ class CodeRunnerTools
 
             return $result;
         } catch (\Throwable $e) {
-            return [
-                'error' => true,
-                'message' => 'Execution failed: ' . $e->getMessage(),
-                'mode' => $mode,
-            ];
+            return $this->errorResponse('Execution failed: ' . $e->getMessage(), ['mode' => $mode]);
         }
     }
 
@@ -505,8 +506,7 @@ class CodeRunnerTools
         };
 
         $config = function (string $path, string $scopeType = 'default', int $scopeId = 0)
-            use ($objectManager)
-        {
+ use ($objectManager) {
             $scopeConfig = $objectManager->get(
                 \Magento\Framework\App\Config\ScopeConfigInterface::class
             );
@@ -670,7 +670,7 @@ class CodeRunnerTools
         $count = 0;
 
         foreach ($array as $key => $value) {
-            if ($count++ > 100) {
+            if ($count++ >= 100) {
                 $result['__truncated__'] = 'Array truncated at 100 items';
                 break;
             }

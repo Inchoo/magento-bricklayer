@@ -9,9 +9,12 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Guidelines;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\ContextTools;
+use Inchoo\MagentoBricklayer\Support\CollectsMarkdownFiles;
 
 class GuidelinesCompiler
 {
+    use CollectsMarkdownFiles;
+
     private readonly string $packageRoot;
     private readonly ?string $magentoRoot;
 
@@ -387,40 +390,17 @@ SECTION;
         }
 
         $localDir = $this->magentoRoot . '/.bricklayer/guidelines/';
-        if (!is_dir($localDir)) {
+        $relativePaths = $this->collectMarkdownRelativePaths($localDir);
+        if ($relativePaths === []) {
             return '';
         }
 
-        $realLocalDir = realpath($localDir);
-        if ($realLocalDir === false) {
-            return '';
-        }
-        $realLocalDir = rtrim($realLocalDir, '/\\') . '/';
-
+        $localDirPrefix = rtrim($localDir, '/\\') . '/';
         $bundledRelativePaths = $this->getBundledGuidelineRelativePaths();
 
-        try {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($realLocalDir, \FilesystemIterator::SKIP_DOTS)
-            );
-        } catch (\UnexpectedValueException) {
-            return '';
-        }
-
         $grouped = [];
-        foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
-                continue;
-            }
-            if (strtolower($file->getExtension()) !== 'md') {
-                continue;
-            }
-
-            $absolute = $file->getPathname();
-            $relativePath = str_replace('\\', '/', substr($absolute, strlen($realLocalDir)));
-            if ($relativePath === '') {
-                continue;
-            }
+        foreach ($relativePaths as $relativePath) {
+            $absolute = $localDirPrefix . $relativePath;
 
             if (in_array($relativePath, $bundledRelativePaths, true)) {
                 $this->appliedLocalOverrides[] = '.bricklayer/guidelines/' . $relativePath;
@@ -514,6 +494,7 @@ SECTION;
 
             $meta = LocalOverrideHelper::parseSkillFrontmatter($skillFile);
             $description = $meta['description'] ?? LocalOverrideHelper::defaultDisplayName($category);
+            $description = str_replace('|', '\\|', $description);
 
             $rows .= "| `{$category}` | {$description} |\n";
             $this->appliedLocalAdditions[] = '.bricklayer/skills/' . $category . '/SKILL.md';
@@ -530,40 +511,7 @@ SECTION;
      */
     private function getBundledGuidelineRelativePaths(): array
     {
-        $bundledDir = $this->packageRoot . '/config/guidelines/';
-        if (!is_dir($bundledDir)) {
-            return [];
-        }
-
-        $realBundledDir = realpath($bundledDir);
-        if ($realBundledDir === false) {
-            return [];
-        }
-        $realBundledDir = rtrim($realBundledDir, '/\\') . '/';
-
-        $paths = [];
-        try {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($realBundledDir, \FilesystemIterator::SKIP_DOTS)
-            );
-        } catch (\UnexpectedValueException) {
-            return [];
-        }
-
-        foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || !$file->isFile()) {
-                continue;
-            }
-            if (strtolower($file->getExtension()) !== 'md') {
-                continue;
-            }
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($realBundledDir)));
-            if ($relative !== '') {
-                $paths[] = $relative;
-            }
-        }
-
-        return $paths;
+        return $this->collectMarkdownRelativePaths($this->packageRoot . '/config/guidelines/');
     }
 
     /**

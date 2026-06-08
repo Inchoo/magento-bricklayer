@@ -10,11 +10,13 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class RoutingTools
 {
     use RequiresMagento;
+    use RespondsWithErrors;
 
     #[McpTool(
         name: 'route-list',
@@ -57,7 +59,7 @@ class RoutingTools
 
             return $result;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -115,7 +117,7 @@ class RoutingTools
 
             return $result;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -166,7 +168,7 @@ class RoutingTools
                 'controllers' => $controllers,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -221,7 +223,7 @@ class RoutingTools
                 'rewrites' => $rewrites,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 

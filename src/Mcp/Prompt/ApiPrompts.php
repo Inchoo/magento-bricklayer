@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento REST and GraphQL APIs.
  */
-class ApiPrompts
+class ApiPrompts extends AbstractPrompt
 {
     /**
      * Creates a complete REST API resource.
@@ -37,12 +38,7 @@ class ApiPrompts
         $moduleName = "{$vendor}_{$module}";
         $path = $basePath ?: '/V1/' . strtolower($module);
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a complete REST API resource for {$resourceName}:
 
 **Module:** {$moduleName}
@@ -83,10 +79,7 @@ webapi.xml example structure:
     </resources>
 </route>
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -111,12 +104,7 @@ PROMPT
         $moduleName = "{$vendor}_{$module}";
         $type = $returnType ?: ucfirst($queryName) . 'Output';
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a GraphQL query for {$queryName}:
 
 **Module:** {$moduleName}
@@ -158,10 +146,7 @@ Resolver requirements:
 - Use data providers or repositories for data fetching
 - Handle authorization if needed
 - Return array matching the schema structure
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -186,12 +171,7 @@ PROMPT
         $moduleName = "{$vendor}_{$module}";
         $input = $inputType ?: ucfirst($mutationName) . 'Input';
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a GraphQL mutation for {$mutationName}:
 
 **Module:** {$moduleName}
@@ -227,10 +207,7 @@ Mutation resolver requirements:
 - Use repository/service for data operations
 - Handle exceptions gracefully
 - Return structured response with success status
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -254,12 +231,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create an authenticated API endpoint:
 
 **Module:** {$moduleName}
@@ -297,9 +269,6 @@ Service interface requirements:
 For customer-authenticated endpoints:
 - Access customer ID via \Magento\Authorization\Model\UserContextInterface
 - Validate customer owns the requested resource
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 }

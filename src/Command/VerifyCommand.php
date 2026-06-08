@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -9,7 +10,6 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Command;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
-use Inchoo\MagentoBricklayer\Bootstrap\MagentoDetector;
 use Inchoo\MagentoBricklayer\Config\ConfigInitializer;
 use Inchoo\MagentoBricklayer\Config\ConfigLoader;
 use Inchoo\MagentoBricklayer\Mcp\McpServerFactory;
@@ -30,21 +30,15 @@ use Symfony\Component\Console\Output\OutputInterface;
     name: 'verify',
     description: 'Verify Bricklayer installation and configuration'
 )]
-class VerifyCommand extends Command
+class VerifyCommand extends AbstractBricklayerCommand
 {
-
     /** @var array<array{name: string, status: string, message: string}> */
     private array $results = [];
 
     protected function configure(): void
     {
+        parent::configure();
         $this
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
-            )
             ->addOption(
                 'json',
                 null,
@@ -76,8 +70,7 @@ HELP
     {
         $outputJson = $input->getOption('json');
 
-        $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
+        $magentoRoot = $this->detectMagentoRoot($input);
 
         // Run all checks
         $this->checkBootstrap($magentoRoot);
@@ -88,7 +81,7 @@ HELP
         $this->checkPsySH();
         $this->checkDatabase();
         $this->checkLogDirectory($magentoRoot);
-        $this->checkCodeRunner();
+        $this->checkCodeRunner($magentoRoot);
         $this->checkDiagnoseError();
 
         // Calculate summary
@@ -123,6 +116,7 @@ HELP
                 'pass' => '<fg=green>  ✓</>',
                 'warn' => '<fg=yellow>  ⚠</>',
                 'fail' => '<fg=red>  ✗</>',
+                default => '  ?',
             };
             $name = str_pad($result['name'], 30, '.', STR_PAD_RIGHT);
             $message = $result['message'];
@@ -329,10 +323,11 @@ HELP
         }
     }
 
-    private function checkCodeRunner(): void
+    private function checkCodeRunner(?string $magentoRoot): void
     {
         try {
             $configLoader = new ConfigLoader();
+            $configLoader->load($magentoRoot);
             $enabled = $configLoader->isToolEnabled('code-runner');
 
             if ($enabled) {

@@ -382,6 +382,36 @@ class ExceptionParserTest extends TestCase
         $this->assertEqualsWithDelta($expected, $result, 2);
     }
 
+    public function testItExtractsAChainedExceptionClassContainingDigits(): void
+    {
+        $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
+        $lines = [
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Vendor\\\\Module2\\\\Exception\\\\Custom2Exception(code: 1): Inner cause at /var/www/html/app/code/Vendor/Module2/Block/Custom.php:28)\"} []",
+        ];
+
+        $result = $this->parser->parse($lines, '24h');
+
+        $this->assertCount(1, $result);
+        $entry = $result[0];
+        $this->assertNotNull($entry['previous']);
+        $this->assertSame('Vendor\\Module2\\Exception\\Custom2Exception', $entry['previous']['class']);
+    }
+
+    public function testItExtractsAChainedExceptionClassContainingUnderscores(): void
+    {
+        $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
+        $lines = [
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Vendor\\\\Module\\\\Exception\\\\Custom_Exception(code: 2): Underscore cause at /var/www/html/app/code/Vendor/Module/Block/Custom.php:42)\"} []",
+        ];
+
+        $result = $this->parser->parse($lines, '24h');
+
+        $this->assertCount(1, $result);
+        $entry = $result[0];
+        $this->assertNotNull($entry['previous']);
+        $this->assertSame('Vendor\\Module\\Exception\\Custom_Exception', $entry['previous']['class']);
+    }
+
     /**
      * Invoke a private method on ExceptionParser via reflection.
      */

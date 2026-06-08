@@ -79,4 +79,106 @@ class VerifyCommandTest extends TestCase
         $this->assertStringContainsString('Magento', $output);
         $this->assertStringContainsString('Result', $output);
     }
+
+    public function testItLoadsTheProjectConfigWithTheResolvedRootBeforeCheckingCodeRunner(): void
+    {
+        $tempDir = sys_get_temp_dir() . '/verify_cmd_test_' . uniqid();
+        mkdir($tempDir, 0777, true);
+
+        try {
+            // Write a .bricklayer.json that disables code-runner
+            file_put_contents(
+                $tempDir . '/.bricklayer.json',
+                (string) json_encode(['tools' => ['code-runner' => ['enabled' => false]]])
+            );
+
+            $command = new VerifyCommand();
+            $tester = new CommandTester($command);
+            $tester->execute(['--json' => true, '--magento-root' => $tempDir]);
+
+            $data = json_decode($tester->getDisplay(), true);
+            $this->assertNotNull($data);
+
+            $codeRunnerResult = null;
+            foreach ($data['results'] as $result) {
+                if ($result['name'] === 'Code runner') {
+                    $codeRunnerResult = $result;
+                    break;
+                }
+            }
+
+            $this->assertNotNull($codeRunnerResult, 'Code runner check must be present in results');
+            // The project config sets code-runner disabled — the command must reflect that,
+            // not fall back to built-in defaults ("enabled (default config)").
+            $this->assertSame('warn', $codeRunnerResult['status']);
+            $this->assertStringContainsString('disabled', $codeRunnerResult['message']);
+        } finally {
+            @unlink($tempDir . '/.bricklayer.json');
+            @rmdir($tempDir);
+        }
+    }
+
+    public function testItReflectsAProjectConfigOverrideOfCodeRunnerEnabledState(): void
+    {
+        $tempDir = sys_get_temp_dir() . '/verify_cmd_test_' . uniqid();
+        mkdir($tempDir, 0777, true);
+
+        try {
+            // Write a .bricklayer.json that enables code-runner with allow_write
+            file_put_contents(
+                $tempDir . '/.bricklayer.json',
+                (string) json_encode(['tools' => ['code-runner' => ['enabled' => true, 'allow_write' => true]]])
+            );
+
+            $command = new VerifyCommand();
+            $tester = new CommandTester($command);
+            $tester->execute(['--json' => true, '--magento-root' => $tempDir]);
+
+            $data = json_decode($tester->getDisplay(), true);
+            $this->assertNotNull($data);
+
+            $codeRunnerResult = null;
+            foreach ($data['results'] as $result) {
+                if ($result['name'] === 'Code runner') {
+                    $codeRunnerResult = $result;
+                    break;
+                }
+            }
+
+            $this->assertNotNull($codeRunnerResult, 'Code runner check must be present in results');
+            $this->assertSame('pass', $codeRunnerResult['status']);
+            $this->assertStringContainsString('read-write', $codeRunnerResult['message']);
+        } finally {
+            @unlink($tempDir . '/.bricklayer.json');
+            @rmdir($tempDir);
+        }
+    }
+
+    public function testItRendersAnUnknownStatusWithoutThrowing(): void
+    {
+        // Pre-seed $results with an unknown status via reflection;
+        // execute() appends to (never resets) the property, so the entry survives
+        // into the render loop and exercises the match default arm.
+        $command = new VerifyCommand();
+        $prop = new \ReflectionProperty(VerifyCommand::class, 'results');
+        $prop->setValue($command, [
+            ['name' => 'Future check', 'status' => 'unknown', 'message' => 'x'],
+        ]);
+
+        $tester = new CommandTester($command);
+
+        // Must not throw UnhandledMatchError
+        $this->expectNotToPerformAssertions();
+        $tester->execute([]);
+    }
+
+    public function testItStillRendersPassWarnAndFailStatusesCorrectly(): void
+    {
+        $this->tester->execute([]);
+        $output = $this->tester->getDisplay();
+
+        // The standard statuses must render; we check the non-JSON text path renders
+        // the summary line which only appears when all three statuses are handled.
+        $this->assertStringContainsString('Result:', $output);
+    }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento controllers.
  */
-class ControllerPrompts
+class ControllerPrompts extends AbstractPrompt
 {
     /**
      * Creates a frontend controller action.
@@ -37,12 +38,7 @@ class ControllerPrompts
         $moduleName = "{$vendor}_{$module}";
         $route = $routeName ?: strtolower($module);
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 frontend controller with the following specifications:
 
 **Module:** {$moduleName}
@@ -68,10 +64,7 @@ Controller patterns to consider:
 - For page rendering: return \$this->resultPageFactory->create()
 - For JSON response: return \$this->resultJsonFactory->create()->setData([])
 - For redirects: return \$this->resultRedirectFactory->create()->setPath('path')
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -96,12 +89,7 @@ PROMPT
         $moduleName = "{$vendor}_{$module}";
         $acl = $aclResource ?: "{$moduleName}::manage";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 admin controller with the following specifications:
 
 **Module:** {$moduleName}
@@ -129,10 +117,7 @@ Admin controller specifics:
 - Use messageManager for success/error messages
 - Redirect back to listing after save/delete operations
 - Handle exceptions and show user-friendly errors
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -156,12 +141,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 AJAX controller with the following specifications:
 
 **Module:** {$moduleName}
@@ -200,10 +180,7 @@ try {
     ]);
 }
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -227,12 +204,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create Magento 2 form controllers for managing {$entityName}:
 
 **Module:** {$moduleName}
@@ -263,9 +235,6 @@ Controller flow:
 - Edit -> loads entity, passes to form
 - Save -> validates, saves via repository, redirects
 - Delete -> validates, deletes via repository, redirects
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 }

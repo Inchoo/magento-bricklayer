@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -26,21 +27,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'inspect',
     description: 'Display information about the current Magento installation'
 )]
-class InspectCommand extends Command
+class InspectCommand extends AbstractBricklayerCommand
 {
-
     /**
      * @return void
      */
     protected function configure(): void
     {
+        parent::configure();
         $this
-            ->addOption(
-                'magento-root',
-                'm',
-                InputOption::VALUE_OPTIONAL,
-                'Path to Magento root directory (auto-detected if not specified)'
-            )
             ->addOption(
                 'json',
                 null,
@@ -87,18 +82,18 @@ HELP
         $outputJson = $input->getOption('json');
         $noBootstrap = $input->getOption('no-bootstrap');
 
-        $detector = new MagentoDetector();
-        $magentoRoot = $input->getOption('magento-root') ?? $detector->detect();
+        $magentoRoot = $this->detectMagentoRoot($input);
 
         if ($magentoRoot === null) {
             if ($outputJson) {
                 $output->writeln(json_encode(['error' => 'Magento installation not found']));
             } else {
-                $io->error('Could not detect Magento installation. Please specify --magento-root option.');
+                $io->error(self::ERROR_NO_MAGENTO);
             }
             return Command::FAILURE;
         }
 
+        $detector = new MagentoDetector();
         $info = $this->gatherBasicInfo($detector, $magentoRoot);
 
         if (!$noBootstrap) {
@@ -212,7 +207,6 @@ HELP
                 'valid' => $validIndexers,
                 'invalid' => $invalidIndexers,
             ];
-
         } catch (\Throwable $e) {
             $info['error'] = $e->getMessage();
         }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -159,11 +160,6 @@ class McpConfigWriter
         return $projectName . '-php';
     }
 
-    public function writeCursorConfig(string $envType = 'native'): void
-    {
-        $this->writeMcpConfig($envType);
-    }
-
     public function writePhpStormConfig(string $envType = 'native'): void
     {
         $ideaDir = $this->projectRoot . '/.idea';
@@ -184,6 +180,25 @@ class McpConfigWriter
     /** @return array<string> */
     public static function getAvailableEnvironmentTypes(): array
     {
-        return ['native', 'docker', 'docker-compose', 'ddev', 'hooli', 'warden'];
+        return array_keys(self::getEnvironmentTypeLabels());
+    }
+
+    /**
+     * Returns the canonical env-type → human-readable label map.
+     * This is the single authoritative source for both the set of supported types
+     * and their display labels.
+     *
+     * @return array<string, string>
+     */
+    public static function getEnvironmentTypeLabels(): array
+    {
+        return [
+            'native' => 'Native (no containers)',
+            'ddev' => 'DDEV',
+            'hooli' => 'Hooli',
+            'warden' => 'Warden',
+            'docker-compose' => 'Docker Compose',
+            'docker' => 'Docker',
+        ];
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for catalog operations (products, categories).
  */
-class CatalogPrompts
+class CatalogPrompts extends AbstractPrompt
 {
     /**
      * Guides through product creation.
@@ -23,7 +24,7 @@ class CatalogPrompts
      * @param string $sku Product SKU
      * @param string $name Product name
      * @param float $price Product price
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-product',
@@ -36,10 +37,7 @@ class CatalogPrompts
         string $name = '',
         float $price = 0.00
     ): array {
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Guide me through creating a Magento 2 product with these specifications:
 
 **Product Type:** {$productType}
@@ -78,9 +76,7 @@ Provide step-by-step instructions including:
    - Index and cache management
 
 Use the `product-create` tool to create the product, or provide the code to do so programmatically.
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -89,7 +85,7 @@ PROMPT
      * @param string $sourceFormat Source format (csv, json, xml, api)
      * @param string $entityType Entity type (products, categories, customers)
      * @param string $mapping Field mapping description
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'bulk-product-import',
@@ -100,10 +96,7 @@ PROMPT
         string $entityType = 'products',
         string $mapping = ''
     ): array {
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a bulk import strategy for Magento 2 with these specifications:
 
 **Source Format:** {$sourceFormat}
@@ -150,9 +143,7 @@ Provide a comprehensive import strategy including:
    - Reindex
    - Cache flush
    - Data verification
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 
     /**
@@ -161,7 +152,7 @@ PROMPT
      * @param string $parentCategory Parent category name or ID
      * @param string $children Comma-separated child category names
      * @param string $attributes Additional attributes to set
-     * @return array<array<string, string>> Prompt messages
+     * @return array<array<string, mixed>> Prompt messages
      */
     #[McpPrompt(
         name: 'create-category-structure',
@@ -172,10 +163,7 @@ PROMPT
         string $children = '',
         string $attributes = ''
     ): array {
-        return [
-            [
-                'role' => 'user',
-                'content' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a Magento 2 category structure with these specifications:
 
 **Parent Category:** {$parentCategory}
@@ -219,8 +207,6 @@ Provide instructions for creating the category hierarchy:
    - Position/sorting
 
 Use the `category-create` tool to create categories or provide the implementation code.
-PROMPT
-            ]
-        ];
+PROMPT);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -17,7 +18,13 @@ class ConfigValidatorTest extends TestCase
 
     protected function setUp(): void
     {
+        ConfigValidator::clearKnownToolsCache();
         $this->validator = new ConfigValidator();
+    }
+
+    protected function tearDown(): void
+    {
+        ConfigValidator::clearKnownToolsCache();
     }
 
     public function testValidateReturnsTrueForEmptyConfig(): void

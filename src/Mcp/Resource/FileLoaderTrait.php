@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -8,11 +9,15 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 
+use Inchoo\MagentoBricklayer\Support\CollectsMarkdownFiles;
+
 /**
  * Provides common file loading functionality for MCP resources.
  */
 trait FileLoaderTrait
 {
+    use CollectsMarkdownFiles;
+
     /**
      * Load content from a file within the config directory
      *
@@ -35,6 +40,17 @@ trait FileLoaderTrait
     }
 
     /**
+     * Convert a hyphen- or underscore-separated name to Title Case.
+     *
+     * Canonical helper used by GuidelinesResource, SkillsResource, and generatePlaceholder
+     * so that all three render underscore-separated names identically.
+     */
+    private function titleCaseName(string $name): string
+    {
+        return ucwords(str_replace(['-', '_'], ' ', $name));
+    }
+
+    /**
      * Generate placeholder content for missing files
      *
      * @param string $path The file path (used to extract a title)
@@ -43,7 +59,7 @@ trait FileLoaderTrait
     private function generatePlaceholder(string $path): string
     {
         $filename = pathinfo($path, PATHINFO_FILENAME);
-        $title = ucwords(str_replace(['-', '_'], ' ', $filename));
+        $title = $this->titleCaseName($filename);
 
         return <<<MARKDOWN
 # {$title}
