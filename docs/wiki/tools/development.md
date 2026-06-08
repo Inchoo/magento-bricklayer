@@ -16,14 +16,16 @@ Execute PHP in Magento's DI context.
 | `area` | string | `""` | Area emulation context |
 | `timeout` | int | 30 | Max execution time in seconds |
 
-**Built-in helpers:**
+**Runtime:** When PsySH (`psy/psysh`, a bundled dependency) is installed it is used as the execution engine; otherwise a basic `eval` fallback runs. The response reports which one ran via a `runtime` field (`psysh` or `eval`).
+
+**Built-in helpers:** available in both the `$`-prefixed scope-variable form and the bare-function form (`$get(...)` and `get(...)` are equivalent — both stay bound to the live ObjectManager across calls):
 
 | Helper | Purpose |
 |--------|---------|
-| `$get(Class::class)` | Get singleton from DI |
-| `$create(Class::class)` | Create new instance |
-| `$repo(Interface::class)` | Repository shorthand |
-| `$config('path')` | Read system configuration |
+| `get(Class::class)` / `$get(...)` | Get singleton from DI |
+| `create(Class::class)` / `$create(...)` | Create new instance |
+| `repo(Interface::class)` / `$repo(...)` | Repository shorthand |
+| `config('path')` / `$config(...)` | Read system configuration |
 | `query('SELECT ...')` | Execute read-only SQL |
 | `runLog($value, 'label')` | Capture values to response |
 
@@ -31,7 +33,7 @@ Execute PHP in Magento's DI context.
 - **`execute`** — Run code and return results. Read-only by default (uses transaction rollback).
 - **`define`** — Save a named PHP function for reuse across calls. Max 20 per session.
 
-**Security:** 9 dangerous code patterns are blocked. No network access. Path traversal protection.
+**Security:** dangerous code patterns (shell execution, etc.) are blocked. No network access. Path traversal protection. **Hard-blocked in production** deploy mode — the block fails closed and cannot be lifted by config or env var, even when the deploy mode can't be read.
 
 ### `code-runner-help`
 

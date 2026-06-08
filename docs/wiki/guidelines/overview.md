@@ -1,6 +1,6 @@
 # Guidelines & Skills
 
-Bricklayer includes 30 development guidelines and 28 skill guides that AI agents load via the `development-context` tool before writing code.
+Bricklayer includes 33 development guidelines and 28 skill guides that AI agents load via the `development-context` tool before writing code.
 
 ## How It Works
 
@@ -13,7 +13,7 @@ development-context category="plugin"
 → Returns plugin development patterns, before/after/around conventions, etc.
 ```
 
-## Guidelines (30 documents)
+## Guidelines (33 documents)
 
 Guidelines are stored in `config/guidelines/` and organized by area:
 
@@ -21,11 +21,28 @@ Guidelines are stored in `config/guidelines/` and organized by area:
 
 | Guideline | Description |
 |-----------|-------------|
-| Architecture | Plugins, observers, preferences, factories, repositories, service contracts |
-| Coding Standards | PSR-12, syntax, formatting, quality, best practices |
+| Architecture | High-level architecture: plugins, observers, preferences, factories, repositories, service contracts |
+| Coding Standards (Syntax) | PSR-12 syntax and formatting |
+| Coding Standards (Quality) | Quality rules, best practices, constants as final classes |
 | Security | Input validation, CSRF, XSS prevention, ACL |
 | Performance | Caching, lazy loading, query optimization |
 | Testing | Unit, integration, API, and MFTF testing patterns |
+
+### Patterns
+
+Concrete, copy-ready implementation patterns in `config/guidelines/patterns/`:
+
+| Guideline | Description |
+|-----------|-------------|
+| Plugin | Interceptors: before/after/around, plugin chains on repositories with sortOrder |
+| Observer | Event observer development |
+| Preference | Class preference (rewrite) development |
+| Factory | Factory generation and usage |
+| Repository | Repository / service-layer data access |
+| Service Contract | `Api/` interfaces and Data Interfaces |
+| Pool | DI-based strategy resolution with extensible array injection (replaces if/else type branching) |
+| Value Object | Immutable DTOs with `public readonly` properties and `fromJson()`/`toJson()` |
+| Context Object | Bundling repeated request-scoped params into one immutable object with a Builder |
 
 ### Database
 

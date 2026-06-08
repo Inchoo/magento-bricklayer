@@ -6,7 +6,7 @@ Magento Bricklayer is an AI-assisted development toolkit for Magento 2 that impl
 
 - **80 MCP tools** for Magento introspection, CRUD operations, code generation, and diagnostics
 - **Progressive disclosure** — 17 essential tools visible at startup; 63 discoverable via `search-tools`
-- **30 development guidelines** and **28 skill guides** for Magento best practices
+- **33 development guidelines** and **28 skill guides** for Magento best practices
 - **Production safety** — deploy-mode-aware defaults with per-tool granular control
 - **Multi-agent support** — Claude Code, Cursor, GitHub Copilot, JetBrains AI, Gemini CLI
 
@@ -31,7 +31,7 @@ Magento Bricklayer is an AI-assisted development toolkit for Magento 2 that impl
 
 | Magento Version | PHP Version | Status |
 |-----------------|-------------|--------|
-| 2.4.4 – 2.4.8  | 8.1 – 8.4  | Supported |
+| 2.4.4 – 2.4.9  | 8.1 – 8.4  | Supported |
 
 | Environment | Detection |
 |-------------|-----------|

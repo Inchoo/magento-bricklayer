@@ -36,7 +36,7 @@ vendor/bin/bricklayer init
 
 Useful when you need to regenerate the configuration without touching agent files.
 
-**What it generates** (developer/default mode): 32 entries — one per runtime-configurable tool. Destructive tools (`*-delete`, `order-cancel`, `creditmemo-create`, all 4 `generate-*` tools) default to `enabled: false`; everything else defaults to `enabled: true`. Tool-specific options (`code-runner.allow_write`, `code-runner.max_timeout`, `database-query.max_rows`, `log.max_lines`) are set to safe defaults.
+**What it generates** (developer/default mode): 33 entries — one per runtime-configurable tool. Destructive tools (`*-delete`, `order-cancel`, `creditmemo-create`, all 4 `generate-*` tools) default to `enabled: false`; everything else defaults to `enabled: true`. Tool-specific options (`code-runner.allow_write`, `code-runner.max_timeout`, `database-query.max_rows`, `log.max_lines`) are set to safe defaults.
 
 **Production mode** additionally disables `code-runner` and lowers `database-query.max_rows` to 50.
 
@@ -61,12 +61,12 @@ vendor/bin/bricklayer config:set tools.code-runner.allow_write false
 vendor/bin/bricklayer config:set tools.log.max_lines 1000
 ```
 
-**Interactive mode** (no arguments) lists all 32 runtime-configurable tools with their current values shown inline, lets you select a tool, then a setting, then prompts for the new value with type-aware validation:
+**Interactive mode** (no arguments) lists all 33 runtime-configurable tools with their current values shown inline, lets you select a tool, then a setting, then prompts for the new value with type-aware validation:
 
 ```
 Select a tool to configure
 --------------------------
- 32 runtime-configurable tools available.
+ 33 runtime-configurable tools available.
 
  Tool:
   [0 ] category-assign-products  (enabled=true)

@@ -45,7 +45,7 @@ src/                  # Main PHP source code
     └── Prompt/       # 8 prompt providers
 
 config/               # Auto-discovered content
-├── guidelines/       # 30 markdown guidelines
+├── guidelines/       # 33 markdown guidelines
 └── skills/           # 28 skill directories
 
 tests/                # PHPUnit tests

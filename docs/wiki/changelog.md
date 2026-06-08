@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.15.1
+
+- **`code-runner` bare helper functions now work in the PsySH runtime** — `get()`, `create()`, `repo()`, `config()`, `query()`, and `runLog()` (documented in `code-runner-help`) previously fataled with `Call to undefined function get()` under PsySH, where they existed only as the `$get`/`$create`/… scope closures. Both the bare and `$`-prefixed forms now work in both runtimes and stay bound to the live ObjectManager across calls.
+- Fixed a latent guard bug in the `eval` fallback where the helper-function `function_exists()` check resolved against the wrong namespace, which could fatally re-declare helpers on a second invocation in a long-lived process.
+
+## 1.15.0
+
+A code-audit release: correctness and security fixes, `code-runner` now uses PsySH as intended, and duplicated internal logic consolidated. No breaking changes.
+
+**Security & safety**
+- **Environment-variable tool overrides now work for every tool.** `BRICKLAYER_TOOLS_*` settings were silently ignored for hyphenated tools (e.g. `code-runner`, `product-delete`), so disabling a tool via an env var had no effect. Use the full-path form, e.g. `BRICKLAYER_TOOLS_CODE_RUNNER_ENABLED=false`.
+- **`code-runner` is now reliably blocked in production** even when the deploy mode can't be read (fails closed instead of open).
+
+**Fixes**
+- **`code-runner` actually runs through PsySH** when installed — it previously fell back to a basic `eval` engine on every call while wrongly reporting "PsySH not available". Responses now report the active `runtime` (`psysh` or `eval`).
+- **`diagnose-error`** counts error history from the log the error was actually found in, instead of always `exception.log`.
+- **GraphQL introspection** labels input types correctly and returns type descriptions (both were broken).
+- **`database-schema`** now respects its own enable/disable setting (it was tied to `database-query`).
+- **The `mcp` command** honors `--magento-root` on systems without `pcntl`.
+- Smaller fixes: safer log-file handling, accurate text truncation, recursive module validation, correct config-write success reporting, dynamic (non-hardcoded) tool/category counts, data-URI image type detection.
+
+**Internal (no behavior change)**
+- Consolidated duplicated logic — error responses, pagination, sensitive-value masking, time parsing, command setup, and log/markdown scanning — into shared traits and helpers.
+- Wired up the previously-orphaned PhpStorm config writer, so `install` now generates `.idea/mcp.json`.
+
+## 1.14.2
+
+- **New guideline: Pool pattern** (`patterns/pool.md`) — DI-based strategy resolution with extensible array injection, replacing if/else branching on type identifiers. Covers third-party extensibility and chain of responsibility with sortOrder.
+- **New guideline: Value Object / DTO** (`patterns/value-object.md`) — Immutable data carriers with `public readonly` properties, `fromJson()`/`toJson()` serialization for JSON columns, and comparison with Data Interfaces.
+- **New guideline: Context Object** (`patterns/context-object.md`) — Bundling repeated request-scoped parameters (customerId, storeId, currencyCode) into a single immutable object with a Builder.
+- **Updated: Plugin pattern** — Added "Plugin Chain on Repositories" section showing how to chain multiple `beforeSave` plugins with sortOrder for cross-cutting concerns.
+- **Updated: Coding Standards** — Added "Constants as Final Classes" section for grouping enum-like constants in `final class` instead of interfaces.
+
+## 1.14.1
+
+- Added Symfony Console 7 compatibility (`symfony/console: ^5.4 || ^6.0 || ^7.0`).
+
 ## 1.14.0
 
 - **Project-local overrides** — New `.bricklayer/` directory at the Magento root lets projects add or replace bundled content without forking the package:

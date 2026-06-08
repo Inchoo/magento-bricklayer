@@ -69,7 +69,7 @@ Features:
 
 | Resource | Content |
 |----------|---------|
-| `GuidelinesResource` | 30 markdown development guidelines |
+| `GuidelinesResource` | 33 markdown development guidelines |
 | `SkillsResource` | 28 skill guides with code examples |
 | `CodingStandardsResource` | PSR-12 and Magento standards |
 | `ReferenceResource` | Event names, layout XML, DI patterns |

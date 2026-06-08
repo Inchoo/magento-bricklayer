@@ -23,7 +23,7 @@ Configuration is loaded in priority order (highest wins):
 
 ## File Structure
 
-A generated developer-mode file contains **one entry per runtime-configurable tool** (32 entries total). Destructive tools default to `enabled: false`, everything else defaults to `enabled: true`:
+A generated developer-mode file contains **one entry per runtime-configurable tool** (33 entries total). Destructive tools default to `enabled: false`, everything else defaults to `enabled: true`:
 
 ```json
 {
