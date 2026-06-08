@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Mcp;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use Mcp\Capability\Registry\Container;
 use Mcp\Schema\ServerCapabilities;
 use Mcp\Server;
@@ -62,6 +63,17 @@ class McpServerFactory
         }
     }
 
+    /**
+     * Return the total number of registered MCP tools.
+     *
+     * Extracted as a protected method to allow test doubles to inject a
+     * controlled count without going through a full server build.
+     */
+    protected function getToolCount(): int
+    {
+        return ToolRegistry::getInstance()->count();
+    }
+
     private function getServerInstructions(): string
     {
         $edition = 'Community';
@@ -83,7 +95,7 @@ class McpServerFactory
             }
         }
 
-        $toolCount = 80;
+        $toolCount = $this->getToolCount();
 
         return <<<INSTRUCTIONS
         Magento {$edition} {$version} ({$mode} mode).
@@ -93,7 +105,7 @@ class McpServerFactory
         - diagnose-error: first step for any error (combines logs + DI + plugin context)
         - diagnose-performance: indexes, cache, cron, config, query analysis
         Use development-context to load coding guidelines before writing code.
-        Use search-tools to discover all {$toolCount} tools (only 16 shown initially).
+        Use search-tools to discover all {$toolCount} tools.
         Use code-runner for multi-step operations instead of chaining individual tools.
         On list tools: use fields to limit response, count_only=true to check size.
         INSTRUCTIONS;

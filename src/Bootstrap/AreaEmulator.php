@@ -21,8 +21,6 @@ class AreaEmulator
     public const AREA_GRAPHQL = 'graphql';
     public const AREA_CRONTAB = 'crontab';
 
-    private const DEFAULT_AREA = self::AREA_ADMINHTML;
-
     private const VALID_AREAS = [
         self::AREA_GLOBAL,
         self::AREA_ADMINHTML,
@@ -43,38 +41,16 @@ class AreaEmulator
 
         $objectManager = MagentoBootstrap::getObjectManager();
 
+        /** @var \Magento\Framework\App\State|null $state */
+        $state = null;
         try {
-            /** @var \Magento\Framework\App\State $state */
             $state = $objectManager->get(\Magento\Framework\App\State::class);
             $state->setAreaCode($areaCode);
             $this->currentArea = $areaCode;
         } catch (\Magento\Framework\Exception\LocalizedException $e) {
             // Area code already set - get current area
-            $this->currentArea = $state->getAreaCode();
+            $this->currentArea = $state !== null ? $state->getAreaCode() : null;
         }
-    }
-
-    public function getCurrentArea(): ?string
-    {
-        if ($this->currentArea !== null) {
-            return $this->currentArea;
-        }
-
-        try {
-            $objectManager = MagentoBootstrap::getObjectManager();
-            /** @var \Magento\Framework\App\State $state */
-            $state = $objectManager->get(\Magento\Framework\App\State::class);
-            $this->currentArea = $state->getAreaCode();
-        } catch (\Throwable $e) {
-            $this->currentArea = null;
-        }
-
-        return $this->currentArea;
-    }
-
-    public function getDefaultArea(): string
-    {
-        return self::DEFAULT_AREA;
     }
 
     public function isValidArea(string $areaCode): bool

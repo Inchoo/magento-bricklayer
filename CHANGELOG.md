@@ -1,3 +1,23 @@
+# 1.15.0
+
+A code-audit release: fixes a batch of correctness and security bugs, makes `code-runner` use PsySH as intended, and consolidates duplicated internal logic. No breaking changes.
+
+**Security & safety**
+* **Environment-variable tool overrides now work for every tool.** `BRICKLAYER_TOOLS_*` settings were silently ignored for hyphenated tools (e.g. `code-runner`, `product-delete`), so disabling a tool via an env var had no effect. Use the full-path form, e.g. `BRICKLAYER_TOOLS_CODE_RUNNER_ENABLED=false`.
+* **`code-runner` is now reliably blocked in production** even when the deploy mode can't be read (fails closed instead of open).
+
+**Fixes**
+* **`code-runner` actually runs through PsySH** when it's installed — it previously fell back to a basic `eval` engine on every call while wrongly reporting "PsySH not available". Responses now report the active `runtime`.
+* **`diagnose-error`** counts error history from the log the error was actually found in, instead of always `exception.log`.
+* **GraphQL introspection** labels input types correctly and returns type descriptions (both were broken).
+* **`database-schema`** now respects its own enable/disable setting (it was tied to `database-query`).
+* **The `mcp` command** honors `--magento-root` on systems without `pcntl`.
+* Many smaller fixes: safer log-file handling, accurate text truncation, recursive module validation, correct config-write success reporting, dynamic (non-hardcoded) tool/category counts, data-URI image type detection, and more.
+
+**Internal (no behavior change)**
+* Consolidated duplicated logic — error responses, pagination, sensitive-value masking, time parsing, command setup, and log/markdown scanning — into shared traits and helpers.
+* Removed dead code and wired up the previously-orphaned PhpStorm config writer, so `install` now generates `.idea/mcp.json`.
+
 # 1.14.2
 * **New guideline: Pool pattern** (`patterns/pool.md`) — DI-based strategy resolution with extensible array injection, replacing if/else branching on type identifiers. Covers implementation, third-party extensibility, and chain of responsibility with sortOrder.
 * **New guideline: Value Object / DTO** (`patterns/value-object.md`) — Immutable data carriers with `public readonly` properties, `fromJson()`/`toJson()` serialization for JSON columns, and comparison with Data Interfaces.

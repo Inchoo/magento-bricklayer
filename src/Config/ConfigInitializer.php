@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,6 +14,8 @@ namespace Inchoo\MagentoBricklayer\Config;
  */
 class ConfigInitializer
 {
+    use IteratesToolPhpFiles;
+
     private const CONFIG_FILE = '.bricklayer.json';
 
     /**
@@ -58,10 +61,10 @@ class ConfigInitializer
         }
 
         $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
-        file_put_contents($configPath, $json);
+        $written = file_put_contents($configPath, $json) !== false;
 
         return [
-            'created' => true,
+            'created' => $written,
             'path' => $configPath,
             'deploy_mode' => $deployMode,
             'disabled_tools' => $disabledCount,
@@ -166,30 +169,20 @@ class ConfigInitializer
 
         $toolDir = __DIR__ . '/../Mcp/Tool';
 
-        if (!is_dir($toolDir)) {
-            return self::$configurableToolsCache = [];
-        }
-
         $tools = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if (!$file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
+        foreach (self::iterateToolPhpFiles($toolDir) as $file) {
             $contents = file_get_contents($file->getPathname());
             if ($contents === false) {
                 continue;
             }
 
-            if (preg_match_all(
-                '/requireToolEnabled\(\s*[\'"]([^\'"]+)[\'"]\s*\)/',
-                $contents,
-                $matches
-            )) {
+            if (
+                preg_match_all(
+                    '/requireToolEnabled\(\s*[\'"]([^\'"]+)[\'"]\s*\)/',
+                    $contents,
+                    $matches
+                )
+            ) {
                 foreach ($matches[1] as $name) {
                     $tools[$name] = true;
                 }

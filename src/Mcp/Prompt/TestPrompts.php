@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -13,7 +14,7 @@ use Mcp\Capability\Attribute\McpPrompt;
 /**
  * Provides MCP prompts for creating Magento tests.
  */
-class TestPrompts
+class TestPrompts extends AbstractPrompt
 {
     /**
      * Creates a unit test class.
@@ -34,12 +35,7 @@ class TestPrompts
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a unit test for {$classToTest}:
 
 **Module:** {$moduleName}
@@ -122,10 +118,7 @@ class {TestClassName}Test extends TestCase
     }
 }
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -147,12 +140,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create an integration test for {$testSubject}:
 
 **Module:** {$moduleName}
@@ -237,10 +225,7 @@ Rollback file (Test/Integration/_files/custom_fixture_rollback.php):
 <?php
 // Clean up test data
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -264,12 +249,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create an API functional test:
 
 **Module:** {$moduleName}
@@ -343,10 +323,7 @@ class {TestClassName}Test extends WebapiAbstract
     }
 }
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 
     /**
@@ -370,12 +347,7 @@ PROMPT
     ): array {
         $moduleName = "{$vendor}_{$module}";
 
-        return [
-            [
-                'role' => 'user',
-                'content' => [
-                    'type' => 'text',
-                    'text' => <<<PROMPT
+        return $this->userMessage(<<<PROMPT
 Create a GraphQL functional test:
 
 **Module:** {$moduleName}
@@ -482,9 +454,6 @@ GRAPHQL;
     }
 }
 ```
-PROMPT
-                ],
-            ],
-        ];
+PROMPT);
     }
 }

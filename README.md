@@ -168,7 +168,7 @@ vendor/bin/bricklayer install [options]
 
 Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
-- `--agents=AGENTS` - Comma-separated list of agents to configure (claude-code, cursor, phpstorm, copilot, gemini)
+- `--agents=AGENT` - Agent to configure; **repeat the flag** for multiple (e.g. `--agents=claude-code --agents=cursor`). Valid values: claude-code, cursor, phpstorm, copilot, gemini. Omit to choose interactively
 - `--force` - Overwrite existing configuration files
 
 ### init
@@ -182,7 +182,7 @@ Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
 - `--force` - Overwrite existing `.bricklayer.json`
 
-The generated config contains **one entry per runtime-configurable tool** (32 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
+The generated config contains **one entry per runtime-configurable tool** (33 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
 
 Deploy-mode behavior:
 - **production** — 11 tools disabled (code-runner + all 10 destructive/code-generation tools), `database-query.max_rows` lowered to 50
@@ -206,7 +206,7 @@ vendor/bin/bricklayer config:set tools.code-runner.allow_write false
 Options:
 - `--magento-root=PATH` — Specify Magento root directory (auto-detected by default)
 
-**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 32 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
+**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 33 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
 
 **Scripted mode** (positional arguments) is for automation. Values are parsed automatically: `true`/`false` → bool, `null` → null, numeric → int/float, `[...]`/`{...}` → JSON-decoded, anything else → string.
 
@@ -403,7 +403,7 @@ diagnose-error(index=0, source="exception", since="1h", pattern="", verbosity="s
 - `module_context` — Responsible module's name, version, enabled status, dependencies, and validation issues
 - `di_context` — DI preferences and plugins for the error class
 - `environment` — Deploy mode, disabled caches, invalid indexers, generated code age
-- `history` — Error frequency and top exception types in the time period
+- `history` — Error frequency and top exception types, counted from the log the matched error actually came from (e.g. an error found via the `system.log` fallback is counted in `system.log`, not `exception.log`). Carries `available: false` for sources with no aggregate log to count from (e.g. `var/report`), instead of reporting misleading counts from an unrelated log
 - `suggestions` — Actionable fixes with confidence levels (high/medium/low) and CLI commands
 - `_hint` — *(conditional)* Next-step guidance when plugins or DI issues are involved
 
@@ -444,10 +444,13 @@ code-runner(code="$p = getProductBySku('24-MB01'); return $p->getName();")
 
 **Response includes:**
 - `success`, `output`, `return`, `error` - Standard execution result
-- `read_only` - Whether DB changes were rolled back
+- `runtime` - Execution engine: `psysh` when PsySH is installed (the default), or `eval` as a fallback when it is not
+- `read_only` - Whether DB changes were rolled back (`true` on every default call — see below)
 - `area` - Effective area code (if specified)
 - `log` - Values captured via `runLog()` helper
 - `metrics` - Execution time (ms), memory delta (MB), peak memory (MB), queries executed
+
+Code runs through a [PsySH](https://psysh.org/) shell when the `psy/psysh` dependency is available (it ships as a Bricklayer requirement), falling back to a plain `eval` engine otherwise — `verify` reports which is active. Read-only mode wraps execution in a database transaction that is **always rolled back** unless `allow_write=true`, so `read_only: true` and the rollback note appear on every default call (even for code that performs no writes); pass `allow_write=true` to commit.
 
 The tool validates code against 9 dangerous patterns (shell execution, file writes, superglobals, cURL, eval, header manipulation, global handler registration, long sleeps). Disabled in production mode and configurable via `.bricklayer.json`.
 
@@ -565,7 +568,7 @@ vendor/bin/bricklayer init
 vendor/bin/bricklayer config:set
 ```
 
-A generated developer-mode config looks like this (32 entries total — one per runtime-configurable tool):
+A generated developer-mode config looks like this (33 entries total — one per runtime-configurable tool; the snippet below is an excerpt):
 
 ```json
 {
@@ -579,6 +582,7 @@ A generated developer-mode config looks like this (32 entries total — one per 
             "enabled": true,
             "max_rows": 100
         },
+        "database-schema": { "enabled": true },
         "log": {
             "enabled": true,
             "max_lines": 500
@@ -635,14 +639,30 @@ Destructive tools (`product-delete`, `category-delete`, `customer-delete`, `cust
 
 ### Environment Variable Overrides
 
+Environment variables are the highest-priority configuration layer — they override `.bricklayer.json`.
+
+Two variables are read directly and stand alone:
+
 ```bash
 BRICKLAYER_MAGENTO_ROOT=/path/to/magento    # Override Magento root detection
-BRICKLAYER_CODE_RUNNER_ENABLED=false        # Disable code-runner tool
-BRICKLAYER_CODE_RUNNER_ALLOW_WRITE=false    # Enforce read-only mode globally
-BRICKLAYER_CODE_RUNNER_MAX_TIMEOUT=30       # Maximum timeout in seconds
-BRICKLAYER_DATABASE_QUERY_MAX_ROWS=50       # Limit query results
 BRICKLAYER_DEBUG=1                          # Enable debug output
 ```
+
+Any tool setting is overridable by mapping its dot-notation config key to an env name:
+prefix with `BRICKLAYER_`, upper-case, and replace both `.` and `-` with `_`. Hyphenated
+tool names (`code-runner`, `database-query`, `product-delete`, …) are fully supported.
+
+```bash
+BRICKLAYER_TOOLS_CODE_RUNNER_ENABLED=false       # tools.code-runner.enabled
+BRICKLAYER_TOOLS_CODE_RUNNER_ALLOW_WRITE=false   # tools.code-runner.allow_write
+BRICKLAYER_TOOLS_CODE_RUNNER_MAX_TIMEOUT=30      # tools.code-runner.max_timeout
+BRICKLAYER_TOOLS_DATABASE_QUERY_MAX_ROWS=50      # tools.database-query.max_rows
+BRICKLAYER_TOOLS_PRODUCT_DELETE_ENABLED=true     # tools.product-delete.enabled
+```
+
+> The env key must include the full config path. For example `tools.code-runner.enabled`
+> maps to `BRICKLAYER_TOOLS_CODE_RUNNER_ENABLED` — **not** `BRICKLAYER_CODE_RUNNER_ENABLED`,
+> which targets a different (unread) key and has no effect.
 
 ## Architecture
 

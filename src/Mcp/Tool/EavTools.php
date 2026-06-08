@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -10,11 +11,15 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresValidVerbosity;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class EavTools
 {
     use RequiresMagento;
+    use RequiresValidVerbosity;
+    use RespondsWithErrors;
 
     private const SUPPORTED_ENTITY_TYPES = [
         'catalog_product',
@@ -29,7 +34,7 @@ class EavTools
     )]
     public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
     {
-        if ($error = $this->requireMagento()) {
+        if ($error = $this->requireValidVerbosity($verbosity)) {
             return $error;
         }
 
@@ -44,8 +49,8 @@ class EavTools
             ];
         }
 
-        if (!in_array($verbosity, ['minimal', 'standard', 'detailed'], true)) {
-            return ['error' => true, 'message' => 'verbosity must be one of: minimal, standard, detailed'];
+        if ($error = $this->requireMagento()) {
+            return $error;
         }
 
         try {
@@ -114,7 +119,7 @@ class EavTools
 
             return $result;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -149,7 +154,7 @@ class EavTools
 
             return ['entity_types' => $entityTypes];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -10,11 +11,13 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class GraphqlTools
 {
     use RequiresMagento;
+    use RespondsWithErrors;
 
     #[McpTool(
         name: 'graphql-inspect',
@@ -97,8 +100,19 @@ class GraphqlTools
                 'types' => $types,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
+    }
+
+    private function resolveTypeDescription(object $type): ?string
+    {
+        if (method_exists($type, 'description')) {
+            $d = $type->description();
+            return is_string($d) ? $d : null;
+        }
+
+        $desc = $type->description ?? null;
+        return is_string($desc) ? $desc : null;
     }
 
     private function getGraphqlTypeInfo(string $typeName): array
@@ -114,7 +128,7 @@ class GraphqlTools
             $typeInfo = [
                 'name' => $typeName,
                 'kind' => $this->getTypeKind($type),
-                'description' => method_exists($type, 'getDescription') ? $type->getDescription() : null,
+                'description' => $this->resolveTypeDescription($type),
             ];
 
             if (method_exists($type, 'getFields')) {
@@ -165,7 +179,7 @@ class GraphqlTools
 
             return $typeInfo;
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -205,7 +219,7 @@ class GraphqlTools
                 'queries' => $queries,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -244,7 +258,7 @@ class GraphqlTools
                 'mutations' => $mutations,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -258,7 +272,7 @@ class GraphqlTools
                 'filter_type' => $typeName ?: 'all',
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -288,8 +302,8 @@ class GraphqlTools
         $className = get_class($type);
 
         return match (true) {
-            str_contains($className, 'ObjectType') => 'OBJECT',
             str_contains($className, 'InputObjectType') => 'INPUT_OBJECT',
+            str_contains($className, 'ObjectType') => 'OBJECT',
             str_contains($className, 'EnumType') => 'ENUM',
             str_contains($className, 'InterfaceType') => 'INTERFACE',
             str_contains($className, 'ScalarType') => 'SCALAR',

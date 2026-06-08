@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Tool\Diagnostic;
 
+use Inchoo\MagentoBricklayer\Mcp\Tool\TimeUnits;
+
 /**
  * Parses multi-line Magento exception/error logs into structured data.
  * Supports both Monolog format and raw PHP error output (e.g., from var/report files
@@ -18,7 +20,7 @@ class ExceptionParser
 {
     private const TIMESTAMP_PATTERN = '/^\[\d{4}-/';
     private const HEADER_PATTERN = '/^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(\w+)\.(\w+):\s*(.*)$/';
-    private const EXCEPTION_CHAIN_PATTERN = '/([A-Za-z\\\\]+(?:Exception|Error))\(code:\s*(\d+)\):\s*(.*?)\s+at\s+([^\s:]+):(\d+)/';
+    private const EXCEPTION_CHAIN_PATTERN = '/([\w\\\\]+(?:Exception|Error))\(code:\s*(\d+)\):\s*(.*?)\s+at\s+([^\s:]+):(\d+)/';
     private const STACK_FRAME_PATTERN = '/^#(\d+)\s+(.+?)\((\d+)\):\s*(.*)$/';
 
     /**
@@ -359,18 +361,6 @@ class ExceptionParser
 
     private function calculateCutoff(string $since): ?int
     {
-        if (!preg_match('/^(\d+)([mhd])$/', $since, $m)) {
-            return null;
-        }
-
-        $value = (int) $m[1];
-        $seconds = match ($m[2]) {
-            'm' => $value * 60,
-            'h' => $value * 3600,
-            'd' => $value * 86400,
-            default => 3600,
-        };
-
-        return time() - $seconds;
+        return TimeUnits::toCutoff($since);
     }
 }

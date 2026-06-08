@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -8,8 +9,9 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
-use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ResolvesPackagePaths;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -20,6 +22,9 @@ use Mcp\Capability\Attribute\McpTool;
  */
 class ContextTools
 {
+    use ResolvesPackagePaths;
+    use RespondsWithErrors;
+
     /**
      * Category-to-resource mapping
      *
@@ -261,15 +266,9 @@ class ContextTools
         ],
     ];
 
-    private readonly string $packageRoot;
-    private readonly ?string $magentoRootOverride;
-
     public function __construct(?string $magentoRoot = null, ?string $packageRoot = null)
     {
-        $this->magentoRootOverride = $magentoRoot !== null ? rtrim($magentoRoot, '/\\') : null;
-        $this->packageRoot = $packageRoot !== null
-            ? rtrim($packageRoot, '/\\')
-            : dirname(__DIR__, 3);
+        $this->initPackagePaths($magentoRoot, $packageRoot);
     }
 
     /**
@@ -342,7 +341,7 @@ class ContextTools
                 ),
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -552,21 +551,6 @@ class ContextTools
         }
 
         return implode("\n\n---\n\n", $sections);
-    }
-
-    /**
-     * Resolve the effective Magento root path, preferring an override passed
-     * into the constructor (used in CLI/test contexts) and falling back to
-     * MagentoBootstrap::getMagentoRoot() for live MCP invocations.
-     */
-    private function resolveMagentoRoot(): ?string
-    {
-        if ($this->magentoRootOverride !== null) {
-            return $this->magentoRootOverride;
-        }
-
-        $root = MagentoBootstrap::getMagentoRoot();
-        return $root !== null ? rtrim($root, '/\\') : null;
     }
 
     /**

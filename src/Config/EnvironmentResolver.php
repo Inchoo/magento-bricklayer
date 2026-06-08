@@ -55,6 +55,33 @@ class EnvironmentResolver
         return $result;
     }
 
+    /**
+     * Return all BRICKLAYER_* environment variables as a raw map: envName => parsedValue.
+     * Unlike getAll(), this does NOT attempt to reverse the env key to a config key.
+     *
+     * @return array<string, mixed>
+     */
+    public function getAllRaw(): array
+    {
+        $result = [];
+
+        foreach ($_ENV as $key => $value) {
+            if (str_starts_with($key, self::ENV_PREFIX)) {
+                $result[$key] = $this->parseValue($value);
+            }
+        }
+
+        foreach (getenv() as $key => $value) {
+            if (str_starts_with($key, self::ENV_PREFIX)) {
+                if (!array_key_exists($key, $result)) {
+                    $result[$key] = $this->parseValue($value);
+                }
+            }
+        }
+
+        return $result;
+    }
+
     public function toEnvKey(string $key): string
     {
         return self::ENV_PREFIX . strtoupper(str_replace(['.', '-'], '_', $key));

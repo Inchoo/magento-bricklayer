@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -49,23 +50,22 @@ class SkillsResource
     )]
     public function getSkillsIndex(): string
     {
-        $skillsDir = dirname(__DIR__, 3) . '/config/skills';
+        $skillsDir = $this->getSkillsDir();
         $skills = [];
 
-        if (is_dir($skillsDir)) {
-            $dirs = glob($skillsDir . '/*', GLOB_ONLYDIR);
-            foreach ($dirs as $dir) {
-                $skillName = basename($dir);
-                $skillFile = $dir . '/SKILL.md';
-                if (file_exists($skillFile)) {
-                    $content = file_get_contents($skillFile);
-                    // Extract first heading
-                    if ($content && preg_match('/^#\s+(.+)$/m', $content, $matches)) {
-                        $skills[$skillName] = $matches[1];
-                    } else {
-                        $skills[$skillName] = ucwords(str_replace('-', ' ', $skillName));
-                    }
-                }
+        // Each skill is a sub-directory containing a SKILL.md. Reuse the shared markdown
+        // scanner (which guards against missing/unreadable dirs) and keep only SKILL.md files.
+        foreach ($this->collectMarkdownRelativePaths($skillsDir) as $relativePath) {
+            if (!str_ends_with($relativePath, '/SKILL.md')) {
+                continue;
+            }
+            $skillName = dirname($relativePath);
+            $content = file_get_contents($skillsDir . '/' . $relativePath);
+            // Extract first heading
+            if ($content !== false && preg_match('/^#\s+(.+)$/m', $content, $matches)) {
+                $skills[$skillName] = $matches[1];
+            } else {
+                $skills[$skillName] = $this->titleCaseName($skillName);
             }
         }
 
@@ -82,5 +82,16 @@ class SkillsResource
         }
 
         return $markdown;
+    }
+
+    /**
+     * Returns the absolute path to the skills configuration directory.
+     *
+     * Extracted as a protected method so that tests can substitute a temporary
+     * directory without touching the filesystem layout expected by the real package.
+     */
+    protected function getSkillsDir(): string
+    {
+        return dirname(__DIR__, 3) . '/config/skills';
     }
 }

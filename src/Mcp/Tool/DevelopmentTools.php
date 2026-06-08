@@ -10,6 +10,7 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -20,6 +21,7 @@ use Mcp\Capability\Attribute\McpTool;
 class DevelopmentTools
 {
     use RequiresMagento;
+    use RespondsWithErrors;
 
     /**
      * Reinitializes Magento with a fresh ObjectManager.
@@ -50,10 +52,7 @@ class DevelopmentTools
         try {
             MagentoBootstrap::reinitialize();
         } catch (\Throwable $e) {
-            return [
-                'error' => true,
-                'message' => 'Reinitialize failed: ' . $e->getMessage(),
-            ];
+            return $this->errorResponse('Reinitialize failed: ' . $e->getMessage());
         }
 
         CodeRunnerTools::clearDefinedFunctions();
@@ -175,7 +174,7 @@ class DevelopmentTools
                 'types' => $types,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -223,7 +222,7 @@ class DevelopmentTools
                 'indexers' => $indexers,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -250,7 +249,7 @@ class DevelopmentTools
             try {
                 $path = $moduleDir->getDir($moduleName);
             } catch (\Throwable $e) {
-                return ['error' => true, 'message' => "Module not found: $moduleName"];
+                return $this->errorResponse("Module not found: $moduleName");
             }
 
             $issues = [];
@@ -283,10 +282,7 @@ class DevelopmentTools
             }
 
             // Check PHP files for strict types
-            $phpFiles = array_merge(
-                glob($path . '/*.php') ?: [],
-                glob($path . '/**/*.php') ?: []
-            );
+            $phpFiles = $this->collectPhpFiles($path);
             $missingStrictTypes = 0;
             foreach ($phpFiles as $file) {
                 $content = file_get_contents($file);
@@ -316,8 +312,40 @@ class DevelopmentTools
                 'info' => $info,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Collects all PHP files under a directory recursively.
+     *
+     * Replaces the non-recursive glob('/**') approach: PHP's glob() does not
+     * recurse more than one level deep, so files in subdirectories such as
+     * Model/ResourceModel/ or Block/Adminhtml/ were silently skipped.
+     *
+     * @param string $path Root directory to scan
+     * @return string[]    Absolute paths to every *.php file found
+     */
+    private function collectPhpFiles(string $path): array
+    {
+        if (!is_dir($path)) {
+            return [];
+        }
+
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($iterator as $file) {
+            /** @var \SplFileInfo $file */
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                $files[] = $file->getPathname();
+            }
+        }
+
+        return $files;
     }
 
     /**
@@ -343,7 +371,7 @@ class DevelopmentTools
                 'recommendations' => $this->getDeployModeRecommendations($mode),
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -387,7 +415,7 @@ class DevelopmentTools
                 'jobs' => $cronJobs,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -435,7 +463,7 @@ class DevelopmentTools
                 'history' => $history,
             ];
         } catch (\Throwable $e) {
-            return ['error' => true, 'message' => $e->getMessage()];
+            return $this->errorResponse($e->getMessage());
         }
     }
 

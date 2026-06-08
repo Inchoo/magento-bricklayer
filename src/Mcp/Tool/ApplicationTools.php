@@ -10,11 +10,13 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
+use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
 use Mcp\Capability\Attribute\McpTool;
 
 class ApplicationTools
 {
     use RequiresMagento;
+    use RespondsWithErrors;
 
     #[McpTool(
         name: 'application-info',
@@ -72,10 +74,7 @@ class ApplicationTools
 
             return $result;
         } catch (\Throwable $e) {
-            return [
-                'error' => true,
-                'message' => $e->getMessage(),
-            ];
+            return $this->errorResponse($e->getMessage());
         }
     }
 
