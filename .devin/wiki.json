@@ -1,0 +1,180 @@
+{
+  "repo_notes": [
+    {
+      "author": "Bricklayer maintainers",
+      "content": "Canonical, maintainer-authored documentation lives in docs/wiki/ — treat it as the primary source of truth and mirror its organization. The intended navigation is defined in docs/wiki/_sidebar.md. Each docs/wiki/*.md file and subdirectory (architecture/, tools/, configuration/, guidelines/, code-generation/, diagnostics/, security/) maps to a wiki section. Prefer the framing, terminology, and grouping used there over inferring structure from the source layout alone. README.md and SKILL.md are secondary narrative sources; src/ is the source of truth for behavior."
+    },
+    {
+      "author": "Bricklayer maintainers",
+      "content": "Exact inventory as of v1.15.1 — verify against source, do NOT approximate or write '80+'. There are exactly 80 MCP tools (count of #[McpTool] attributes across src/Mcp/Tool/*.php). Of these, 17 are visible at startup (tier-1) and 63 are hidden (tier-2) but remain fully callable by name and are discoverable via the search-tools tool. There are 14 MCP resources (#[McpResource] in src/Mcp/Resource), 34 MCP prompts (#[McpPrompt] in src/Mcp/Prompt), 33 development guidelines (config/guidelines/), and 28 skill guides (config/skills/). State '80 tools'."
+    },
+    {
+      "author": "Bricklayer maintainers",
+      "content": "Core terminology — use this exact phrasing. The workflow is 'check → learn → write' (lowercase, with arrows); do NOT rename it 'Check-Learn-Write'. It means: check runtime state via introspection tools (check-class, eav-attributes, diagnose-error, etc.) → load domain guidelines via development-context → then write code. The guiding principle is 'runtime-first': Magento resolves DI, plugins, preferences, and events at runtime across all installed modules, so reading source files alone misses cross-module overrides, conflicts, and customizations. Bricklayer exists to close that gap."
+    },
+    {
+      "author": "Bricklayer maintainers",
+      "content": "Tools are organized along two axes. Visibility (progressive disclosure): tier-1 tools appear in tools/list at startup (17 tools); tier-2 tools are omitted from the list but callable by name and surfaced via search-tools (63 tools) — this reduces token overhead while keeping every tool callable. Safety: read-only tools only require an initialized Magento (requireMagento) with no config gate; destructive tools (delete, refund, code generation, code-runner with writes) additionally require non-production (requireNonProduction) and ship disabled by default via ConfigInitializer::DESTRUCTIVE_TOOLS (enabled:false). code-runner defaults to read-only with its DB transaction rolled back unless allow_write is set."
+    },
+    {
+      "author": "Bricklayer maintainers",
+      "content": "Scope and positioning: Bricklayer is a Composer library that runs an MCP server for Magento 2 — it is NOT a Magento module and installs nothing into app/code. Supported: Magento 2.4.4–2.4.9 on PHP 8.1–8.4. It auto-detects and supports Native, DDEV, Warden, and Docker environments (entrypoints bin/bricklayer-mcp and bin/bricklayer-mcp-docker; src/Integration/McpConfigWriter.php generates the correct exec command per environment). Multi-agent support: Claude Code, Cursor, GitHub Copilot, JetBrains AI, and Gemini CLI. The name reflects laying components ('bricks') in the correct order to build a maintainable codebase. License: MIT, Copyright 2026 Inchoo."
+    },
+    {
+      "author": "Bricklayer maintainers",
+      "content": "This repository is the Bricklayer toolkit itself (PSR-4 autoload Inchoo\\\\MagentoBricklayer\\\\ under src/, tests under tests/). Do NOT document any surrounding example Magento project, vendor/, or generated/ output that may exist in a host installation — only this package. The 'June 2026' commit and copyright dates are correct and intentional; do not treat them as data errors. Current version is 1.15.1."
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "High-level introduction to Bricklayer: what it is (a Composer library exposing an MCP server for Magento 2), the runtime-first problem it solves (agents reading source files miss cross-module DI/plugin/preference/event overrides), and headline capabilities. Mirror docs/wiki/home.md and README.md sections 'What is Bricklayer?' and 'How Agents Use Bricklayer'. State exact counts (80 tools, 14 resources, 34 prompts, 33 guidelines, 28 skills) and the check → learn → write workflow.",
+      "parent": null
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Landing page for new users: requirements (Magento 2.4.4–2.4.9, PHP 8.1–8.4), installation paths, and first steps. Mirror docs/wiki/getting-started.md and README 'Requirements' / 'Installation' / 'Quick Start'. Acts as parent for the detailed installation, developer-guide, and FAQ pages.",
+      "parent": null
+    },
+    {
+      "title": "Installation & Setup",
+      "purpose": "Step-by-step installation: composer require inchoo/magento-bricklayer as a dev dependency vs global install; running 'bricklayer install' to generate agent and MCP client config; 'bricklayer init' to scaffold project-local overrides. Source: src/Command/InstallCommand.php, src/Command/InitCommand.php, src/Integration/McpConfigWriter.php; docs/wiki/getting-started.md.",
+      "parent": "Getting Started"
+    },
+    {
+      "title": "Developer Guide",
+      "purpose": "Practical end-to-end guide to using Bricklayer with an AI agent: the check → learn → write loop, when to reach for which tool, and worked examples grounded in real tools (check-class before a plugin, eav-attributes before touching product/customer data, diagnose-error when debugging, development-context before writing code). Mirror docs/wiki/developer-guide.md.",
+      "parent": "Getting Started"
+    },
+    {
+      "title": "FAQ",
+      "purpose": "Common questions and troubleshooting. Mirror docs/wiki/faq.md. Cover production-mode behavior and disabled destructive tools, why most tools are hidden at startup (progressive disclosure / search-tools), and container-detection issues.",
+      "parent": "Getting Started"
+    },
+    {
+      "title": "Key Concepts and Terminology",
+      "purpose": "Foundational concepts and glossary on one page: the runtime-first principle, the check → learn → write workflow, tool visibility tiers (tier-1 visible / tier-2 hidden), tool safety classes (read-only vs destructive), progressive disclosure, MCP primitives (tools/resources/prompts), guidelines vs skills, and development-context categories. Define each term exactly as used in src/ and SKILL.md.",
+      "parent": null
+    },
+    {
+      "title": "Architecture",
+      "purpose": "System architecture overview: how the Composer library boots Magento, builds the MCP server, registers tools, and serves resources/prompts. Mirror docs/wiki/architecture/overview.md. Parent for the bootstrap, server/registry, and resources/prompts pages.",
+      "parent": null
+    },
+    {
+      "title": "Magento Bootstrap Layer",
+      "purpose": "How Bricklayer detects and bootstraps a Magento installation and emulates store/admin areas, including auto-reinitialize and config hot-reload. Source: src/Bootstrap/MagentoBootstrap.php, src/Bootstrap/MagentoDetector.php, src/Bootstrap/AreaEmulator.php; docs/wiki/architecture/bootstrap.md.",
+      "parent": "Architecture"
+    },
+    {
+      "title": "MCP Server, Tool Registry, and Shared Concerns",
+      "purpose": "The MCP server entrypoint, the tool registry, and the shared traits/concerns that tools reuse. Source: src/Mcp/Tool/ToolRegistry.php, src/Mcp/Tool/Concern/*, src/Command/McpServerCommand.php, bin/bricklayer-mcp; docs/wiki/architecture/tool-system.md. Explain how #[McpTool] attributes are discovered and how tier-1/tier-2 visibility is applied.",
+      "parent": "Architecture"
+    },
+    {
+      "title": "MCP Resources and Prompts",
+      "purpose": "The 14 MCP resources and 34 MCP prompts Bricklayer exposes, which are distinct from its 80 tools. Resources: src/Mcp/Resource/* (Guidelines, CodingStandards, Skills, Template, Reference). Prompts: src/Mcp/Prompt/* (Api, Block, Catalog, Controller, Module, Order, Plugin, Test). Explain how agents consume resources (development-context, guidelines, coding standards) and how prompt templates drive code generation.",
+      "parent": "Architecture"
+    },
+    {
+      "title": "CLI Commands",
+      "purpose": "Reference for the bricklayer CLI: install, init, config:set, mcp, inspect, update, verify. Source: src/Command/*.php; docs/wiki/cli-commands.md and README 'Available Commands'. Document the interactive config:set picker (and its warnings on ineffective keys / shadowing BRICKLAYER_* env vars) and the verify command's diagnostic checks.",
+      "parent": null
+    },
+    {
+      "title": "Configuration System",
+      "purpose": "How Bricklayer is configured and the precedence order (.bricklayer.json overridden by BRICKLAYER_* env vars, plus project-local overrides). Mirror docs/wiki/configuration/*. Parent for the .bricklayer.json, environment-variables, agent-integration, local-overrides, and Docker pages. Source: src/Config/*.",
+      "parent": null
+    },
+    {
+      "title": ".bricklayer.json Reference",
+      "purpose": "Full reference of .bricklayer.json: structure, per-tool enable/disable, deploy-mode-aware production-safety defaults, and the recommended production configuration. Source: src/Config/ConfigInitializer.php, src/Config/ConfigLoader.php, src/Config/ConfigValidator.php; docs/wiki/configuration/bricklayer-json.md.",
+      "parent": "Configuration System"
+    },
+    {
+      "title": "Environment Variables",
+      "purpose": "BRICKLAYER_* environment-variable overrides and how they shadow .bricklayer.json keys. Source: src/Config/EnvironmentResolver.php; docs/wiki/configuration/environment-variables.md.",
+      "parent": "Configuration System"
+    },
+    {
+      "title": "Agent Integration",
+      "purpose": "How Bricklayer generates MCP client configuration for each supported agent — Claude Code, Cursor, GitHub Copilot, JetBrains AI, and Gemini CLI — and where each config file is written. Source: src/Integration/McpConfigWriter.php; docs/wiki/configuration/agent-integration.md. Show the generated mcp.json / command per agent.",
+      "parent": "Configuration System"
+    },
+    {
+      "title": "Project-Local Overrides",
+      "purpose": "The .bricklayer/ project-local override system: override-vs-addition semantics for guidelines, skills, and coding standards; optional SKILL.md frontmatter; and the regenerate workflow. Source: src/Guidelines/LocalOverrideHelper.php, src/Guidelines/GuidelinesCompiler.php; docs/wiki/configuration/local-overrides.md.",
+      "parent": "Configuration System"
+    },
+    {
+      "title": "Docker and Container Environments",
+      "purpose": "Automatic detection and configuration for Native, DDEV, Warden, and Docker. Covers bin/bricklayer-mcp vs bin/bricklayer-mcp-docker and the generated exec command per environment (e.g. 'ddev exec', 'warden shell -c', 'docker compose exec -T'). Source: bin/bricklayer-mcp-docker, src/Integration/McpConfigWriter.php, src/Config/EnvironmentResolver.php; README 'Docker / Container Environments'.",
+      "parent": "Configuration System"
+    },
+    {
+      "title": "MCP Tools Reference",
+      "purpose": "Index of all 80 MCP tools grouped by domain, with the tier-1/tier-2 visibility split (17 visible at startup, 63 discoverable via search-tools) and the read-only vs destructive classification. Mirror docs/wiki/tools/overview.md. Parent for the per-domain tool pages below.",
+      "parent": null
+    },
+    {
+      "title": "Introspection Tools",
+      "purpose": "Runtime introspection tools — the core of the 'check' step: check-class, di-configuration, plugin-list, preference-list, event-list, module-list/module-structure, eav-attributes/eav-entity-types, and route/api/url-rewrite tools. Source: src/Mcp/Tool/{ApplicationTools,ModuleTools,EavTools,RoutingTools,DevelopmentTools}.php; docs/wiki/tools/introspection.md.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Catalog, Order, and Customer Tools",
+      "purpose": "Service-layer CRUD over catalog, sales, and customers, plus batch execution. Source: src/Mcp/Tool/{CatalogTools,OrderTools,CustomerTools,BatchTools}.php; docs/wiki/tools/{catalog,orders,customers}.md. Note which operations are destructive (create/update/delete, invoice/credit-memo/refund) and ship disabled in production.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Database and Log Tools",
+      "purpose": "Direct database schema/query inspection and log reading/searching. Source: src/Mcp/Tool/{DatabaseTools,LogTools}.php; docs/wiki/tools/{database,logs-and-diagnostics}.md. Cover read-only query safeguards and log-output controls (e.g. max_entry_length).",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Diagnostic and Performance Tools",
+      "purpose": "diagnose-error (exception log + stack trace + DI context + plugin-chain analysis + fix suggestions in one call), diagnose-performance (indexes, cache, cron, query patterns), system-status, and application-info. Source: src/Mcp/Tool/{DiagnosticTools,PerformanceTools,Diagnostic/*}.php; docs/wiki/diagnostics/overview.md.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "GraphQL Tools",
+      "purpose": "GraphQL schema introspection — types, queries, mutations, and resolvers. Source: src/Mcp/Tool/GraphqlTools.php; docs/wiki/tools/graphql.md.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Code Runner Tool",
+      "purpose": "code-runner: execute multi-step PHP against the booted Magento application in a single call, with helper functions (repo(), etc., documented by code-runner-help). Read-only by default with the DB transaction rolled back; writes require allow_write. Document its security model. Source: src/Mcp/Tool/CodeRunnerTools.php.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Code Generation Tools",
+      "purpose": "Scaffolding generators — generate-module, generate-model, generate-controller, generate-api — and the MCP prompt templates that drive them, with conflict detection and Magento-compliant output. Destructive (writes files), disabled in production. Source: src/Mcp/Tool/CodeGenerationTools.php, src/Mcp/Prompt/*; docs/wiki/code-generation/overview.md.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Development and System Tools",
+      "purpose": "Agent-workflow and system tools: development-context (load guidelines by category), search-tools (discover hidden tier-2 tools), search-docs, configuration-get/list, and reinitialize. Source: src/Mcp/Tool/{ContextTools,SearchTools,ConfigurationTools,DevelopmentTools}.php; docs/wiki/tools/development.md.",
+      "parent": "MCP Tools Reference"
+    },
+    {
+      "title": "Guidelines and Skills System",
+      "purpose": "The 33 development guidelines (config/guidelines/: core, patterns, modules, areas, database, ecosystem) and 28 skill guides (config/skills/), how development-context categories map to them, and how they are compiled, served, and overridden. Source: src/Guidelines/GuidelinesCompiler.php, src/Mcp/Resource/{GuidelinesResource,SkillsResource,CodingStandardsResource}.php; docs/wiki/guidelines/overview.md.",
+      "parent": null
+    },
+    {
+      "title": "Security Model",
+      "purpose": "Production safety and code-execution security: deploy-mode-aware defaults, requireNonProduction gating, DESTRUCTIVE_TOOLS disabled-by-default, code-runner read-only/transaction-rollback behavior, and database-query protections. Source: src/Config/ConfigInitializer.php, src/Mcp/Tool/CodeRunnerTools.php; docs/wiki/security/overview.md; SECURITY.md.",
+      "parent": null
+    },
+    {
+      "title": "Testing",
+      "purpose": "Test-suite layout and patterns: PHPUnit configuration and per-area unit tests (Bootstrap, Command, Config, Guidelines, Mcp, Resource, Tool). Source: tests/Unit/*, phpunit.xml.dist, Makefile, and the composer 'check' script (phpcs PSR-12 + phpstan level 8 + phpunit). Mirror the testing portion of docs/wiki/contributing.md.",
+      "parent": null
+    },
+    {
+      "title": "Contributing",
+      "purpose": "How to develop, test, and extend Bricklayer: add a tool to an existing class via #[McpTool], add a new tool class, add a guideline or skill, add a development-context category, and regenerate documentation. Source: docs/wiki/contributing.md, README 'Extending Bricklayer', and composer scripts (phpcs, phpstan, test, check).",
+      "parent": null
+    }
+  ]
+}
