@@ -1,879 +1,432 @@
 ---
-name: Magento Bricklayer
-description: Comprehensive reference for AI agents on how magento-bricklayer works — its MCP tools, CLI, configuration, and decision patterns for common Magento 2 tasks.
+name: Magento Bricklayer (contributing)
+description: Orientation for an AI agent working ON the magento-bricklayer source — how the codebase is laid out, how tools/prompts/resources are registered and auto-discovered, how to add or change one, the QA gates, and the design rule every change is judged against. This is for modifying Bricklayer itself, not for using it against a Magento store (that is the README + wiki).
 ---
 
-# Magento Bricklayer
+# Magento Bricklayer — Working on the Codebase
 
 Bricklayer is a Symfony Console application + MCP (Model Context Protocol) server that
-gives AI coding agents first-class access to a running Magento 2 installation. It is
-implemented as a **standalone Composer library** (not a Magento module) — zero Magento
-footprint, no `setup:upgrade` required, easy install/remove.
+exposes a running Magento 2 installation to AI coding agents. It is a **standalone Composer
+library** (`Inchoo\MagentoBricklayer`), not a Magento module — it has no `module.xml`,
+registers nothing in Magento's DI graph, and bootstraps Magento the way a CLI tool does.
 
-This skill orients an agent so it can choose the right tool for any Magento task without
-guessing. Read the Quick Reference first, then drill into the specific section you need.
-
----
-
-## Quick Reference
-
-**When starting any Magento task, follow this order:**
-
-1. **Load relevant context** — call `development-context category=<task-category>` before writing or modifying code. Always load `coding-standards` for any PHP file.
-2. **Check runtime state** — Magento resolves DI, plugins, preferences, and events at runtime across modules. Reading source files alone misses these overrides. Use the tools listed in the [Introspection Decision Matrix](#introspection-decision-matrix).
-3. **Prefer consolidated tools** — `check-class`, `diagnose-error`, `diagnose-performance`, `system-status`, `graphql-inspect`, and `code-runner` each replace multiple chained calls.
-4. **Be token-conscious** — use `fields`, `count_only`, `verbosity=minimal` on list tools; use `code-runner` for multi-step operations; truncate logs with `max_entry_length`.
-
-**80 MCP tools across 20 tool classes.** 16 are visible in `tools/list` (tier 1); the other 64 are discoverable via `search-tools` but callable by name at any time (tier 2).
+This file orients an agent that is **editing Bricklayer's own source**. If you are looking
+for how to *use* Bricklayer's tools against a Magento store, that lives in `README.md` and
+`docs/wiki/` — not here.
 
 ---
 
-## Architecture at a Glance
+## Rule zero: never hardcode a count
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  AI Agent (Claude, Cursor, Copilot, JetBrains AI, Gemini)       │
-└────────────────────────┬────────────────────────────────────────┘
-                         │ JSON-RPC 2.0 over stdio
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  bin/bricklayer-mcp  →  McpServerFactory  →  MCP Server         │
-│                                                                  │
-│  Auto-discovers:                                                │
-│    - src/Mcp/Tool/*.php       → #[McpTool] methods              │
-│    - src/Mcp/Resource/*.php   → #[McpResource] templates        │
-│    - src/Mcp/Prompt/*.php     → #[McpPrompt] workflows          │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
- ┌────────────────┐ ┌──────────┐ ┌────────────────┐
- │ Tool Classes   │ │ Concerns │ │ Magento        │
- │ (20 files,     │ │ (5       │ │ Bootstrap      │
- │  80 tools)     │ │  traits) │ │ (ObjectManager)│
- └────────┬───────┘ └─────┬────┘ └────────┬───────┘
-          │               │               │
-          └───────────────┴───────────────┘
-                         │
-                         ▼
-          ┌──────────────────────────────┐
-          │ ConfigLoader ← .bricklayer.json│
-          │              ← BRICKLAYER_* env│
-          │              ← built-in defaults│
-          └──────────────────────────────┘
-```
+Bricklayer's most important internal discipline is **zero drift**: every count (tools,
+prompts, resources, categories, gated tools…) is derived from source at runtime, never
+maintained by hand. `ToolRegistry::count()` feeds the server instructions; `ConfigValidator::getKnownTools()`
+and `ConfigInitializer::discoverConfigurableTools()` discover the tool set by reflecting
+`#[McpTool]` attributes and scanning `requireToolEnabled()` call sites. No hand-written list
+exists, so nothing can fall out of sync with the code.
 
-**Key design principles:**
-
-- **Progressive disclosure** — Tier-1 tools (16) cover the most common entry points; tier-2 tools (64) handle the long tail and are discoverable via `search-tools`.
-- **Runtime-state first** — Every write/destructive tool goes through `ChecksConfig::requireToolEnabled()`. Every tool that touches Magento goes through `RequiresMagento::requireMagento()` (lazy + staleness-aware).
-- **Hot reload everywhere** — `.bricklayer.json` mtime is checked on every tool call via `ConfigLoader::reloadIfStale()`. Sentinel files (`app/etc/config.php`, `generated/metadata/global.php`) trigger full ObjectManager reinitialization when they change on disk. **No agent restart is ever required when configuration or Magento state changes.**
-- **Zero drift** — `ConfigValidator::getKnownTools()` and `ConfigInitializer::discoverConfigurableTools()` both discover tools from source (reflection on `#[McpTool]` attributes, source scan for `requireToolEnabled()` call sites) so no hand-maintained lists exist.
-
----
-
-## The Seven CLI Commands
-
-Bricklayer ships a Symfony Console application with **7 commands**:
-
-| Command | Purpose |
-|---------|---------|
-| `bricklayer install` | One-shot setup: generates `.mcp.json`, `.bricklayer.json`, and agent-specific guideline files (CLAUDE.md, .cursorrules, etc.). Detects environment (DDEV, Warden, docker-compose, Hooli, Docker, native) and writes the right `mcp exec` command. Auto-runs `verify` at the end. |
-| `bricklayer init` | Generates only `.bricklayer.json` with deploy-mode-aware defaults. 32 entries in developer mode (10 destructive tools disabled), 32 in production mode (11 disabled because `code-runner` joins the list, and `database-query.max_rows` drops to 50). Tool list discovered by scanning source for `requireToolEnabled()` call sites. |
-| `bricklayer config:set` | Update a single `.bricklayer.json` value with validation, round-trip verification, and an **interactive picker** for discoverability. Run without args to walk through tool → setting → value. Supports bool picker, int validator that re-prompts on non-numeric input. Warns if a key is ineffective (e.g. `enabled` on a read-only tool) or if a `BRICKLAYER_*` env var would shadow the change. |
-| `bricklayer mcp` | Starts the MCP server over stdin/stdout. Normally invoked by AI agents automatically via `.mcp.json`. Also available as `bin/bricklayer-mcp` (bare script without Symfony Console overhead). |
-| `bricklayer inspect` | Shows Magento version, edition, PHP version, deploy mode, module count, store hierarchy. `--json` for machine output, `--no-bootstrap` to skip full DI load. |
-| `bricklayer update` | Regenerates agent files (CLAUDE.md, .cursorrules, etc.) from current bundled content **plus any project-local overrides in `.bricklayer/`**. Reports which local files were applied. |
-| `bricklayer verify` | Post-install health check: Magento bootstrap, deploy mode, MCP server creation + tool count, agent config files, PsySH for code-runner, DB connectivity, log writability, `.bricklayer.json` validation. Auto-generates `.bricklayer.json` if missing. `--json` for machine output. |
-
-### Scripted vs. interactive config:set
+**This applies to you too.** Don't write a tool/prompt/resource/category count into this
+file or anywhere in the docs — it isn't needed to work on the code and it goes stale on the
+next change. Describe structure, not quantity. If you genuinely need a current number (e.g.
+asserting one in a test, or touching server-instruction logic), derive it:
 
 ```bash
-# Interactive — walks through tool/setting/value
-vendor/bin/bricklayer config:set
+# tool classes / total tools
+grep -rl '#\[McpTool' src/Mcp/Tool --include='*.php' | wc -l        # classes (approx; see note)
+grep -rho '#\[McpTool' src/Mcp/Tool --include='*.php' | wc -l       # total tools (approx)
 
-# Scripted — dot-notation key + value
-vendor/bin/bricklayer config:set tools.product-delete.enabled true
-vendor/bin/bricklayer config:set tools.database-query.max_rows 250
-vendor/bin/bricklayer config:set tools.code-runner.allow_write false
-vendor/bin/bricklayer config:set tools.log.max_lines 1000
+# visible vs hidden  (hidden tools carry meta: ['hidden' => true])
+grep -rc "'hidden' => true" src/Mcp/Tool/*.php
 
-# Negative integers need the `--` separator (Symfony Console quirk)
-vendor/bin/bricklayer config:set -- tools.database-query.max_rows -1  # will fail validation
+# prompts / resources
+grep -rho '#\[McpPrompt'   src/Mcp/Prompt   | wc -l
+grep -rho '#\[McpResource\b' src/Mcp/Resource | wc -l
+
+# config-gated tools (distinct names)
+grep -rhoE "requireToolEnabled\(\s*'[a-z0-9-]+'" src/Mcp/Tool | sort -u | wc -l
 ```
 
-**Value parser**: `true`/`false` → bool, `null` → null, numeric → int/float, `[...]`/`{...}` → JSON-decoded, otherwise string.
+> **Grep is approximate for attributes.** PHP 8 attributes can span multiple lines and a bare
+> `grep '#[McpTool'` will also match the one inside a docblock comment in
+> `src/Mcp/Prompt/AbstractPrompt.php` (it has no real prompt methods — it's a transparent
+> base). For an exact count, parse with attribute-awareness (walk the parens, skip comment
+> lines) rather than counting raw matches. When in doubt, reflect.
 
 ---
 
-## MCP Tools Inventory (80 tools, 20 classes)
+## Source map
 
-### Tier-1 tools — always visible in `tools/list`
+```
+magento-bricklayer/
+├── bin/
+│   ├── bricklayer              # Symfony Console entry (config:set, init, install, mcp, inspect, update, verify)
+│   ├── bricklayer-mcp          # bare MCP server entry (no Console overhead) — what agents launch
+│   └── bricklayer-mcp-docker   # bash wrapper: auto-detects the PHP container, runs the server inside it
+├── src/
+│   ├── Application.php          # registers the console commands
+│   ├── Bootstrap/              # MagentoBootstrap (init + staleness), MagentoDetector, AreaEmulator
+│   ├── Command/                # one class per CLI command + AbstractBricklayerCommand base
+│   ├── Config/                 # ConfigLoader, ConfigValidator, ConfigInitializer, EnvironmentResolver,
+│   │                           #   IteratesToolPhpFiles (shared tool-file walker)
+│   ├── Exception/              # Bricklayer / Bootstrap / Configuration / MagentoNotFound
+│   ├── Guidelines/             # GuidelinesCompiler (generates CLAUDE.md/.cursorrules/…),
+│   │                           #   LocalOverrideHelper (.bricklayer/ frontmatter), ToolScanner (reflection)
+│   ├── Integration/            # McpConfigWriter (writes .mcp.json / .idea/mcp.json)
+│   ├── Support/                # CollectsMarkdownFiles (namespace-neutral .md walker)
+│   └── Mcp/
+│       ├── McpServerFactory.php # builds the server: dynamic instructions, ServerCapabilities, pagination=200
+│       ├── Tool/               # ← the bulk of the surface: one class per domain
+│       │   ├── *Tools.php       # one class per domain (CatalogTools, OrderTools, …)
+│       │   ├── ToolRegistry.php # singleton: TOOL_GROUPS map + reflection scan + count()
+│       │   ├── TimeUnits.php    # relative-time strings → seconds/cutoff/hours
+│       │   ├── Concern/         # shared tool traits (see "Trait toolbox")
+│       │   └── Diagnostic/      # ExceptionParser for diagnose-error
+│       ├── Prompt/             # #[McpPrompt] classes + AbstractPrompt base
+│       └── Resource/           # #[McpResource]/#[McpResourceTemplate] classes + FileLoaderTrait
+├── config/
+│   ├── guidelines/             # markdown guideline corpus, grouped: areas/ core/ database/ ecosystem/ modules/ patterns/
+│   └── skills/                 # SKILL.md knowledge modules served by development-context
+├── docs/wiki/                  # human-facing developer docs (git subtree, Makefile push/pull/diff) — NOT agent-facing
+├── tests/Unit/                 # mirrors src/ layout; *Test.php; PHPUnit 10/11
+├── composer.json               # deps + QA scripts; PSR-4 Inchoo\MagentoBricklayer\ => src/
+├── phpstan.neon.dist           # level 8 over src + tests
+├── phpunit.xml.dist
+├── README.md                   # human/usage docs (large)
+└── SKILL.md                    # this file
+```
 
-These 16 are the entry points. Everything else is discoverable through `search-tools` or callable by name.
-
-| Tool | Class | Use when |
-|------|-------|----------|
-| `batch-execute` | BatchTools | You have 3+ similar calls to make (max 20) and want one round-trip |
-| `check-class` | ConfigurationTools | Before modifying any class — returns plugins, DI config, and preferences in one call |
-| `code-runner` | CodeRunnerTools | You need to run arbitrary PHP in Magento context — replaces chains of individual calls |
-| `code-runner-help` | CodeRunnerTools | You're about to write `code-runner` PHP and need the helper reference (`get()`, `create()`, `repo()`, `config()`, area emulation) |
-| `customer-get` | CustomerTools | Fetching a single customer |
-| `database-query` | DatabaseTools | Read-only SELECT queries with automatic `LIMIT` enforcement |
-| `database-schema` | DatabaseTools | Table structures, columns, indexes, foreign keys |
-| `development-context` | ContextTools | **Always** before writing PHP — loads coding guidelines and task-specific patterns |
-| `diagnose-error` | DiagnosticTools | Investigating any Magento error — orchestrates logs + DI + module context + suggestions |
-| `di-configuration` | ConfigurationTools | Checking DI preferences and plugins for a specific class |
-| `eav-attributes` | EavTools | Listing EAV attributes for `catalog_product`, `catalog_category`, `customer`, `customer_address` |
-| `order-get` | OrderTools | Fetching a single order |
-| `plugin-list` | ConfigurationTools | Listing all plugins/interceptors for a class (optionally filtered by method) |
-| `preference-list` | ConfigurationTools | Listing class preference rewrites |
-| `product-get` | CatalogTools | Fetching a single product |
-| `reinitialize` | DevelopmentTools | Force fresh ObjectManager after config/DI changes when sentinel files didn't update |
-| `search-tools` | SearchTools | Discovering tools by keyword or group. Use `detail=names` first for a lightweight overview, then `detail=full` only for tools you need |
-
-### Tier-2 tools — hidden, callable by name, discoverable via `search-tools`
-
-| Group | Tools |
-|-------|-------|
-| **Introspection** | `application-info`, `module-list`, `module-structure`, `validate-module`, `eav-entity-types`, `configuration-get`, `configuration-list`, `event-list`, `route-list`, `route-info`, `api-endpoints`, `url-rewrites` |
-| **Catalog** | `product-list`, `product-create`, `product-update`, `product-delete`, `product-stock-get`, `product-stock-update`, `product-media-list`, `product-media-add`, `product-link-list`, `product-link-set`, `category-tree`, `category-get`, `category-create`, `category-update`, `category-delete`, `category-products`, `category-assign-products` |
-| **Orders** | `order-list`, `order-items`, `order-comments`, `order-add-comment`, `order-cancel`, `order-hold`, `order-unhold`, `invoice-create`, `invoice-list`, `shipment-create`, `shipment-list`, `shipment-track-add`, `creditmemo-create`, `creditmemo-list` |
-| **Customers** | `customer-list`, `customer-create`, `customer-update`, `customer-delete`, `customer-validate`, `customer-groups-list`, `customer-orders`, `customer-addresses`, `customer-address-create`, `customer-address-update`, `customer-address-delete` |
-| **Development** | `system-status`, `search-docs` |
-| **Diagnostics** | `diagnose-performance` |
-| **Logs** | `log` (consolidated read/list/search/analyze) |
-| **GraphQL** | `graphql-inspect` (types/queries/mutations/resolvers) |
-| **Code Generation** | `generate-module`, `generate-model`, `generate-controller`, `generate-api` (all disabled by default — require explicit `enabled: true`) |
-
----
-
-## Cross-cutting Concerns (Tool Traits)
-
-Every tool class composes one or more of these traits from `src/Mcp/Tool/Concern/`. Understanding them makes the runtime behavior of any tool obvious.
-
-| Trait | Provides | Returns an error when… |
-|-------|----------|------------------------|
-| `RequiresMagento` | `requireMagento()` — lazy validation, auto-reinit on sentinel-file changes | Magento is not bootstrapped |
-| `ChecksConfig` | `requireToolEnabled($name)` — honors `.bricklayer.json`; `requireNonProduction($name)` — fail-closed production guard; `isProductionMode()` | Tool is `enabled: false` in config, OR tool is destructive and mode is production without explicit `enabled: true` |
-| `ReadsLogFiles` | `readLastLines()`, `parseLogEntry()`, `calculateTimeCutoff()`, `truncateText()` — efficient tail-reading | — (helpers only) |
-| `FiltersFields` | `filterFields($data, $fields)` — whitelist response fields via comma-separated string | — (helpers only) |
-| `SecureArea` | `withSecureArea($callback)` — registers `isSecureArea=true` for protected delete operations | — (helpers only) |
-
-### The guard order inside every write/destructive tool
+Every PHP file starts with the same header and `declare(strict_types=1)`:
 
 ```php
-public function someWriteOperation(...): array {
-    if ($error = $this->requireMagento())            return $error;  // Magento ready?
-    if ($error = $this->requireToolEnabled('foo'))   return $error;  // .bricklayer.json allows?
-    if ($error = $this->requireNonProduction('foo')) return $error;  // prod + unconfigured?
-    // ... actual work
-}
+<?php
+/**
+ * Copyright (c) Inchoo. All rights reserved.
+ * See LICENSE.txt for license details.
+ */
+declare(strict_types=1);
+
+namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 ```
-
-If you see an error like `"foo is disabled in configuration."`, the fix is:
-
-```bash
-vendor/bin/bricklayer config:set tools.foo.enabled true
-```
-
-The running MCP picks up the change on the very next tool call — no restart needed.
 
 ---
 
-## Configuration: `.bricklayer.json`
+## How registration and discovery work
 
-### Priority order (highest wins)
+There is **no manual wiring**. The MCP SDK's attribute discoverer scans the configured
+directories and registers every method carrying an MCP attribute. Three attributes, imported
+from `Mcp\Capability\Attribute\*`:
 
-1. **Environment variables** (`BRICKLAYER_*`)
-2. **Project config** (`.bricklayer.json` at the Magento root)
-3. **Built-in defaults** (`ConfigLoader::getDefaultConfig()`)
+| Attribute | Where | Registers |
+|-----------|-------|-----------|
+| `#[McpTool(name, description, meta?)]` | `src/Mcp/Tool/*.php` | a callable tool |
+| `#[McpPrompt(...)]` | `src/Mcp/Prompt/*.php` | a prompt template |
+| `#[McpResource(...)]` / `#[McpResourceTemplate(...)]` | `src/Mcp/Resource/*.php` | a static / templated resource |
 
-### Shape
+Two consequences a contributor must internalize:
 
-A generated developer-mode file contains **32 entries** — one per runtime-configurable tool. Entries are discovered by scanning source for `requireToolEnabled()` call sites, so the file never contains dead keys.
+- **The discoverer only indexes methods declared directly on a concrete class.** That is why
+  `AbstractPrompt` can be an `abstract class` with shared formatting helpers and stay invisible
+  to prompt discovery — it has no `#[McpPrompt]` methods of its own.
+- **Visibility is just metadata.** A tool with `meta: ['hidden' => true]` is omitted from
+  `tools/list` but remains fully callable by name. Visible (tier-1) tools simply omit the
+  `meta` argument. `search-tools` is the gateway agents use to find hidden ones.
 
-```json
-{
-    "tools": {
-        "code-runner": {
-            "enabled": true,
-            "allow_write": false,
-            "max_timeout": 60
-        },
-        "database-query": {
-            "enabled": true,
-            "max_rows": 100
-        },
-        "log": {
-            "enabled": true,
-            "max_lines": 500
-        },
-        "diagnose-performance": { "enabled": true },
-
-        "product-create": { "enabled": true },
-        "product-update": { "enabled": true },
-        "product-delete": { "enabled": false },
-        "category-delete": { "enabled": false },
-        "customer-delete": { "enabled": false },
-        "order-cancel": { "enabled": false },
-        "creditmemo-create": { "enabled": false },
-
-        "generate-module": { "enabled": false },
-        "generate-model": { "enabled": false },
-        "generate-controller": { "enabled": false },
-        "generate-api": { "enabled": false }
-    }
-}
-```
-
-### Deploy-mode-aware defaults
-
-| Setting | Developer | Production |
-|---------|-----------|------------|
-| `code-runner.enabled` | `true` | `false` |
-| `code-runner.allow_write` | `false` | `false` |
-| `code-runner.max_timeout` | `60` | `60` |
-| `database-query.max_rows` | `100` | `50` |
-| `log.max_lines` | `500` | `500` |
-| Destructive tools | `false` | `false` |
-| Code generation tools | `false` | `false` |
-| Total disabled | 10 | 11 (adds `code-runner`) |
-
-Destructive tools: `product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, `creditmemo-create`, and all 4 `generate-*`. These are disabled in **both** modes by default and must be explicitly enabled.
-
-### Environment variable overrides
-
-```bash
-BRICKLAYER_MAGENTO_ROOT=/path/to/magento   # Override Magento root detection
-BRICKLAYER_CODE_RUNNER_ENABLED=false       # Disable code-runner
-BRICKLAYER_CODE_RUNNER_ALLOW_WRITE=false   # Enforce read-only globally
-BRICKLAYER_CODE_RUNNER_MAX_TIMEOUT=30      # Cap timeout
-BRICKLAYER_DATABASE_QUERY_MAX_ROWS=50      # Cap query results
-BRICKLAYER_DEBUG=1                         # Verbose output
-BRICKLAYER_CONTAINER_USER=www-data         # Override user in docker exec
-```
-
-`config:set` will warn if a matching `BRICKLAYER_*` variable is set, since env vars take priority over the file.
-
-### Hot reload is automatic
-
-`ChecksConfig::getConfigLoader()` calls `ConfigLoader::reloadIfStale()` on every tool invocation — a `filemtime()` check per call. Changes to `.bricklayer.json` are picked up **on the next MCP tool call**. There is no reason to restart the agent or the MCP server after a config change.
+`ToolRegistry` (`src/Mcp/Tool/ToolRegistry.php`) is a separate, reflection-driven index used
+for grouping and counting. It holds `TOOL_GROUPS` — a map of group name → tool classes — and
+exposes `all()` / `count()` / `getToolGroups()`. The current groups are: `introspection`,
+`catalog`, `orders`, `customers`, `database`, `logs`, `diagnostic`, `graphql`, `development`,
+`code-generation`, `context`. `search-tools` filters on these.
 
 ---
 
-## Development Context (`development-context` tool)
+## Adding or changing a tool
 
-Before writing or modifying any PHP file, call `development-context` with the relevant category to load coding guidelines and development patterns. **Always load `coding-standards` for any PHP file**, and then load one or more task-specific categories.
+Tools are grouped by domain into a single class (`CatalogTools`, `OrderTools`, …). To add one:
 
-### The 38 bundled categories
+1. **Pick the right class** for the domain. Add a `public function` returning `array`.
+2. **Declare the attribute.** Visible tool:
+   ```php
+   #[McpTool(
+       name: 'product-get',
+       description: 'Get product by SKU. Use fields to limit response.'
+   )]
+   public function getProduct(string $sku = '', int $storeId = 0, string $fields = ''): array
+   ```
+   Hidden (tier-2) tool — add the `meta` arg:
+   ```php
+   #[McpTool(
+       name: 'product-list',
+       description: '…',
+       meta: ['hidden' => true]
+   )]
+   ```
+   Keep descriptions **≤ ~80 words** and front-load a "when to use" trigger — agents only
+   reliably reach for tools whose description tells them when to.
+3. **Apply the right guards, in order, at the top of the method.** This order is a convention
+   the whole codebase follows:
+   ```php
+   if ($error = $this->requireMagento())            return $error; // Magento bootstrapped?
+   if ($error = $this->requireToolEnabled('foo'))   return $error; // enabled in .bricklayer.json?
+   if ($error = $this->requireNonProduction('foo')) return $error; // destructive + production?
+   ```
+    - **Pure read/introspection** (plugin-list, di-configuration, check-class…): only
+      `requireMagento()`. No config gate — reading resolved DI or a plugin chain is non-destructive.
+    - **Write or cost-sensitive** (creates/updates, `database-query`, `log`, `diagnose-performance`,
+      `code-runner`): add `requireToolEnabled('foo')`. The act of adding this call is what makes
+      the tool config-gated — `ConfigInitializer` discovers it by scanning for the call site, so
+      **no list anywhere needs updating.**
+    - **Destructive** (deletes, refunds, codegen): also add `requireNonProduction('foo')` **and**
+      add the tool name to `ConfigInitializer::DESTRUCTIVE_TOOLS` so it ships `enabled: false`.
+4. **Mix in the traits you need** (see below) via `use` at class scope.
+5. **Register the class in `ToolRegistry::TOOL_GROUPS`** under the appropriate group, so
+   `search-tools` can group/discover it.
+6. **Write a `*Test.php`** under the mirrored `tests/Unit/Tool/` path.
 
-| Group | Categories |
-|-------|------------|
-| **System & Quality** | `coding-standards` (always), `testing`, `security`, `performance`, `cron`, `indexer` |
-| **Module Development** | `module`, `model`, `plugin`, `observer`, `preference`, `eav`, `data-patch` |
-| **API & Integration** | `rest-api`, `graphql`, `payment`, `payment-gateway`, `payment-checkout`, `shipping`, `message-queue`, `import`, `export` |
-| **Frontend & Admin** | `frontend`, `theme`, `theme-styling`, `checkout`, `checkout-advanced`, `adminhtml`, `ui-component`, `ui-component-form` |
-| **Hyvä Theme** | `hyva-theme`, `hyva-theme-advanced`, `hyva-ui-component`, `hyva-ui-component-js`, `hyva-checkout`, `hyva-checkout-config`, `hyva-checkout-api`, `magewire` |
-| **Meta** | `list` — returns the catalog of available categories |
-
-### How the tool works
-
-`ContextTools::getDevelopmentContext($category)`:
-
-1. Looks up the category in `CATEGORY_MAP` (`src/Mcp/Tool/ContextTools.php`)
-2. Each entry maps to `{skills: string[], guidelines: string[], description, group}`
-3. Loads `.md` files from `config/guidelines/` and `config/skills/`
-4. **Prefers project-local overrides** in `.bricklayer/skills/<category>/SKILL.md` and `.bricklayer/guidelines/<path>.md`
-5. Strips YAML frontmatter from skill files before returning content
-6. Appends task-specific next-step guidance (e.g. `plugin` → "check-class before modifying", `observer` → "event-list to find events")
-
-### Cheap discovery pattern
-
-```
-search-docs query="how do I add a column"    # → lightweight keyword search returns pointer
-development-context category=data-patch      # → full guidelines + skill content
-```
-
-`search-docs` is the scout (cheap); `development-context` is the full context loader (more tokens).
-
----
-
-## Project-Local Overrides (`.bricklayer/` directory)
-
-Anything a project places under `.bricklayer/` at the Magento root is picked up automatically by `bricklayer update`, `development-context`, and `search-docs`. **No registration in `.bricklayer.json` is required** — the path is the contract (modelled after Laravel Boost).
-
-| Path | Purpose |
-|------|---------|
-| `.bricklayer/skills/<category>/SKILL.md` | Override a bundled skill, or add a new category. Optional YAML frontmatter with `name`/`description` keys. |
-| `.bricklayer/guidelines/<path>.md` | Override a bundled guideline if `<path>` matches, or add a new guideline. No frontmatter. |
-| `.bricklayer/project-context.md` | Appended under "Project-Specific Context" in every compiled agent file (CLAUDE.md, .cursorrules, etc.) |
-| `.bricklayer/decision-matrix.md` | Extra rows appended to the "Before Modifying Magento Code" decision matrix. Must be valid markdown table row format. |
-
-During compilation `GuidelinesCompiler` tracks `appliedLocalOverrides[]` and `appliedLocalAdditions[]` and reports them at the end of `bricklayer update`.
+For **consolidated tools** (one tool, many behaviours) follow the existing pattern: a routing
+parameter + a `match` expression — e.g. `graphql-inspect target=…`, `system-status check=…`,
+`log action=…`, `application-info include=…`. Prefer consolidating over adding a new visible
+tool; the visible surface is deliberately small.
 
 ---
 
-## Introspection Decision Matrix
+## Trait toolbox (`src/Mcp/Tool/Concern/`)
 
-Magento resolves DI, plugins, preferences, and events at runtime across modules. Reading source files alone misses overrides. **Before modifying any class, check runtime state first, then load the relevant guideline.**
+The Concern traits provide the cross-cutting behaviour. Reach for these instead of
+re-implementing — consistency here is enforced by review.
 
-| Task | Check runtime state | Then load guideline |
-|------|---------------------|---------------------|
-| Writing or modifying a **plugin** | `check-class className=Target\Class` | `development-context category=plugin` |
-| Overriding/extending a class (**preference**) | `check-class className=Target\Class` | `development-context category=preference` |
-| Injecting or changing **DI config** | `di-configuration className=Target\Class` | (based on findings) |
-| Working with **product data** | `eav-attributes entityType=catalog_product` | `development-context category=eav` |
-| Working with **customer data** | `eav-attributes entityType=customer` | `development-context category=eav` |
-| Creating/modifying a **DB table** | `database-schema table=table_name` | `development-context category=data-patch` |
-| Subscribing to an **event** | `event-list eventName=event_name` | `development-context category=observer` |
-| Adding a **REST API endpoint** | `api-endpoints` | `development-context category=rest-api` |
-| Writing a **GraphQL resolver** | `graphql-inspect target=types` | `development-context category=graphql` |
-| Creating a **cron job** | `system-status check=cron` | `development-context category=cron` |
-| Debugging **any error** | `diagnose-error` | (based on diagnosis) |
-| Investigating **performance** | `diagnose-performance` | `development-context category=performance` |
-| Writing **any PHP file** | — | `development-context category=coding-standards` (always) |
+| Trait | Provides |
+|-------|----------|
+| `RequiresMagento` | `requireMagento()` — lazy bootstrap check + auto-reinit when sentinel files change |
+| `ChecksConfig` | `requireToolEnabled()`, `requireNonProduction()`, `isProductionMode()`; config staleness auto-reload via `getConfigLoader()` |
+| `RespondsWithErrors` | the canonical error envelope (this replaced the old `ToolException`, now removed) |
+| `PaginatesResults` | the canonical paginated list envelope (`has_more`, etc.) — use on every list tool |
+| `FiltersFields` | the optional `fields` whitelist parameter |
+| `MasksSensitiveConfig` | single source of truth for the sensitive-prefix list + path masking — use anywhere config values can surface |
+| `ReadsLogFiles` | tail-reading, entry parsing, time-cutoff, truncation; honors `log.max_lines` |
+| `RequiresValidVerbosity` | validates the `minimal`/`standard`/`detailed` enum |
+| `ResolvesPackagePaths` | package-root / Magento-root constructor logic (for testability) |
+| `SecureArea` | runs admin-context operations inside `isSecureArea=true` and unwinds after |
 
----
-
-## Consolidated Tools (prefer these over chains)
-
-These tools orchestrate multiple internal calls to give agents a complete answer in one round-trip.
-
-### `check-class` — before modifying any class
-
-Returns **plugins + DI config + preferences** for any class in a single call. This is the pre-flight check before writing a plugin, preference, or DI override.
-
-```
-check-class className="Magento\Catalog\Model\Product"
-```
-
-### `diagnose-error` — the first tool to call on any error
-
-Orchestrates log parsing, DI analysis, plugin context, module inspection, and suggestion synthesis. Recognizes 15 common Magento error patterns (class-not-found, DI compilation, database, search engine, invalid templates/blocks, memory, sessions, etc.).
-
-```
-diagnose-error(index=0, source="exception", since="1h", pattern="", verbosity="standard")
-```
-
-**Returns**: `error` (parsed exception with chain), `module_context`, `di_context`, `environment`, `history`, `suggestions` (actionable fixes with confidence levels + CLI commands), and an optional `_hint`.
-
-### `diagnose-performance` — system-wide performance audit
-
-One call produces findings across indexes, cache, flat-tables, cron-backlog, config, and queries. Each finding has a severity (`info`/`warning`/`critical`) and a suggestion. Use `check` to scope:
-
-```
-diagnose-performance check=all            # everything
-diagnose-performance check=indexes        # just indexer state
-diagnose-performance check=cron-backlog   # just cron queue
-```
-
-### `system-status` — consolidated system check
-
-```
-system-status check=cache          # cache types and enabled state
-system-status check=indexers       # indexer status + staleness
-system-status check=deploy-mode    # developer/production/default
-system-status check=cron           # last cron run + schedule health
-system-status check=cron-history   # recent execution log
-```
-
-### `graphql-inspect` — consolidated GraphQL introspection
-
-```
-graphql-inspect target=types        # all types
-graphql-inspect target=queries      # query fields
-graphql-inspect target=mutations    # mutation fields
-graphql-inspect target=resolvers    # resolver classes
-graphql-inspect target=types name=Product  # detail on one type
-```
-
-### `log` — consolidated log tool
-
-```
-log action=list                                        # available log files
-log action=read logType=exception lines=100            # tail N lines
-log action=search query="DeadlockException" hours=24   # find across files
-log action=analyze hours=24                            # frequency analysis
-```
-
-Use `max_entry_length=500` to cap verbose stack traces when tailing.
-
-### `code-runner` — execute PHP in Magento context
-
-The swiss-army knife for multi-step operations. Replaces chains of individual tool calls when you need computed or combined data.
-
-```php
-code-runner(code: "
-    $p = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class)->get('24-MB01');
-    return [
-        'sku' => $p->getSku(),
-        'price' => $p->getPrice(),
-        'stock' => get(\Magento\CatalogInventory\Api\StockRegistryInterface::class)
-            ->getStockItemBySku('24-MB01')->getQty(),
-    ];
-")
-```
-
-**Helpers available inside `code-runner`:**
-
-| Helper | Returns |
-|--------|---------|
-| `get($class)` | ObjectManager::get() — singletons |
-| `create($class, $args)` | ObjectManager::create() — fresh instance |
-| `repo($class)` | Shortcut for repository interfaces |
-| `config($path)` | System config value for the given path |
-
-**Parameters:**
-- `code` (required) — PHP without `<?php` tags
-- `area` — `frontend`, `adminhtml`, `webapi_rest`, `graphql`, `crontab`, `global`
-- `allow_write` — default `false`; when false, DB changes are rolled back automatically
-- `timeout` — seconds (default 30, cap via `tools.code-runner.max_timeout`)
-- `mode` — `execute` (default) or `define` (save reusable functions for the session)
-
-**Reusable functions** via `mode=define`:
-
-```php
-code-runner(mode="define", code="
-    function getProductBySku($sku) {
-        return get(\Magento\Catalog\Api\ProductRepositoryInterface::class)->get($sku);
-    }
-")
-
-code-runner(code="$p = getProductBySku('24-MB01'); return $p->getName();")
-```
-
-Defined functions are validated against a 9-pattern dangerous-code blocklist and cleared on `reinitialize`. Max 20 defined functions per session.
-
-**Call `code-runner-help` whenever you're about to write non-trivial `code-runner` PHP.**
-
-### `batch-execute` — run multiple tools in one call
-
-```
-batch-execute operations=[
-    {tool: "product-get", args: {sku: "24-MB01"}},
-    {tool: "product-get", args: {sku: "24-WB01"}},
-    {tool: "product-get", args: {sku: "24-WB02"}}
-]
-```
-
-Max 20 operations per call. Individual failures don't abort the batch.
+Cross-namespace helpers worth knowing: `TimeUnits` (`Mcp/Tool/`), `CollectsMarkdownFiles`
+(`Support/`), `IteratesToolPhpFiles` (`Config/`), `AbstractBricklayerCommand` (`Command/`),
+`AbstractPrompt` (`Mcp/Prompt/`), `LocalOverrideHelper` (`Guidelines/`).
 
 ---
 
-## Token Efficiency Patterns
+## The other MCP subsystems (where to edit)
 
-Bricklayer gives you multiple knobs to keep context cost low. Use them.
+**Prompts** (`src/Mcp/Prompt/`) — `#[McpPrompt]` methods on concrete classes grouped by domain
+(`ModulePrompts`, `PluginPrompts`, …). `AbstractPrompt` is the shared text-formatting base and
+must stay free of `#[McpPrompt]` methods. To add a prompt, add a method to the right class.
 
-### On list tools
+**Resources** (`src/Mcp/Resource/`) — `#[McpResource]` for fixed resources,
+`#[McpResourceTemplate]` for templated ones. `FileLoaderTrait` + `Support\CollectsMarkdownFiles`
+power the file-backed ones. The guidelines and skills resources **auto-discover `.md` files**
+under `config/guidelines/` and `config/skills/` — so adding a guideline or skill file needs
+**no code change**, only a new markdown file.
 
-```
-module-list verbosity=minimal                              # just names, no vendor/version/status
-product-list fields=sku,name,price                         # whitelist columns
-eav-attributes entityType=catalog_product count_only=true  # just the count
-configuration-list section=catalog count_only=true         # size-check before fetching
-```
+**Guidelines** (`config/guidelines/`) — the markdown corpus compiled into agent files
+(`CLAUDE.md`, `.cursorrules`, …) by `GuidelinesCompiler`. Grouped into `areas/ core/ database/
+ecosystem/ modules/ patterns/`. Pure content; edit the markdown.
 
-### On the `log` tool
+**Skills** (`config/skills/`) — `SKILL.md` knowledge modules served on demand by the
+`development-context` tool.
 
-```
-log action=read logType=exception lines=50 max_entry_length=500
-```
-
-`max_entry_length=500` truncates each log entry's message — essential when tailing `exception.log` with long stack traces.
-
-### On `search-tools`
-
-```
-search-tools query=product detail=names      # lightweight: just tool names
-search-tools query=product detail=summary    # names + one-line descriptions
-search-tools query=product detail=full       # names + descriptions + schemas (use sparingly)
-```
-
-Start with `detail=names`, then escalate only for the specific tools you need.
-
-### Prefer consolidated tools over chains
-
-One call to `check-class` replaces: `di-configuration` + `plugin-list` + `preference-list`. One call to `diagnose-error` replaces: `log action=read` + `module-structure` + `di-configuration` + `plugin-list` + manual analysis. One call to `code-runner` replaces arbitrary multi-step fetches.
-
-### Use `code-runner` for loops
-
-Instead of 10 `product-get` calls, loop inside `code-runner`:
-
-```php
-code-runner(code: "
-    $repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);
-    $out = [];
-    foreach (['24-MB01', '24-WB01', '24-WB02'] as $sku) {
-        $p = $repo->get($sku);
-        $out[$sku] = ['name' => $p->getName(), 'price' => $p->getPrice()];
-    }
-    return $out;
-")
-```
-
-### Use `search-docs` before `development-context`
-
-`search-docs` is cheap and points you at the right category. Only call `development-context` once you know which category to load.
+**Context categories** — the `development-context` map lives in `CATEGORY_MAP` in
+`src/Mcp/Tool/ContextTools.php`. Each key maps to `{skills[], guidelines[], description, group}`.
+On a call it loads the mapped files from `config/skills/` + `config/guidelines/`, strips SKILL.md
+YAML frontmatter, prefers any `.bricklayer/` override, and appends category-specific
+`_next_steps`. Add a category by adding a map entry plus the referenced markdown (the full
+override contract is below).
 
 ---
 
-## Security Model
+## Project-local overrides (`.bricklayer/`)
 
-### Destructive tools blocked by default
+A `.bricklayer/` directory at the **Magento root** (not in the package) lets a project extend
+bundled content without forking. **The path is the contract** — nothing is registered in
+`.bricklayer.json`. `GuidelinesCompiler` reads it, `ContextTools`/`SearchTools` resolve it, and
+all of it flows through `Guidelines\LocalOverrideHelper` (frontmatter parse/strip).
 
-`product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, `creditmemo-create`, and the 4 `generate-*` tools ship with `enabled: false` in both developer and production configurations. They must be explicitly enabled:
+| Path | Effect |
+|------|--------|
+| `.bricklayer/project-context.md` | appended to every generated agent file under `## Project-Specific Context` |
+| `.bricklayer/decision-matrix.md` | extra rows merged into the "Before Modifying Magento Code" table (malformed lines skipped) |
+| `.bricklayer/guidelines/<path>.md` | matches a bundled path → **override**; no match → **new** section |
+| `.bricklayer/skills/<category>/SKILL.md` | matches a bundled category → **override**; else a **new** local-only category callable via `development-context category=<dir>` |
 
-```bash
-vendor/bin/bricklayer config:set tools.product-delete.enabled true
-```
-
-### Production mode is fail-closed
-
-`ChecksConfig::isProductionMode()` **fails closed** — if the mode cannot be determined, it assumes production. In production, `requireNonProduction()` blocks destructive tools **unless** the config explicitly sets `enabled: true`. Without a config file or without the entry, they are blocked.
-
-### Code-runner safety
-
-- **Read-only by default** — when `allow_write=false` (default), Bricklayer wraps execution in a DB transaction that is rolled back after the code runs. Set `allow_write=true` in both the config and the individual call to persist changes.
-- **Pattern blocklist** — 9 dangerous patterns are rejected: shell execution, file writes, superglobals, cURL, eval, header manipulation, global handler registration, long sleeps, and more.
-- **Per-tool kill switch** — disable via `tools.code-runner.enabled=false` to turn the tool off entirely.
-- **Timeout enforcement** — `tools.code-runner.max_timeout` caps per-call timeout.
-
-### Query safety
-
-- Database queries are `SELECT`-only with dangerous-pattern detection.
-- Table names in schema queries are validated against actual database tables to prevent SQL injection.
-- `tools.database-query.max_rows` enforces a hard cap (default 100 dev, 50 prod).
-- Sensitive configuration values (`payment/*`, `carriers/*`, `oauth/*`, etc.) are automatically masked in query results.
-
-### Log safety
-
-- `tools.log.max_lines` enforces a hard cap on lines returned per read (default 500).
-- `max_entry_length` parameter truncates long stack traces per entry.
-- Access is gated via `tools.log.enabled`.
+Local SKILL.md may carry YAML frontmatter (`name:`/`description:`), stripped before content
+reaches agents and used as display metadata. `GuidelinesCompiler` tracks `appliedLocalOverrides[]`
+vs `appliedLocalAdditions[]`; `update` reports both. The testability seam for this whole
+subsystem is the optional `$magentoRoot`/`$packageRoot` on the `GuidelinesCompiler`,
+`ContextTools`, and `SearchTools` constructors — that is what the tests drive.
 
 ---
 
-## Auto-Reinitialize: Stale Magento State
+## CLI commands (`src/Command/`)
 
-Bricklayer runs as a long-lived MCP server process that bootstraps Magento's ObjectManager once at startup. When external commands change the application state (`setup:upgrade`, `setup:di:compile`, `module:enable`), the in-memory ObjectManager can go stale.
+Registered in `Application.php`; `AbstractBricklayerCommand` provides shared Magento-root
+resolution + IO.
 
-Bricklayer tracks the mtimes of two sentinel files at startup:
+| Command | Class | Responsibility |
+|---------|-------|----------------|
+| `install` | `InstallCommand` | detect env, write `.mcp.json` + agent guideline files (CLAUDE.md / .cursorrules / `.idea/mcp.json` / …) + `.bricklayer.json`, then run `verify` |
+| `init` | `InitCommand` | write `.bricklayer.json` with deploy-mode-aware defaults; create the `.bricklayer/` dir |
+| `config:set` | `ConfigSetCommand` | read/write a single `.bricklayer.json` value; interactive picker when run bare; warns on an ineffective key or a shadowing `BRICKLAYER_*` env var |
+| `mcp` | `McpServerCommand` | run the server over stdio (honors `--magento-root` even without `pcntl`); `bin/bricklayer-mcp` is the bare-script equivalent |
+| `inspect` | `InspectCommand` | print Magento version/edition/mode/module count/store hierarchy; `--json`, `--no-bootstrap` |
+| `update` | `UpdateCommand` | regenerate agent files from bundled + `.bricklayer/` content; report applied overrides |
+| `verify` | `VerifyCommand` | health check — each check is a private `check*` method (bootstrap, deploy mode, server build, agent configs, `.bricklayer.json`, PsySH, DB, log dir, code-runner gating, diagnose-error) |
 
-- `app/etc/config.php` — changes on `setup:upgrade`, `module:enable/disable`
-- `generated/metadata/global.php` — changes on `setup:di:compile`
-
-On **every tool call**, `RequiresMagento::requireMagento()` calls `MagentoBootstrap::reinitializeIfStale()` which compares current mtimes against the snapshot. If either changed, Magento is reinitialized with a fresh ObjectManager — **no manual intervention required**. The staleness check costs two `filemtime()` calls (microseconds).
-
-A manual `reinitialize` tool is also available for edge cases where sentinel files don't change (e.g. editing a module's `config.xml` without recompiling).
+`ConfigSetCommand`'s value parser: `true`/`false` → bool, `null` → null, numeric → int/float,
+`[…]`/`{…}` → JSON, else string. Negative integers need the `--` separator (a Symfony Console
+quirk), e.g. `config:set -- tools.x.max_rows -1`.
 
 ---
 
-## Environment Detection
+## Environment detection & config writing (`Bootstrap/`, `Integration/`, the docker wrapper)
 
-`MagentoDetector::getEnvironmentType()` inspects the project directory and returns one of:
+`install` and the config writers target six environments. `MagentoDetector::getEnvironmentType()`
+returns the **first** match:
 
-| Environment | Detection |
-|-------------|-----------|
-| `ddev` | `.ddev/config.yaml` present |
-| `hooli` | `../hooli` + `../docker-compose.yml` |
+| Env | Detected by |
+|-----|-------------|
+| `ddev` | `.ddev/config.yaml` |
+| `hooli` | parent dir has both `hooli/` and `docker-compose.yml` |
 | `warden` | `.warden/warden-env.yml` or `.env.warden` |
-| `docker-compose` | `docker-compose.{yml,yaml}` or `compose.yml` |
-| `docker` | `/.dockerenv` file or `DOCKER_CONTAINER` env var |
-| `native` | default fallback |
+| `docker-compose` | `docker-compose.yml` / `docker-compose.yaml` / `compose.yml` |
+| `docker` | `/.dockerenv` exists or `DOCKER_CONTAINER` is set |
+| `native` | fallback |
 
-`McpConfigWriter::writeMcpConfig($envType)` uses the detected type to emit the correct `command`/`args` in `.mcp.json`:
-
-```json
-// Native
-{"command": "php", "args": ["vendor/bin/bricklayer-mcp"]}
-
-// DDEV
-{"command": "ddev", "args": ["exec", "php", "vendor/bin/bricklayer-mcp"]}
-
-// Warden
-{"command": "warden", "args": ["shell", "-c", "php vendor/bin/bricklayer-mcp"]}
-
-// Docker Compose (with user detection)
-{"command": "docker", "args": ["compose", "exec", "-T", "-u", "www-data", "php", "php", "vendor/bin/bricklayer-mcp"]}
-```
-
-For dynamic container names, use `bin/bricklayer-mcp-docker` — a bash wrapper that auto-detects the PHP container by matching common patterns (`apache-php`, `php-fpm`, `magento`, `web`, `app`) while excluding utility containers (phpmyadmin, redis, elasticsearch, varnish).
-
-**Container user detection** (in precedence order):
-1. `BRICKLAYER_CONTAINER_USER` env var (explicit override)
-2. POSIX owner of `composer.json`
-3. Hooli `.env` `APACHE_USER` value
-4. Default: `root`
+`McpConfigWriter::writeMcpConfig($envType)` turns that into the `command`/`args` written to
+`.mcp.json` (native → `php vendor/bin/bricklayer-mcp`; ddev → `ddev exec …`; warden →
+`warden shell -c …`; docker-compose → `docker compose exec -T -u <user> …`). The container user
+is resolved in `McpConfigWriter`, precedence: `BRICKLAYER_CONTAINER_USER` → owner of
+`composer.json` (`fileowner` + `posix_getpwuid`) → Hooli `.env` `APACHE_USER`. For dynamic
+container names, `bin/bricklayer-mcp-docker` finds the PHP container at runtime from `docker ps`
+names — excluding `phpmyadmin|mysql|mariadb|redis|elastic|opensearch|varnish|mailhog|rabbitmq|database|nginx-proxy`,
+then matching `apache-php|php-fpm|php|magento|web|app`. Changing detection or the emitted command
+means touching these three together (`MagentoDetector`, `McpConfigWriter`, the wrapper).
 
 ---
 
-## MCP Resources (5 exposed)
+## Config and security model (implementation view)
 
-| Resource URI | Purpose |
-|--------------|---------|
-| `magento://guidelines/{category}/{name}` | Auto-discovers `.md` files in `config/guidelines/` — no code changes needed when adding guidelines |
-| `magento://standards/coding`, `magento://standards/architecture` | MCGA (Magento Coding Guidelines) and architecture patterns |
-| `magento://skills/{name}`, `magento://skills/index` | Auto-discovers `SKILL.md` files in `config/skills/` |
-| `magento://templates/module` | Module structure templates with required files and boilerplate |
-| `magento://reference/events` | Event reference, ACL patterns, layout XML, DI patterns |
+Configuration resolves **env var > `.bricklayer.json` > deploy-mode default**.
 
-Resources are read via the MCP resource API, not tool calls. Most agents don't need them directly — `development-context` and `search-docs` already consume them internally.
+- `ConfigLoader` reads `.bricklayer.json` at the Magento root and, on every tool call (via
+  `ChecksConfig::getConfigLoader()`), runs `reloadIfStale()` — an `filemtime()` check — so a
+  mid-session edit takes effect on the next call with **no server restart**.
+- `ConfigInitializer::generate()` writes the file. It calls `discoverConfigurableTools()`
+  (scan for `requireToolEnabled()` call sites, via the shared `IteratesToolPhpFiles`), then
+  `buildToolEntry()` per tool: a tool in `DESTRUCTIVE_TOOLS` ships `enabled:false`; `code-runner`
+  is `enabled: !isProduction` with `allow_write:false`/`max_timeout:60`; `database-query.max_rows`
+  is `50` in production / `100` otherwise; `log.max_lines:500`. One entry is written per gated
+  tool — the file never contains a dead key.
+- `EnvironmentResolver` maps a dotted key to an env var with a **fixed transform**:
+  ```
+  ENV = 'BRICKLAYER_' . strtoupper(str_replace(['.', '-'], '_', $key))
+  ```
+  So `tools.code-runner.enabled` → `BRICKLAYER_TOOLS_CODE_RUNNER_ENABLED`. **The `TOOLS_`
+  segment is required.** The short form `BRICKLAYER_CODE_RUNNER_ENABLED` resolves to a
+  non-existent key and silently does nothing — this was a real bug (hyphens weren't being
+  translated) fixed in v1.15.0; keep doc examples on the full-path form.
 
-## MCP Prompts (8 code-generation workflows)
+Security layers, innermost-relevant for contributors:
 
-| Prompt | Purpose |
-|--------|---------|
-| `create-module` | Full module scaffold with vendor, module, version |
-| `create-plugin` | Observer/plugin patterns guide |
-| `create-controller` | Front/admin controller scaffolding with routing |
-| `create-block` | Block class and template generation |
-| `create-catalog-extension` | Product attribute/category extension guide |
-| `create-api` | REST API endpoint + service contract setup |
-| `create-order-extension` | Order/invoice custom logic patterns |
-| `create-test` | PHPUnit and MFTF test generation |
-
-Prompts return multi-turn message arrays that guide agents through code generation workflows.
-
----
-
-## Common Workflows
-
-### "I need to add a column to the customer table"
-
-```
-development-context category=data-patch   # guideline: declarative schema + data patches
-database-schema table=customer_entity     # current structure
-eav-attributes entityType=customer        # confirm it's not EAV (which uses different flow)
-```
-
-### "I'm getting a DI compile error"
-
-```
-diagnose-error                             # consolidated: logs + DI + suggestions
-# If suggestion points at a specific class:
-check-class className="Vendor\Module\Model\Thing"
-```
-
-### "I want to add a plugin to Magento\Catalog\Model\Product::getPrice"
-
-```
-development-context category=plugin        # load plugin guideline
-check-class className="Magento\Catalog\Model\Product"  # existing plugins/preferences/DI
-# Now write di.xml + Plugin class per the guideline
-```
-
-### "Production is slow"
-
-```
-diagnose-performance check=all             # full audit
-# Drill into the biggest finding:
-diagnose-performance check=indexes         # or check=cache / check=cron-backlog
-system-status check=cron                   # is cron stuck?
-```
-
-### "I want to create 100 test products"
-
-```
-development-context category=coding-standards
-# Use code-runner to batch-create — replaces 100 product-create calls:
-code-runner(allow_write=true, code: "
-    $repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);
-    $factory = get(\Magento\Catalog\Api\Data\ProductInterfaceFactory::class);
-    $created = 0;
-    for ($i = 1; $i <= 100; $i++) {
-        $p = $factory->create();
-        $p->setSku(\"test-$i\")
-          ->setName(\"Test Product $i\")
-          ->setTypeId('simple')
-          ->setAttributeSetId(4)
-          ->setPrice(rand(10, 100));
-        $repo->save($p);
-        $created++;
-    }
-    return ['created' => $created];
-")
-```
-
-Note the **explicit `allow_write=true`** — without it, all 100 inserts get rolled back.
-
-### "I need to search orders by custom criteria and compute a total"
-
-```
-# Don't chain order-list + filter on client side. Use database-query or code-runner:
-database-query(query: "
-    SELECT COUNT(*) AS cnt, SUM(grand_total) AS total
-    FROM sales_order
-    WHERE status = 'complete' AND created_at >= '2026-01-01'
-")
-```
-
-### "I've changed `.bricklayer.json` — should I restart?"
-
-**No.** The next tool call picks up the change automatically via `ConfigLoader::reloadIfStale()`. The same applies after running `bin/magento setup:upgrade` or `setup:di:compile` — `RequiresMagento::requireMagento()` will detect the sentinel file mtime change and reinitialize Magento on the next call.
+- **Fail closed.** `ChecksConfig::isProductionMode()` returns `true` if the deploy mode can't be
+  read (the `catch` returns `true`). New destructive paths inherit this only if they call the
+  guards above — so always use the guard helpers, never re-derive the mode yourself.
+- **`code-runner`** is hard-blocked in production (no config override), runs through PsySH when
+  `\Psy\Shell` exists (degraded `eval` fallback otherwise, with the active engine reported in
+  `runtime`), defaults to read-only (`allow_write:false`, DB transaction rolled back), and
+  rejects the dangerous-code blocklist (`DANGEROUS_PATTERNS` in `CodeRunnerTools`).
+  Its six bare helpers (`get`/`create`/`repo`/`config`/`query`/`runLog`) must work in **both**
+  runtimes and stay bound to the live ObjectManager across calls — a regression here is what
+  v1.15.1 fixed, so any change touching helper registration needs a test under both engines.
 
 ---
 
-## Extension Points
+## The design rule every change is judged against
 
-### Add a tool to an existing class
+> **Can an agent already do this without Bricklayer — via `code-runner` or plain file-reading?
+> If yes, the feature needs strong justification.**
 
-Add a new public method to any class in `src/Mcp/Tool/` and decorate it with `#[McpTool(name: '...', description: '...')]`. It's auto-registered. If it mutates state, guard it:
-
-```php
-if ($error = $this->requireMagento())            return $error;
-if ($error = $this->requireToolEnabled('foo'))   return $error;
-if ($error = $this->requireNonProduction('foo')) return $error;
-```
-
-`ConfigValidator::getKnownTools()` and `ConfigInitializer::discoverConfigurableTools()` will pick up the new tool on the next call — no manual list to update.
-
-### Add a new tool class
-
-Drop a new file in `src/Mcp/Tool/`. `McpServerFactory` auto-discovers it via `setDiscovery(__DIR__, ['Tool', 'Resource', 'Prompt'])`.
-
-### Add a guideline
-
-Drop a `.md` file in the appropriate `config/guidelines/<category>/` directory. `GuidelinesResource` auto-discovers it — no code change needed.
-
-### Add a skill
-
-Create `config/skills/<category>/SKILL.md` with optional YAML frontmatter (`name`, `description`). `SkillsResource` auto-discovers it.
-
-### Add a project-local override (no fork needed)
-
-Drop files under `.bricklayer/` at the Magento root:
-
-```
-.bricklayer/
-├── skills/
-│   └── my-team-pattern/
-│       └── SKILL.md
-├── guidelines/
-│   └── core/
-│       └── our-conventions.md
-├── project-context.md
-└── decision-matrix.md
-```
-
-Run `bricklayer update` to regenerate agent files with the overrides applied.
-
-### Add a new `development-context` category
-
-Add an entry to `ContextTools::CATEGORY_MAP` mapping the category name to `{skills, guidelines, description, group}`. Then create the referenced `SKILL.md` and guideline files.
+Bricklayer's irreplaceable value is **runtime introspection of a live install**: resolved DI
+across all modules, real plugin execution order, deployed EAV, actual DB state, error
+diagnostics with DI/plugin context. That is what file-reading and an LLM's priors cannot give.
+CRUD wrappers (product-create, order-cancel, …) are conveniences around what `code-runner`
+already does and carry their weight only as ergonomic shortcuts. When reviewing or proposing a
+new tool, apply the runtime-vs-static test first. Bricklayer stays narrow on runtime behaviour
+and leaves static analysis (LSP/Intelephense), code-location (Magector), and library docs
+(Context7) to the complementary tools around it — do not absorb their jobs.
 
 ---
 
-## Troubleshooting Reference
+## QA gates
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `"foo is disabled in configuration."` | `tools.foo.enabled: false` in `.bricklayer.json` | `bricklayer config:set tools.foo.enabled true` |
-| `"foo is disabled in production mode. Set tools.foo.enabled=true in .bricklayer.json to override."` | Deploy mode is production and config lacks explicit `enabled: true` | As above. Think hard before enabling a destructive tool in prod. |
-| `"Tool 'X' does not honor the 'enabled' flag at runtime"` | X is a read-only introspection tool that doesn't check `ChecksConfig`. The file edit will be silently ignored. | Don't edit it. The warning is telling you the change has no effect. |
-| `Environment variable BRICKLAYER_* ... takes precedence` | Env var shadowing the file change | `unset BRICKLAYER_FOO_BAR` or remove from your shell profile |
-| Config file changes don't take effect | Rare — likely an env var override | Check `env \| grep BRICKLAYER_`. If empty, the hot-reload is working on the next tool call. |
-| "stale" Magento state after `setup:upgrade` | Sentinel file mtime hasn't changed or reinit races the tool call | Call the `reinitialize` tool once explicitly |
-| `diagnose-error` returns nothing | The target error is not in the scanned time window | Expand `since=24h` or `since=7d` |
-| `code-runner` changes don't persist | Missing `allow_write=true` on both the config and the call | `bricklayer config:set tools.code-runner.allow_write true` AND pass `allow_write=true` to the call |
+Defined as composer scripts (`composer.json`):
+
+```bash
+composer test           # phpunit
+composer phpstan        # phpstan analyse src tests --level=8
+composer phpcs          # phpcs --standard=PSR12 src tests
+composer phpcbf         # auto-fix PSR-12
+composer check          # phpcs + phpstan + test  (run before proposing a change)
+```
+
+`phpstan.neon.dist` is level 8 over `src` + `tests`, ignoring "Magento class not found" errors
+(Magento isn't on the analysis path). `phpunit.xml.dist` runs the `Unit` suite from `tests/Unit`,
+which **mirrors the `src/` tree** (`tests/Unit/Tool/`, `tests/Unit/Config/`, `tests/Unit/Command/`,
+…) with `*Test.php` files.
+
+> **Bootstrap gotcha.** `phpunit.xml.dist` sets `bootstrap="../../../vendor/autoload.php"` —
+> i.e. it expects the package to live inside a Magento install's `vendor/inchoo/magento-bricklayer/`.
+> Running the suite from a standalone clone may require pointing the bootstrap at the package's
+> own `vendor/autoload.php`. Check this before assuming a test failure is real.
+
+Tests lean on the testability seams in the code: tool/compiler/context constructors accept
+optional `$magentoRoot`/`$packageRoot`, `McpServerFactory` exposes a protected `getToolCount()`
+for doubles, and discovery is reflection-based so tests can assert against real attributes.
 
 ---
 
-## Appendix: Key Files & Classes
+## Conventions and gotchas
 
-```
-src/
-├── Application.php                    # Symfony Console app — registers 7 commands
-├── Bootstrap/
-│   ├── MagentoBootstrap.php           # ObjectManager lifecycle + sentinel-file staleness
-│   ├── MagentoDetector.php            # Walks dirs to find Magento root; detects env type
-│   └── AreaEmulator.php               # Area code switching (frontend/adminhtml/webapi/...)
-├── Command/
-│   ├── ConfigSetCommand.php           # `bricklayer config:set` — interactive + scripted
-│   ├── InitCommand.php                # `bricklayer init`
-│   ├── InstallCommand.php             # `bricklayer install`
-│   ├── InspectCommand.php             # `bricklayer inspect`
-│   ├── McpServerCommand.php           # `bricklayer mcp`
-│   ├── UpdateCommand.php              # `bricklayer update`
-│   └── VerifyCommand.php              # `bricklayer verify`
-├── Config/
-│   ├── ConfigLoader.php               # Loads defaults + file + env vars, hot-reload via mtime
-│   ├── ConfigValidator.php            # Reflection-based known-tools discovery
-│   ├── ConfigInitializer.php          # Source-scan-based comprehensive config generator
-│   └── EnvironmentResolver.php        # BRICKLAYER_* env var → config-key mapping
-├── Guidelines/
-│   ├── GuidelinesCompiler.php         # Compiles bundled + local guidelines into CLAUDE.md etc.
-│   ├── LocalOverrideHelper.php        # Parses SKILL.md frontmatter; strips frontmatter
-│   └── ToolScanner.php                # Scans MCP tool metadata for guideline embedding
-├── Integration/
-│   └── McpConfigWriter.php            # Writes .mcp.json for the detected environment
-├── Mcp/
-│   ├── McpServerFactory.php           # Wires up MCP server (tools + resources + prompts)
-│   ├── Tool/                          # 20 tool classes, 80 tools
-│   │   ├── Concern/                   # 5 shared traits (ChecksConfig, RequiresMagento, ...)
-│   │   ├── Diagnostic/ExceptionParser.php  # Error-pattern recognition for diagnose-error
-│   │   └── ToolRegistry.php           # Reflection-based tool discovery cache
-│   ├── Resource/                      # 5 MCP resources (guidelines, skills, templates, ...)
-│   └── Prompt/                        # 8 MCP code-generation prompts
-└── Exception/                         # BricklayerException + 5 subclasses
-    ├── BootstrapException.php
-    ├── ConfigurationException.php
-    ├── MagentoNotFoundException.php
-    └── ToolException.php
-
-config/
-├── guidelines/                        # Bundled guidelines (core/, areas/, patterns/, modules/, database/, ecosystem/)
-└── skills/                            # Bundled skills (28 categories, each with SKILL.md)
-
-bin/
-├── bricklayer                         # Symfony Console CLI entry point
-├── bricklayer-mcp                     # Bare MCP server entry (no Symfony Console overhead)
-└── bricklayer-mcp-docker              # Bash wrapper that auto-detects the PHP container
-```
+- **`declare(strict_types=1)` + the Inchoo copyright header** on every PHP file; PSR-12; PSR-4
+  autoload `Inchoo\MagentoBricklayer\ => src/`.
+- **Counts are dynamic by design.** Don't introduce a hardcoded tool/category/prompt count
+  anywhere — wire it to `ToolRegistry::count()` / a reflection scan instead. The server
+  instructions in `McpServerFactory::getServerInstructions()` inject `{$toolCount}` and must
+  stay that way.
+- **`ERROR_PATTERNS`** is still **inline** in `DiagnosticTools.php` (a planned move to JSON did
+  not ship). The `#[ToolGroup]` attribute does **not** exist and `ToolScanner` is
+  **still present** — if a task description references either, it's describing a refactor that
+  was never applied.
+- **Sentinel-file staleness**: `MagentoBootstrap::SENTINEL_FILES` is exactly two —
+  `app/etc/config.php` (module list; changes on `setup:upgrade`, `module:enable/disable`) and
+  `generated/metadata/global.php` (compiled DI; changes on `setup:di:compile`).
+  `RequiresMagento::requireMagento()` calls `reinitializeIfStale()` on every tool call (one
+  `filemtime()` per file) and rebuilds the ObjectManager if either moved. The manual
+  `reinitialize` tool (`DevelopmentTools`) covers edits that touch neither sentinel (e.g.
+  `config.xml` without recompiling) and is also where defined `code-runner` functions are
+  cleared, via a direct `CodeRunnerTools::clearDefinedFunctions()` call — there is no callback
+  registry.
+- `tests/Unit/Command/InstallCommandTest.php` mentions `ToolException` **on purpose** — it's a
+  regression guard asserting the class no longer exists (`assertFalse(class_exists(...))`), not
+  stale code. Leave it.
+- The MCP SDK is pinned `mcp/sdk: ^0.3 || ^1.0` deliberately to avoid breaking protocol changes;
+  `magento/framework` is intentionally **not** a dependency (runtime detection avoids version
+  conflicts).
 
 ---
 
-## One-Page Cheat Sheet
+## Dependencies
 
-```
-# Before modifying any class:
-check-class className="Full\Qualified\Name"
-development-context category=<plugin|preference|eav|observer|...>
+`php >=8.1`, `mcp/sdk ^0.3 || ^1.0`, `psy/psysh ^0.12`, `symfony/console ^5.4 || ^6.0 || ^7.0`,
+`psr/log ^2.0 || ^3.0`; dev: `phpunit ^10 || ^11`, `phpstan ^1.10`, `squizlabs/php_codesniffer ^3.7`.
 
-# Always for any PHP file:
-development-context category=coding-standards
-
-# Before mutating data:
-development-context category=data-patch   # for schema changes
-eav-attributes entityType=<catalog_product|customer|...>
-
-# Debugging:
-diagnose-error                             # always the first step
-log action=read logType=exception lines=50 max_entry_length=500
-
-# Performance:
-diagnose-performance check=all
-system-status check=cron-history
-
-# Multi-step data work (instead of chains):
-code-runner-help                           # load helpers + area/allow_write docs
-code-runner(code: "...", allow_write=<true|false>)
-
-# Tool discovery:
-search-tools query="..." detail=names      # start lightweight
-search-tools query="..." detail=full       # only when needed
-
-# Change configuration:
-vendor/bin/bricklayer config:set            # interactive
-vendor/bin/bricklayer config:set tools.X.Y <value>  # scripted
-# Changes apply on next tool call — no restart needed.
-```
-
-**Golden rules:**
-
-1. **Load context first**, then check runtime state, then write code.
-2. **Check runtime state** via `check-class`, `eav-attributes`, `di-configuration`, `event-list`, etc. — never assume source files are the whole picture.
-3. **Prefer consolidated tools** (`check-class`, `diagnose-error`, `diagnose-performance`, `code-runner`, `batch-execute`) over chains of individual calls.
-4. **Use token-efficiency knobs** (`fields`, `count_only`, `verbosity`, `max_entry_length`, `detail`) on every list/read tool.
-5. **Destructive operations are disabled by default** — enable explicitly via `config:set` when needed.
-6. **No restart needed** after config or Magento state changes — hot-reload handles it.
+The `mcp/sdk` pin and the deliberate absence of `magento/framework` are explained under
+"Conventions and gotchas". For the current shape of the surface (how many tools, prompts,
+categories, …) reflect or run the commands in "Rule zero" — it is intentionally not written
+down here.
