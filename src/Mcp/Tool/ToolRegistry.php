@@ -29,7 +29,10 @@ class ToolRegistry
     private int $count = 0;
 
     private const TOOL_GROUPS = [
-        'introspection' => ['ApplicationTools', 'ConfigurationTools', 'ModuleTools', 'EavTools', 'RoutingTools'],
+        'introspection' => [
+            'ApplicationTools', 'ConfigurationTools', 'ModuleTools', 'EavTools', 'RoutingTools',
+            'ViewTools', 'MessageQueueTools',
+        ],
         'catalog' => ['CatalogTools'],
         'orders' => ['OrderTools'],
         'customers' => ['CustomerTools'],

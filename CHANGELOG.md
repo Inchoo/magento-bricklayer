@@ -1,3 +1,18 @@
+# 1.16.0
+
+A feature release adding runtime introspection for the view layer and message-queue wiring — three read-only tools that surface resolved/merged state no single source file shows. No breaking changes.
+
+**New tools** (hidden, discover via `search-tools`)
+* **`layout-inspect`** — resolve a layout handle into its runtime-merged block/container tree (merged across every module and the active theme), showing applied `referenceBlock`/`referenceContainer`/`move`/`remove` directives, declared and theme-resolved `.phtml` template paths, and the page layout. Omit the handle to list every registered handle for an area (`frontend`/`adminhtml`). Config-gated, enabled by default.
+* **`ui-component-inspect`** — resolve an admin grid/form UI component's runtime-merged configuration, showing the component tree, data source, and child components merged across modules. Config-gated, enabled by default.
+* **`message-queue-inspect`** — the runtime-merged consumer → topic → queue → exchange topology with publisher and handler bindings, assembled across `communication.xml`, `queue_consumer.xml`, `queue_topology.xml`, and `queue_publisher.xml`. Each section degrades independently when a sub-config is absent. Ungated.
+
+**Removed**
+* The static `layouts_reference` MCP resource (a hand-maintained handle catalogue) is retired in favour of `layout-inspect`'s runtime list mode — the registered handles are now read from the live install and cannot drift.
+
+**Internal (no behavior change)**
+* `AreaEmulator::emulateAreaCode()` added — a restoring area-code swap (via `State::emulateAreaCode`) so view tools can resolve frontend layout while the MCP server process is locked to the adminhtml area.
+
 # 1.15.1
 
 A patch release fixing a `code-runner` helper-function regression. No breaking changes.

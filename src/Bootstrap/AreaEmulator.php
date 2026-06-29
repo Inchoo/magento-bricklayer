@@ -70,6 +70,27 @@ class AreaEmulator
     }
 
     /**
+     * Run $callback inside a temporary area code, restoring the previous area afterward.
+     *
+     * Unlike setArea()/emulateArea() (which use the one-shot State::setAreaCode and
+     * therefore cannot switch area twice in a long-running process), this delegates to
+     * State::emulateAreaCode, which swaps the area code for the duration of the callback
+     * and restores it on exit. Required for tools that resolve frontend layout while the
+     * MCP server process itself is locked to the adminhtml area.
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public function emulateAreaCode(string $areaCode, callable $callback): mixed
+    {
+        $state = MagentoBootstrap::get(\Magento\Framework\App\State::class);
+
+        /** @var T */
+        return $state->emulateAreaCode($areaCode, $callback);
+    }
+
+    /**
      * @return array<string>
      */
     public function getAvailableAreas(): array
