@@ -11,7 +11,11 @@ namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 use Mcp\Capability\Attribute\McpResource;
 
 /**
- * Provides Magento 2 reference documentation for events, layouts, DI patterns, and ACL.
+ * Provides Magento 2 reference documentation for events, DI patterns, and ACL.
+ *
+ * Layout handle reference is intentionally not provided here: the `layout-inspect`
+ * tool (list mode) enumerates the registered handles at runtime, so there is no
+ * hand-maintained handle catalogue to drift out of date.
  */
 class ReferenceResource
 {
@@ -198,165 +202,6 @@ class CustomService
 3. **Don't modify $observer directly** - Get data, process, set back
 4. **Handle exceptions** - Don't break the event chain
 5. **Use area-specific events** - frontend, adminhtml, webapi
-MARKDOWN;
-    }
-
-    /**
-     * Returns layouts reference.
-     *
-     * @return string Markdown content with layouts reference
-     */
-    #[McpResource(
-        uri: 'magento://reference/layouts',
-        name: 'layouts_reference',
-        description: 'Magento 2 layout XML reference - handles, blocks, containers',
-        mimeType: 'text/markdown'
-    )]
-    public function getLayoutsReference(): string
-    {
-        return <<<'MARKDOWN'
-# Magento Layout XML Reference
-
-## Layout File Locations
-
-| Area | Path |
-|------|------|
-| Frontend | `view/frontend/layout/` |
-| Admin | `view/adminhtml/layout/` |
-| Base | `view/base/layout/` |
-
-## Layout Handle Naming
-
-| Pattern | Example | When Applied |
-|---------|---------|--------------|
-| `default` | `default.xml` | Every page |
-| `<route>_<controller>_<action>` | `catalog_product_view.xml` | Specific page |
-| `<full_action_name>` | `cms_index_index.xml` | CMS homepage |
-| `catalog_category_view_type_*` | Category type-specific | Specific category |
-
-## Core Layout Instructions
-
-### Container
-
-```xml
-<container name="content.aside" htmlTag="div" htmlClass="sidebar sidebar-main">
-    <block class="..." name="..." template="..."/>
-</container>
-```
-
-### Block
-
-```xml
-<block class="Magento\Catalog\Block\Product\View"
-       name="product.info"
-       template="Magento_Catalog::product/view/form.phtml">
-    <arguments>
-        <argument name="custom_data" xsi:type="string">value</argument>
-    </arguments>
-</block>
-```
-
-### Reference Container/Block
-
-```xml
-<!-- Add to existing container -->
-<referenceContainer name="content">
-    <block class="Vendor\Module\Block\Custom"
-           name="vendor.custom.block"
-           template="Vendor_Module::custom.phtml"/>
-</referenceContainer>
-
-<!-- Modify existing block -->
-<referenceBlock name="product.info" remove="true"/>
-<referenceBlock name="breadcrumbs">
-    <arguments>
-        <argument name="show_home" xsi:type="boolean">false</argument>
-    </arguments>
-</referenceBlock>
-```
-
-### Move Elements
-
-```xml
-<move element="product.info.stock.sku"
-      destination="product.info.main"
-      after="product.info.price"/>
-```
-
-### Remove Elements
-
-```xml
-<referenceBlock name="catalog.compare.sidebar" remove="true"/>
-<referenceContainer name="sidebar.main" remove="true"/>
-```
-
-## Common Containers
-
-| Name | Location |
-|------|----------|
-| `header.container` | Page header |
-| `header-wrapper` | Header content area |
-| `main.content` | Main content area |
-| `content` | Primary content |
-| `sidebar.main` | Left sidebar |
-| `sidebar.additional` | Right sidebar |
-| `footer-container` | Page footer |
-
-## UI Components in Layout
-
-```xml
-<referenceContainer name="content">
-    <uiComponent name="vendor_module_entity_listing"/>
-</referenceContainer>
-```
-
-## Head Elements
-
-### Adding CSS/JS
-
-```xml
-<head>
-    <css src="Vendor_Module::css/custom.css"/>
-    <script src="Vendor_Module::js/custom.js"/>
-    <link src="Vendor_Module::css/print.css" media="print"/>
-</head>
-```
-
-### Page Configuration
-
-```xml
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      layout="1column"
-      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-
-    <head>
-        <title>Page Title</title>
-        <meta name="description" content="Page description"/>
-    </head>
-
-    <body>
-        <!-- Layout instructions -->
-    </body>
-</page>
-```
-
-## Page Layouts
-
-| Layout | Description |
-|--------|-------------|
-| `1column` | Single column |
-| `2columns-left` | Two columns, left sidebar |
-| `2columns-right` | Two columns, right sidebar |
-| `3columns` | Three columns |
-| `empty` | Minimal (checkout) |
-
-## Best Practices
-
-1. **Use reference blocks** - Don't redefine existing blocks
-2. **Order matters** - Use `before`/`after` attributes
-3. **Avoid hardcoding** - Use arguments for configurable values
-4. **Test all themes** - Layout works across themes
-5. **Use cacheable="false"** sparingly - Impacts FPC
 MARKDOWN;
     }
 

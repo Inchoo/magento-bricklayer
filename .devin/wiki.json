@@ -6,7 +6,7 @@
     },
     {
       "author": "Bricklayer maintainers",
-      "content": "Exact inventory as of v1.15.1 — verify against source, do NOT approximate or write '80+'. There are exactly 80 MCP tools (count of #[McpTool] attributes across src/Mcp/Tool/*.php). Of these, 17 are visible at startup (tier-1) and 63 are hidden (tier-2) but remain fully callable by name and are discoverable via the search-tools tool. There are 14 MCP resources (#[McpResource] in src/Mcp/Resource), 34 MCP prompts (#[McpPrompt] in src/Mcp/Prompt), 33 development guidelines (config/guidelines/), and 28 skill guides (config/skills/). State '80 tools'."
+      "content": "Inventory counts change every release, so do NOT hardcode them in the wiki. Whenever a count is needed, derive it from source at documentation-generation time rather than stating a fixed number, and prefer describing the categories over enumerating totals. Counting method (source of truth): MCP tools = #[McpTool] attributes across src/Mcp/Tool/*.php, split into tier-1 (visible in tools/list at startup) and tier-2 (hidden but callable by name and discoverable via search-tools); MCP resources = #[McpResource] in src/Mcp/Resource; MCP prompts = #[McpPrompt] in src/Mcp/Prompt; development guidelines = files under config/guidelines/; skill guides = files under config/skills/. When a number must appear, phrase it as a derived snapshot (e.g. 'the MCP tools — currently <N>, see src/Mcp/Tool/'), never as a fixed promise, and never write approximations like '80+'."
     },
     {
       "author": "Bricklayer maintainers",
@@ -14,26 +14,26 @@
     },
     {
       "author": "Bricklayer maintainers",
-      "content": "Tools are organized along two axes. Visibility (progressive disclosure): tier-1 tools appear in tools/list at startup (17 tools); tier-2 tools are omitted from the list but callable by name and surfaced via search-tools (63 tools) — this reduces token overhead while keeping every tool callable. Safety: read-only tools only require an initialized Magento (requireMagento) with no config gate; destructive tools (delete, refund, code generation, code-runner with writes) additionally require non-production (requireNonProduction) and ship disabled by default via ConfigInitializer::DESTRUCTIVE_TOOLS (enabled:false). code-runner defaults to read-only with its DB transaction rolled back unless allow_write is set."
+      "content": "Tools are organized along two axes. Visibility (progressive disclosure): tier-1 tools appear in tools/list at startup (a small curated set); tier-2 tools are omitted from the list but callable by name and surfaced via search-tools (the majority) — this reduces token overhead while keeping every tool callable. Do not hardcode the per-tier counts; derive them from source if a number is needed. Safety: read-only tools only require an initialized Magento (requireMagento) with no config gate; destructive tools (delete, refund, code generation, code-runner with writes) additionally require non-production (requireNonProduction) and ship disabled by default via ConfigInitializer::DESTRUCTIVE_TOOLS (enabled:false). code-runner defaults to read-only with its DB transaction rolled back unless allow_write is set."
     },
     {
       "author": "Bricklayer maintainers",
-      "content": "Scope and positioning: Bricklayer is a Composer library that runs an MCP server for Magento 2 — it is NOT a Magento module and installs nothing into app/code. Supported: Magento 2.4.4–2.4.9 on PHP 8.1–8.4. It auto-detects and supports Native, DDEV, Warden, and Docker environments (entrypoints bin/bricklayer-mcp and bin/bricklayer-mcp-docker; src/Integration/McpConfigWriter.php generates the correct exec command per environment). Multi-agent support: Claude Code, Cursor, GitHub Copilot, JetBrains AI, and Gemini CLI. The name reflects laying components ('bricks') in the correct order to build a maintainable codebase. License: MIT, Copyright 2026 Inchoo."
+      "content": "Scope and positioning: Bricklayer is a Composer library that runs an MCP server for Magento 2 — it is NOT a Magento module and installs nothing into app/code. It supports a range of Magento 2.4.x and PHP 8.x versions — read the constraints in composer.json for the current supported range instead of citing fixed versions. It auto-detects and supports Native, DDEV, Warden, and Docker environments (entrypoints bin/bricklayer-mcp and bin/bricklayer-mcp-docker; src/Integration/McpConfigWriter.php generates the correct exec command per environment). Multi-agent support: Claude Code, Cursor, GitHub Copilot, JetBrains AI, and Gemini CLI. The name reflects laying components ('bricks') in the correct order to build a maintainable codebase. License: MIT. For the authoritative supported Magento/PHP version ranges, read the require/require-dev constraints in composer.json rather than restating fixed numbers here."
     },
     {
       "author": "Bricklayer maintainers",
-      "content": "This repository is the Bricklayer toolkit itself (PSR-4 autoload Inchoo\\\\MagentoBricklayer\\\\ under src/, tests under tests/). Do NOT document any surrounding example Magento project, vendor/, or generated/ output that may exist in a host installation — only this package. The 'June 2026' commit and copyright dates are correct and intentional; do not treat them as data errors. Current version is 1.15.1."
+      "content": "This repository is the Bricklayer toolkit itself (PSR-4 autoload Inchoo\\\\MagentoBricklayer\\\\ under src/, tests under tests/). Do NOT document any surrounding example Magento project, vendor/, or generated/ output that may exist in a host installation — only this package. The 'June 2026' commit and copyright dates are correct and intentional; do not treat them as data errors. Do not pin the wiki to a specific package version — omit version-specific statements so the documentation stays valid across releases; if a version is ever needed, read it from composer.json or the latest git tag at generation time."
     }
   ],
   "pages": [
     {
       "title": "Overview",
-      "purpose": "High-level introduction to Bricklayer: what it is (a Composer library exposing an MCP server for Magento 2), the runtime-first problem it solves (agents reading source files miss cross-module DI/plugin/preference/event overrides), and headline capabilities. Mirror docs/wiki/home.md and README.md sections 'What is Bricklayer?' and 'How Agents Use Bricklayer'. State exact counts (80 tools, 14 resources, 34 prompts, 33 guidelines, 28 skills) and the check → learn → write workflow.",
+      "purpose": "High-level introduction to Bricklayer: what it is (a Composer library exposing an MCP server for Magento 2), the runtime-first problem it solves (agents reading source files miss cross-module DI/plugin/preference/event overrides), and headline capabilities. Mirror docs/wiki/home.md and README.md sections 'What is Bricklayer?' and 'How Agents Use Bricklayer'. Describe the capability set (MCP tools, resources, prompts, development guidelines, and skill guides) without hardcoding totals — derive any count from source at generation time — and the check → learn → write workflow.",
       "parent": null
     },
     {
       "title": "Getting Started",
-      "purpose": "Landing page for new users: requirements (Magento 2.4.4–2.4.9, PHP 8.1–8.4), installation paths, and first steps. Mirror docs/wiki/getting-started.md and README 'Requirements' / 'Installation' / 'Quick Start'. Acts as parent for the detailed installation, developer-guide, and FAQ pages.",
+      "purpose": "Landing page for new users: requirements (supported Magento 2.4.x / PHP 8.x range — cite composer.json constraints rather than fixed numbers), installation paths, and first steps. Mirror docs/wiki/getting-started.md and README 'Requirements' / 'Installation' / 'Quick Start'. Acts as parent for the detailed installation, developer-guide, and FAQ pages.",
       "parent": null
     },
     {
@@ -73,7 +73,7 @@
     },
     {
       "title": "MCP Resources and Prompts",
-      "purpose": "The 14 MCP resources and 34 MCP prompts Bricklayer exposes, which are distinct from its 80 tools. Resources: src/Mcp/Resource/* (Guidelines, CodingStandards, Skills, Template, Reference). Prompts: src/Mcp/Prompt/* (Api, Block, Catalog, Controller, Module, Order, Plugin, Test). Explain how agents consume resources (development-context, guidelines, coding standards) and how prompt templates drive code generation.",
+      "purpose": "The MCP resources and MCP prompts Bricklayer exposes, which are distinct from its tools (derive any counts from source at generation time). Resources: src/Mcp/Resource/* (Guidelines, CodingStandards, Skills, Template, Reference). Prompts: src/Mcp/Prompt/* (Api, Block, Catalog, Controller, Module, Order, Plugin, Test). Explain how agents consume resources (development-context, guidelines, coding standards) and how prompt templates drive code generation.",
       "parent": "Architecture"
     },
     {
@@ -113,7 +113,7 @@
     },
     {
       "title": "MCP Tools Reference",
-      "purpose": "Index of all 80 MCP tools grouped by domain, with the tier-1/tier-2 visibility split (17 visible at startup, 63 discoverable via search-tools) and the read-only vs destructive classification. Mirror docs/wiki/tools/overview.md. Parent for the per-domain tool pages below.",
+      "purpose": "Index of all MCP tools grouped by domain, with the tier-1/tier-2 visibility split (a small set visible at startup, the rest discoverable via search-tools) and the read-only vs destructive classification. Do not hardcode totals — derive any count from src/Mcp/Tool/ at generation time. Mirror docs/wiki/tools/overview.md. Parent for the per-domain tool pages below.",
       "parent": null
     },
     {
@@ -158,7 +158,7 @@
     },
     {
       "title": "Guidelines and Skills System",
-      "purpose": "The 33 development guidelines (config/guidelines/: core, patterns, modules, areas, database, ecosystem) and 28 skill guides (config/skills/), how development-context categories map to them, and how they are compiled, served, and overridden. Source: src/Guidelines/GuidelinesCompiler.php, src/Mcp/Resource/{GuidelinesResource,SkillsResource,CodingStandardsResource}.php; docs/wiki/guidelines/overview.md.",
+      "purpose": "The development guidelines (config/guidelines/: core, patterns, modules, areas, database, ecosystem) and skill guides (config/skills/) — describe the categories, not a fixed count — how development-context categories map to them, and how they are compiled, served, and overridden. Source: src/Guidelines/GuidelinesCompiler.php, src/Mcp/Resource/{GuidelinesResource,SkillsResource,CodingStandardsResource}.php; docs/wiki/guidelines/overview.md.",
       "parent": null
     },
     {

@@ -62,6 +62,9 @@ class SkillHintTest extends TestCase
             'diagnose-performance' => ['PerformanceTools', 'diagnosePerformance', 'category=performance'],
             'route-list' => ['RoutingTools', 'getRouteList', 'category=frontend'],
             'api-endpoints' => ['RoutingTools', 'getApiEndpoints', 'category=rest-api'],
+            'layout-inspect' => ['ViewTools', 'resolveHandle', 'category=frontend'],
+            'ui-component-inspect' => ['ViewTools', 'resolveUiComponent', 'category=ui-component'],
+            'message-queue-inspect' => ['MessageQueueTools', 'inspectMessageQueue', 'category=message-queue'],
         ];
     }
 

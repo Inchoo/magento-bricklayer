@@ -92,9 +92,11 @@ class SearchTools
         ],
         'ui-component' => [
             'keywords' => ['grid', 'listing', 'form', 'data provider'],
+            'tools' => ['ui-component-inspect'],
         ],
         'message-queue' => [
             'keywords' => ['amqp', 'rabbitmq', 'consumer', 'publisher'],
+            'tools' => ['message-queue-inspect'],
         ],
         'frontend' => [
             'keywords' => ['knockout', 'knockoutjs', 'requirejs', 'phtml', 'template'],
@@ -142,6 +144,7 @@ class SearchTools
                 'Containers and reference containers',
                 'Layout update instructions',
             ],
+            'tools' => ['layout-inspect'],
             'dev_context' => 'frontend',
         ],
         'database' => [

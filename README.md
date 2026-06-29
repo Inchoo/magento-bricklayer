@@ -26,6 +26,8 @@ An MCP server that gives AI coding agents runtime visibility into Magento 2. Age
   - [Configuration & DI Tools](#configuration--di-tools)
   - [Routing & API Tools](#routing--api-tools)
   - [GraphQL Tools](#graphql-tools)
+  - [View Tools](#view-tools)
+  - [Message Queue Tools](#message-queue-tools)
   - [Catalog Tools](#catalog-tools)
   - [Order Tools](#order-tools)
   - [Customer Tools](#customer-tools)
@@ -72,7 +74,7 @@ An MCP server that gives AI coding agents runtime visibility into Magento 2. Age
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 80 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 83 tools that AI agents can invoke to:
 
 - **Check runtime state before writing code** — see actual plugin chains, DI resolution, preferences, and event observers across all installed modules
 - Inspect database schema, EAV attributes, and system configuration as they exist at runtime
@@ -82,7 +84,7 @@ Bricklayer is a Composer library that implements an MCP server for Magento 2. Wh
 - Generate Magento-compliant module scaffolding with conflict detection
 - Load domain-specific development guidelines and coding standards on demand
 
-Only 17 essential tools are visible at startup — the remaining 63 are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
+Only 17 essential tools are visible at startup — the remaining 66 are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
 
 The name "Bricklayer" reflects the methodical, structured approach to building Magento 2 modules and extensions, laying each component (the "bricks") in the correct order and position to construct a solid, maintainable codebase.
 
@@ -182,7 +184,7 @@ Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
 - `--force` - Overwrite existing `.bricklayer.json`
 
-The generated config contains **one entry per runtime-configurable tool** (33 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
+The generated config contains **one entry per runtime-configurable tool** (35 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
 
 Deploy-mode behavior:
 - **production** — 11 tools disabled (code-runner + all 10 destructive/code-generation tools), `database-query.max_rows` lowered to 50
@@ -206,7 +208,7 @@ vendor/bin/bricklayer config:set tools.code-runner.allow_write false
 Options:
 - `--magento-root=PATH` — Specify Magento root directory (auto-detected by default)
 
-**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 33 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
+**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 35 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
 
 **Scripted mode** (positional arguments) is for automation. Values are parsed automatically: `true`/`false` → bool, `null` → null, numeric → int/float, `[...]`/`{...}` → JSON-decoded, anything else → string.
 
@@ -313,7 +315,7 @@ This is useful when container names vary between environments or are dynamically
 
 ## MCP Tools Overview
 
-Bricklayer uses **progressive disclosure** — 17 essential tools are visible in `tools/list` while 63 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
+Bricklayer uses **progressive disclosure** — 17 essential tools are visible in `tools/list` while 66 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
 
 ### Application & Module Tools
 - `application-info` — Magento version, PHP version, deploy mode, module counts. Use `include=stores` for website/store hierarchy
@@ -346,6 +348,13 @@ Bricklayer uses **progressive disclosure** — 17 essential tools are visible in
 
 ### GraphQL Tools
 - `graphql-inspect` — Consolidated GraphQL introspection tool. Use `target` (types|queries|mutations|resolvers) to select what to inspect, and optional `name` for detail on a specific type
+
+### View Tools
+- `layout-inspect` — Resolve a layout handle into its runtime-merged block/container tree (merged across all modules and the active theme), or omit the handle to list every registered handle for an area. Shows applied `referenceBlock`/`referenceContainer`/`move`/`remove` directives, declared and theme-resolved `.phtml` template paths, and the page layout. Params: `handle`, `area` (frontend|adminhtml), `verbosity`
+- `ui-component-inspect` — Resolve an admin grid or form UI component's runtime-merged configuration — component tree, data source, columns/fieldsets, and child components — merged across all modules. Params: `name` (e.g. `customer_listing`), `verbosity`
+
+### Message Queue Tools
+- `message-queue-inspect` — Runtime-merged message-queue wiring: consumers, topics, queue/exchange bindings, publishers, and handlers assembled across `communication.xml`, `queue_consumer.xml`, `queue_topology.xml`, and `queue_publisher.xml` of every module. Optional `consumer`/`topic` filters; each section degrades independently if a sub-config is absent
 
 ### Catalog Tools
 - `product-get` **[tier 1]**, `product-list`, `product-create`, `product-update`, `product-delete`
@@ -491,6 +500,9 @@ Additionally, introspection tools return a `_skill_hint` field that guides agent
 | `graphql-inspect` | Points to `development-context category=graphql` |
 | `route-list` | Points to `development-context category=frontend` |
 | `api-endpoints` | Points to `development-context category=rest-api` |
+| `layout-inspect` | Points to `development-context category=frontend` |
+| `ui-component-inspect` | Points to `development-context category=ui-component` |
+| `message-queue-inspect` | Points to `development-context category=message-queue` |
 | `diagnose-performance` | Points to `development-context category=performance` |
 
 The `development-context` tool itself returns `_next_steps` — suggesting which introspection tools to call for the loaded category (e.g., loading the `plugin` category suggests calling `check-class` for the target class).
@@ -554,7 +566,7 @@ Magento coding standards reference with PSR-12 compliance and architecture guide
 Use `magento://skills/index` for a complete listing.
 
 ### Template & Reference Resources
-Code templates for common patterns (`magento://templates/module`, `magento://templates/controller`, `magento://templates/api`, `magento://templates/model`) and reference documentation (`magento://reference/events`, `magento://reference/layouts`, `magento://reference/di-patterns`, `magento://reference/acl`).
+Code templates for common patterns (`magento://templates/module`, `magento://templates/controller`, `magento://templates/api`, `magento://templates/model`) and reference documentation (`magento://reference/events`, `magento://reference/di-patterns`, `magento://reference/acl`). Layout handle reference is no longer a static resource — the `layout-inspect` tool enumerates registered handles at runtime instead.
 
 ## Configuration
 
@@ -568,7 +580,7 @@ vendor/bin/bricklayer init
 vendor/bin/bricklayer config:set
 ```
 
-A generated developer-mode config looks like this (33 entries total — one per runtime-configurable tool; the snippet below is an excerpt):
+A generated developer-mode config looks like this (35 entries total — one per runtime-configurable tool; the snippet below is an excerpt):
 
 ```json
 {

@@ -127,6 +127,9 @@ state before writing code that touches existing classes.**
 | Subscribing to an event | `event-list eventName=event_name` | `development-context category=observer` |
 | Adding a REST API endpoint | `api-endpoints` | `development-context category=rest-api` |
 | Writing a GraphQL resolver | `graphql-inspect target=types` | `development-context category=graphql` |
+| Customizing a layout / moving a block | `layout-inspect handle=<handle>` | `development-context category=frontend` |
+| Modifying an admin grid or form | `ui-component-inspect name=<name>` | `development-context category=ui-component` |
+| Adding or debugging a queue consumer | `message-queue-inspect` | `development-context category=message-queue` |
 | Creating a cron job | `system-status check=cron` | `development-context category=cron` |
 | Debugging an error | `diagnose-error` | (based on diagnosis) |
 | Investigating performance | `diagnose-performance` | `development-context category=performance` |
