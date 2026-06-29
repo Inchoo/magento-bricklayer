@@ -65,6 +65,6 @@ No configuration is needed for containerized setups — `EnvironmentResolver` ha
 
 ## Related Pages
 
-- [.bricklayer.json](configuration/bricklayer-json) — Project-level configuration
+- [.bricklayer.json](Configuration-Bricklayer-Json) — Project-level configuration
 - [CLI Commands](cli-commands) — `config:set` for validated single-value edits
 - [Getting Started](getting-started) — Installation and setup

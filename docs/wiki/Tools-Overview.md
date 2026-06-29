@@ -6,17 +6,17 @@ Magento Bricklayer provides 83 MCP tools organized into 11 groups. Use `search-t
 
 | Group | Tools | Description |
 |-------|-------|-------------|
-| [Introspection](tools/introspection) | 19 | Application info, configuration, modules, EAV, routing, view layer, message queue |
-| [Catalog](tools/catalog) | 18 | Products, categories, stock, media, links |
-| [Orders](tools/orders) | 14 | Orders, invoices, shipments, credit memos |
-| [Customers](tools/customers) | 12 | Customers, addresses, groups, validation |
-| [Database](tools/database) | 2 | Schema inspection and read-only queries |
-| [Logs](tools/logs-and-diagnostics) | 1 | Log reading, searching, and analysis (4 actions) |
-| [Diagnostic](tools/logs-and-diagnostics) | 2 | Error diagnosis and performance analysis |
-| [GraphQL](tools/graphql) | 1 | Schema inspection (types, queries, mutations) |
-| [Development](tools/development) | 3 | Code runner, search tools, batch execution |
-| [Code Generation](code-generation/overview) | 4 | Module, model, controller, API scaffolding |
-| [Context](guidelines/overview) | 1 | Development guidelines loader |
+| [Introspection](Tools-Introspection) | 19 | Application info, configuration, modules, EAV, routing, view layer, message queue |
+| [Catalog](Tools-Catalog) | 18 | Products, categories, stock, media, links |
+| [Orders](Tools-Orders) | 14 | Orders, invoices, shipments, credit memos |
+| [Customers](Tools-Customers) | 12 | Customers, addresses, groups, validation |
+| [Database](Tools-Database) | 2 | Schema inspection and read-only queries |
+| [Logs](Tools-Logs-And-Diagnostics) | 1 | Log reading, searching, and analysis (4 actions) |
+| [Diagnostic](Tools-Logs-And-Diagnostics) | 2 | Error diagnosis and performance analysis |
+| [GraphQL](Tools-Graphql) | 1 | Schema inspection (types, queries, mutations) |
+| [Development](Tools-Development) | 3 | Code runner, search tools, batch execution |
+| [Code Generation](Code-Generation-Overview) | 4 | Module, model, controller, API scaffolding |
+| [Context](Guidelines-Overview) | 1 | Development guidelines loader |
 
 ## Tier 1 Tools (Always Visible)
 

@@ -1,67 +1,21 @@
-# Magento Bricklayer - GitLab Wiki
+# Magento Bricklayer — Wiki
 
-This directory contains the GitLab wiki content for Magento Bricklayer.
+This directory is the source of truth for the [GitHub wiki](https://github.com/Inchoo/magento-bricklayer/wiki). It is stored in GitHub-native **flat** form: one Markdown file per wiki page, named exactly as the published page (`Home.md`, `_Sidebar.md`, `Tools-Overview.md`, `Architecture-Overview.md`, …). Links point directly at those page names, so editing here is what-you-see-is-what-ships.
 
-## Structure
+## Editing
 
-```
-wiki/
-├── home.md                          # Wiki home page
-├── getting-started.md               # Installation and setup
-├── cli-commands.md                  # CLI command reference
-├── faq.md                           # Frequently asked questions
-├── contributing.md                  # Development and contributing guide
-├── changelog.md                     # Version history
-├── _sidebar.md                      # Wiki sidebar navigation
-├── architecture/
-│   ├── overview.md                  # System architecture
-│   ├── bootstrap.md                 # Magento bootstrap process
-│   └── tool-system.md              # Tool registration and groups
-├── tools/
-│   ├── overview.md                  # All 83 tools summary
-│   ├── introspection.md            # Application, config, modules, EAV, routing, view, message queue
-│   ├── catalog.md                  # Products, categories, stock, media
-│   ├── orders.md                   # Orders, invoices, shipments, refunds
-│   ├── customers.md                # Customers, addresses, groups
-│   ├── database.md                 # Schema and query tools
-│   ├── logs-and-diagnostics.md     # Log reading and error diagnosis
-│   └── development.md             # Code runner, search, batch
-├── configuration/
-│   ├── bricklayer-json.md          # .bricklayer.json reference
-│   ├── environment-variables.md    # Environment variable overrides
-│   ├── agent-integration.md        # AI agent configuration
-│   └── local-overrides.md          # Project-local overrides (.bricklayer/)
-├── guidelines/
-│   └── overview.md                 # Guidelines and skills catalog
-├── code-generation/
-│   └── overview.md                 # Code scaffolding tools
-├── diagnostics/
-│   └── overview.md                 # Error and performance diagnostics
-└── security/
-    └── overview.md                 # Security model and production safety
-```
+1. Edit (or add) a page under `docs/wiki/` using the flat naming convention:
+   - `Home.md` — landing page (GitHub requires this exact name).
+   - `_Sidebar.md` — navigation (GitHub requires this exact name).
+   - Multi-word pages use `Title-Case-Hyphenated.md`, grouped by prefix (`Tools-*`, `Architecture-*`, `Configuration-*`).
+   - Use `[text](Page-Name)` for internal links (the page name, no `.md`).
+2. Update `_Sidebar.md` if you added or renamed a page.
 
-## Deploying to GitLab Wiki
-
-GitLab wikis are backed by a Git repository. To deploy:
+## Publishing
 
 ```bash
-# Clone the wiki repository
-git clone git@gitlab.com:inchoo/magento-bricklayer.wiki.git
-
-# Copy wiki content
-cp -r docs/wiki/* magento-bricklayer.wiki/
-
-# Commit and push
-cd magento-bricklayer.wiki
-git add .
-git commit -m "Update wiki content"
-git push
+cd packages/inchoo/magento-bricklayer
+make wiki-push
 ```
 
-Alternatively, copy pages manually through the GitLab wiki web interface.
-
-## Sidebar
-
-The `_sidebar.md` file provides navigation structure. GitLab renders this automatically
-as the wiki sidebar when the file is present in the wiki repository root.
+This clones the wiki repository, mirrors `docs/wiki/*.md` into it, and pushes — a plain copy, no conversion step. Run `make wiki-diff` to see what changed versus `origin/develop`.

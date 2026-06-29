@@ -15,14 +15,14 @@ Magento Bricklayer is an AI-assisted development toolkit for Magento 2 that impl
 | Section | Description |
 |---------|-------------|
 | [Getting Started](getting-started) | Installation, setup, and first steps |
-| [Architecture](architecture/overview) | System design, bootstrap, and MCP protocol |
-| [Tools Reference](tools/overview) | All 83 tools organized by group |
-| [Configuration](configuration/bricklayer-json) | `.bricklayer.json` options and environment variables |
-| [Guidelines & Skills](guidelines/overview) | Development context and coding standards |
+| [Architecture](Architecture-Overview) | System design, bootstrap, and MCP protocol |
+| [Tools Reference](Tools-Overview) | All 83 tools organized by group |
+| [Configuration](Configuration-Bricklayer-Json) | `.bricklayer.json` options and environment variables |
+| [Guidelines & Skills](Guidelines-Overview) | Development context and coding standards |
 | [CLI Commands](cli-commands) | `bricklayer` command reference |
-| [Security](security/overview) | Production safety, code execution, and query protection |
-| [Code Generation](code-generation/overview) | Module, model, controller, and API scaffolding |
-| [Diagnostics](diagnostics/overview) | Error diagnosis and performance analysis |
+| [Security](Security-Overview) | Production safety, code execution, and query protection |
+| [Code Generation](Code-Generation-Overview) | Module, model, controller, and API scaffolding |
+| [Diagnostics](Diagnostics-Overview) | Error diagnosis and performance analysis |
 | [Contributing](contributing) | Development setup, testing, and extending |
 | [Changelog](changelog) | Version history |
 | [FAQ](faq) | Common questions and troubleshooting |

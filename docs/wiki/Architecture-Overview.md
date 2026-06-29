@@ -109,6 +109,6 @@ src/
 
 ## Related Pages
 
-- [Bootstrap Process](architecture/bootstrap) — Detailed bootstrap flow
-- [Tool System](architecture/tool-system) — Tool registration, groups, and progressive disclosure
-- [Configuration System](configuration/bricklayer-json) — Config loading and validation
+- [Bootstrap Process](Architecture-Bootstrap) — Detailed bootstrap flow
+- [Tool System](Architecture-Tool-System) — Tool registration, groups, and progressive disclosure
+- [Configuration System](Configuration-Bricklayer-Json) — Config loading and validation

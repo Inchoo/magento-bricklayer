@@ -166,5 +166,5 @@ After a successful `config:set` the command prints a reminder:
 
 ## Related Pages
 
-- [Environment Variables](configuration/environment-variables) — Override settings via env vars
-- [Security](security/overview) — Production safety system
+- [Environment Variables](Configuration-Environment-Variables) — Override settings via env vars
+- [Security](Security-Overview) — Production safety system

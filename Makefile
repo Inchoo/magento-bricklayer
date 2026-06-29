@@ -1,24 +1,27 @@
-.PHONY: wiki-init wiki-push wiki-pull wiki-diff help
+.PHONY: wiki-push wiki-diff help
 
-WIKI_REMOTE := wiki
 WIKI_URL    := git@github.com:Inchoo/magento-bricklayer.wiki.git
 WIKI_BRANCH := master
+WIKI_SRC    := docs/wiki
+WIKI_WORK   := .wiki-publish
 
-## Wiki — add the GitHub wiki remote (run once before push/pull)
-wiki-init:
-	git remote get-url $(WIKI_REMOTE) >/dev/null 2>&1 || git remote add $(WIKI_REMOTE) $(WIKI_URL)
+## Wiki — mirror docs/wiki/ to the GitHub wiki (clone, copy, commit, push)
+wiki-push:
+	rm -rf $(WIKI_WORK)
+	git clone $(WIKI_URL) $(WIKI_WORK)
+	find $(WIKI_WORK) -maxdepth 1 -name '*.md' -delete
+	cp $(WIKI_SRC)/*.md $(WIKI_WORK)/
+	cd $(WIKI_WORK) && git add -A && \
+		if git diff --cached --quiet; then \
+			echo "Wiki already up to date — nothing to push."; \
+		else \
+			git commit -m "Sync wiki from docs/wiki" && git push origin $(WIKI_BRANCH); \
+		fi
+	rm -rf $(WIKI_WORK)
 
-## Wiki — push docs/wiki/ to the GitHub wiki repository
-wiki-push: wiki-init
-	git subtree push --prefix=docs/wiki $(WIKI_REMOTE) $(WIKI_BRANCH)
-
-## Wiki — pull remote wiki edits (e.g. made via GitHub UI) into docs/wiki/
-wiki-pull: wiki-init
-	git subtree pull --prefix=docs/wiki $(WIKI_REMOTE) $(WIKI_BRANCH) --squash -m "Update wiki from remote"
-
-## Wiki — show what would change on next push
+## Wiki — show which docs/wiki files changed vs origin/develop
 wiki-diff:
-	git diff origin/develop -- docs/wiki/
+	git diff origin/develop -- $(WIKI_SRC)/
 
 ## Show available targets
 help:

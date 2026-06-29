@@ -82,6 +82,6 @@ The `code-runner` tool has multiple safeguards:
 
 ## Related Pages
 
-- [Configuration](configuration/bricklayer-json) — Per-tool enable/disable
-- [Code Runner](tools/development) — Execution safety details
-- [Database Tools](tools/database) — Query restrictions
+- [Configuration](Configuration-Bricklayer-Json) — Per-tool enable/disable
+- [Code Runner](Tools-Development) — Execution safety details
+- [Database Tools](Tools-Database) — Query restrictions
