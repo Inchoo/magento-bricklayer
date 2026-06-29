@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.16.0
+
+A feature release adding runtime introspection for the view layer and message-queue wiring — three read-only tools that surface resolved/merged state no single source file shows. No breaking changes.
+
+**New tools** (hidden, discover via `search-tools`)
+- **`layout-inspect`** — resolve a layout handle into its runtime-merged block/container tree (merged across every module and the active theme), showing applied `referenceBlock`/`referenceContainer`/`move`/`remove` directives, declared and theme-resolved `.phtml` template paths, and the page layout. Omit the handle to list every registered handle for an area. Config-gated, enabled by default.
+- **`ui-component-inspect`** — resolve an admin grid/form UI component's runtime-merged configuration (component tree, data source, columns/fieldsets, child components) merged across modules. Config-gated, enabled by default.
+- **`message-queue-inspect`** — the runtime-merged consumer → topic → queue → exchange topology with publisher and handler bindings, assembled across `communication.xml`, `queue_consumer.xml`, `queue_topology.xml`, and `queue_publisher.xml`. Ungated.
+
+**Removed**
+- The static `layouts_reference` MCP resource (a hand-maintained handle catalogue) is retired in favour of `layout-inspect`'s runtime list mode — registered handles are now read from the live install.
+
+**Counts:** 83 tools (was 80), 21 tool classes, 35 runtime-configurable tools, 3 reference resources.
+
 ## 1.15.1
 
 - **`code-runner` bare helper functions now work in the PsySH runtime** — `get()`, `create()`, `repo()`, `config()`, `query()`, and `runLog()` (documented in `code-runner-help`) previously fataled with `Call to undefined function get()` under PsySH, where they existed only as the `$get`/`$create`/… scope closures. Both the bare and `$`-prefixed forms now work in both runtimes and stay bound to the live ObjectManager across calls.

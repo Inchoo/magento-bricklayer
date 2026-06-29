@@ -40,7 +40,7 @@ src/                  # Main PHP source code
 ├── Guidelines/       # Guidelines compilation + local override helper
 ├── Integration/      # Agent config writers
 └── Mcp/              # MCP server + tools
-    ├── Tool/         # 19 tool classes (+ ToolRegistry)
+    ├── Tool/         # 21 tool classes (+ ToolRegistry)
     ├── Resource/     # 5 resource providers (+ FileLoaderTrait)
     └── Prompt/       # 8 prompt providers
 

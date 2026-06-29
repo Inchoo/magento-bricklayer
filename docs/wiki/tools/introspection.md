@@ -1,6 +1,6 @@
 # Introspection Tools
 
-Tools for inspecting Magento's application state, configuration, modules, EAV system, and routing.
+Tools for inspecting Magento's application state, configuration, modules, EAV system, routing, view layer (layout and UI components), and message-queue wiring.
 
 ## Pre-Modification Check
 
@@ -176,3 +176,42 @@ Lists URL rewrites with optional filtering.
 | `requestPath` | string | `""` | Filter by request path |
 | `storeId` | int | 0 | Filter by store |
 | `limit` | int | 100 | Max results |
+
+## View Layer
+
+### `layout-inspect`
+
+Resolves a layout handle into its runtime-merged block/container tree (merged across all modules and the active theme), or lists every registered handle for an area when no handle is given. Shows applied `referenceBlock`/`referenceContainer`/`move`/`remove` directives, declared and theme-resolved `.phtml` template paths, and the page layout. Replaces the old static `magento://reference/layouts` resource — the handle list is read from the live install.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `handle` | string | `""` | Layout handle to resolve; omit to list all registered handles |
+| `area` | string | `frontend` | `frontend`, `adminhtml` |
+| `verbosity` | string | `standard` | `minimal`, `standard`, `detailed` |
+
+Includes a `_skill_hint` pointing to `development-context category=frontend`.
+
+### `ui-component-inspect`
+
+Resolves an admin grid or form UI component's runtime-merged configuration — component tree, data source, columns/fieldsets, and child components — merged across all modules.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | string | *required* | UI component name, e.g. `customer_listing` |
+| `verbosity` | string | `standard` | `minimal`, `standard`, `detailed` |
+
+Includes a `_skill_hint` pointing to `development-context category=ui-component`.
+
+## Message Queue
+
+### `message-queue-inspect`
+
+Returns the runtime-merged message-queue wiring: consumers, topics, queue/exchange bindings, publishers, and handlers assembled across `communication.xml`, `queue_consumer.xml`, `queue_topology.xml`, and `queue_publisher.xml` of every module. Each section degrades independently if a sub-config is absent.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `consumer` | string | `""` | Filter consumers by name substring (also scopes the topic-keyed sections) |
+| `topic` | string | `""` | Filter topics/bindings/publishers by name substring |
+| `verbosity` | string | `standard` | `minimal`, `standard`, `detailed` |
+
+Includes a `_skill_hint` pointing to `development-context category=message-queue`.

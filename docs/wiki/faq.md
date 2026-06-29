@@ -36,7 +36,7 @@ Same as DDEV — Warden is auto-detected via the `WARDEN_ENV_NAME` environment v
 
 ### Why do I only see 17 tools?
 
-Bricklayer uses progressive disclosure. Only 17 essential tools are listed in `tools/list`. Use `search-tools` to discover the full set of 80 tools by keyword.
+Bricklayer uses progressive disclosure. Only 17 essential tools are listed in `tools/list`. Use `search-tools` to discover the full set of 83 tools by keyword.
 
 ### Can I use Bricklayer in production?
 
