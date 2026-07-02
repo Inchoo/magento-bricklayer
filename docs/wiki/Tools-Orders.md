@@ -48,11 +48,11 @@ Add a comment to order history.
 
 ### `order-create`
 
-Create a new order from a guest quote: add line items by SKU, set a billing/shipping address, and place the order with the given shipping and payment methods. Disabled by default and blocked in production mode.
+Create a new order from a guest quote — or for an existing customer via `customerId` — by adding line items by SKU, setting a billing/shipping address, and placing the order with the given shipping and payment methods. Disabled by default and blocked in production mode.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `customerEmail` | string | *required* | Guest order email |
+| `customerEmail` | string | *required* | Order email (ignored when `customerId` is set) |
 | `items` | array | *required* | Line items: `[{"sku": string, "qty": number}]` |
 | `firstname` | string | *required* | Billing / shipping first name |
 | `lastname` | string | *required* | Billing / shipping last name |
@@ -65,6 +65,7 @@ Create a new order from a guest quote: add line items by SKU, set a billing/ship
 | `regionId` | int | 0 | Region ID (required for US states, etc.) |
 | `shippingMethod` | string | `flatrate_flatrate` | Shipping method code |
 | `paymentMethod` | string | `checkmo` | Payment method code |
+| `customerId` | int | 0 | Attach to an existing customer account; 0 = guest order |
 | `storeId` | int | 0 | Store view ID (0 = default) |
 
 ### `order-cancel`

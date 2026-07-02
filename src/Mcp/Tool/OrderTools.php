@@ -111,10 +111,16 @@ class OrderTools
         }
     }
 
+    /**
+     * Create a new order from a guest quote, or for an existing customer when customerId is set.
+     *
+     * @param int $customerId Existing customer to attach the order to; 0 places a guest order.
+     *     When set, customerEmail is ignored in favour of the customer's own email.
+     */
     #[McpTool(
         name: 'order-create',
-        description: 'Creates a new order from a guest quote. items = list of {sku, qty}; '
-            . 'one address is used for both billing and shipping.',
+        description: 'Creates a new order from a guest quote, or for an existing customer via '
+            . 'customerId. items = list of {sku, qty}; one address is used for billing and shipping.',
         meta: ['hidden' => true, 'prerequisite' => 'Products must be salable; shipping and payment methods active']
     )]
     public function createOrder(
@@ -131,6 +137,7 @@ class OrderTools
         int $regionId = 0,
         string $shippingMethod = 'flatrate_flatrate',
         string $paymentMethod = 'checkmo',
+        int $customerId = 0,
         int $storeId = 0
     ): array {
         if ($error = $this->requireMagento()) {
@@ -169,9 +176,15 @@ class OrderTools
 
             $quote = $quoteFactory->create();
             $quote->setStore($store);
-            $quote->setCustomerEmail($customerEmail);
-            $quote->setCustomerIsGuest(true);
-            $quote->setCustomerGroupId(\Magento\Customer\Api\Data\GroupInterface::NOT_LOGGED_IN_ID);
+
+            if ($customerId > 0) {
+                $customerRepository = MagentoBootstrap::get(\Magento\Customer\Api\CustomerRepositoryInterface::class);
+                $quote->assignCustomer($customerRepository->getById($customerId));
+            } else {
+                $quote->setCustomerEmail($customerEmail);
+                $quote->setCustomerIsGuest(true);
+                $quote->setCustomerGroupId(\Magento\Customer\Api\Data\GroupInterface::NOT_LOGGED_IN_ID);
+            }
 
             foreach ($items as $item) {
                 if (!is_array($item)) {
