@@ -205,13 +205,14 @@ class SearchTools
             'keywords' => ['order', 'invoice', 'shipment', 'creditmemo', 'credit memo', 'refund', 'fulfillment'],
             'topics' => [
                 'Retrieve and search orders by increment ID or filters',
+                'Create new orders from a guest quote',
                 'Create invoices, shipments, and credit memos',
                 'Add tracking numbers and order comments',
                 'Cancel, hold, and unhold orders',
                 'View order items and status history',
             ],
             'tools' => [
-                'order-get', 'order-list', 'order-items', 'order-comments',
+                'order-get', 'order-list', 'order-create', 'order-items', 'order-comments',
                 'order-add-comment', 'order-cancel', 'order-hold', 'order-unhold',
                 'invoice-create', 'invoice-list',
                 'shipment-create', 'shipment-list', 'shipment-track-add',

@@ -1,3 +1,10 @@
+# Unreleased
+
+A feature release adding an order-creation tool. No breaking changes.
+
+**New tools** (hidden, discover via `search-tools`)
+* **`order-create`** — create a new order from a guest quote: add line items by SKU + qty, set a billing/shipping address, and choose a shipping and payment method, then place the order via `CartManagementInterface::placeOrder`. Config-gated and, like other order-mutating tools, **disabled by default** (listed in `DESTRUCTIVE_TOOLS`) and additionally blocked in production unless explicitly enabled via `tools.order-create.enabled=true` in `.bricklayer.json`.
+
 # 1.16.0
 
 A feature release adding runtime introspection for the view layer and message-queue wiring — three read-only tools that surface resolved/merged state no single source file shows. No breaking changes.

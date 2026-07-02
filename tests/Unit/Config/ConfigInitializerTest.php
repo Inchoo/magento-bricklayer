@@ -41,6 +41,7 @@ class ConfigInitializerTest extends TestCase
             'customer-delete',
             'customer-address-delete',
             'order-cancel',
+            'order-create',
             'creditmemo-create',
             'generate-module',
             'generate-model',
@@ -82,6 +83,7 @@ class ConfigInitializerTest extends TestCase
             'customer-delete',
             'customer-address-delete',
             'order-cancel',
+            'order-create',
             'creditmemo-create',
             'generate-module',
             'generate-model',
@@ -204,16 +206,16 @@ class ConfigInitializerTest extends TestCase
 
         $this->assertTrue($result['created']);
         $this->assertEquals('production', $result['deploy_mode']);
-        // Production config disables code-runner + 10 destructive tools = 11
-        $this->assertEquals(11, $result['disabled_tools']);
+        // Production config disables code-runner + 11 destructive tools = 12
+        $this->assertEquals(12, $result['disabled_tools']);
     }
 
     public function testGenerateDeveloperDisablesDestructiveTools(): void
     {
         $result = $this->initializer->generate($this->tempDir);
 
-        // Developer mode disables the 10 destructive tools by default
-        $this->assertEquals(10, $result['disabled_tools']);
+        // Developer mode disables the 11 destructive tools by default
+        $this->assertEquals(11, $result['disabled_tools']);
     }
 
     public function testDetectDeployModeReadsEnvPhp(): void

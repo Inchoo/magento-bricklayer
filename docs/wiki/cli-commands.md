@@ -36,7 +36,7 @@ vendor/bin/bricklayer init
 
 Useful when you need to regenerate the configuration without touching agent files.
 
-**What it generates** (developer/default mode): 35 entries — one per runtime-configurable tool. Destructive tools (`*-delete`, `order-cancel`, `creditmemo-create`, all 4 `generate-*` tools) default to `enabled: false`; everything else defaults to `enabled: true`. Tool-specific options (`code-runner.allow_write`, `code-runner.max_timeout`, `database-query.max_rows`, `log.max_lines`) are set to safe defaults.
+**What it generates** (developer/default mode): 36 entries — one per runtime-configurable tool. Destructive tools (`*-delete`, `order-cancel`, `order-create`, `creditmemo-create`, all 4 `generate-*` tools) default to `enabled: false`; everything else defaults to `enabled: true`. Tool-specific options (`code-runner.allow_write`, `code-runner.max_timeout`, `database-query.max_rows`, `log.max_lines`) are set to safe defaults.
 
 **Production mode** additionally disables `code-runner` and lowers `database-query.max_rows` to 50.
 

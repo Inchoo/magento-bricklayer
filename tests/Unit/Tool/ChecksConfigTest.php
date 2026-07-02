@@ -153,7 +153,7 @@ class ChecksConfigTest extends TestCase
 
     public function testDestructiveToolsHaveNoDefaultEnabled(): void
     {
-        // Verify that the 10 destructive tools don't have 'enabled' in defaults
+        // Verify that the 11 destructive tools don't have 'enabled' in defaults
         $loader = new ConfigLoader();
         $loader->load($this->tempDir);
 
@@ -163,6 +163,7 @@ class ChecksConfigTest extends TestCase
             'customer-delete',
             'customer-address-delete',
             'order-cancel',
+            'order-create',
             'creditmemo-create',
             'generate-module',
             'generate-model',

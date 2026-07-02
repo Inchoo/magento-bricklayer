@@ -99,6 +99,7 @@ These tools are **disabled by default in both developer and production modes**. 
 | `customer-delete` | Customer |
 | `customer-address-delete` | Customer |
 | `order-cancel` | Order |
+| `order-create` | Order |
 | `creditmemo-create` | Order |
 
 ### Code Generation Tools

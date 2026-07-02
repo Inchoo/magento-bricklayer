@@ -112,6 +112,130 @@ class OrderTools
     }
 
     #[McpTool(
+        name: 'order-create',
+        description: 'Creates a new order from a guest quote. items = list of {sku, qty}; '
+            . 'one address is used for both billing and shipping.',
+        meta: ['hidden' => true, 'prerequisite' => 'Products must be salable; shipping and payment methods active']
+    )]
+    public function createOrder(
+        string $customerEmail,
+        array $items,
+        string $firstname,
+        string $lastname,
+        string $street,
+        string $city,
+        string $postcode,
+        string $countryId,
+        string $telephone,
+        string $region = '',
+        int $regionId = 0,
+        string $shippingMethod = 'flatrate_flatrate',
+        string $paymentMethod = 'checkmo',
+        int $storeId = 0
+    ): array {
+        if ($error = $this->requireMagento()) {
+            return $error;
+        }
+
+        if ($error = $this->requireToolEnabled('order-create')) {
+            return $error;
+        }
+        if ($error = $this->requireNonProduction('order-create')) {
+            return $error;
+        }
+
+        if ($customerEmail === '') {
+            return $this->errorResponse('customerEmail is required');
+        }
+        if ($items === []) {
+            return $this->errorResponse('At least one item (sku, qty) is required');
+        }
+
+        try {
+            $storeManager = MagentoBootstrap::get(\Magento\Store\Model\StoreManagerInterface::class);
+            $store = $storeId > 0
+                ? $storeManager->getStore($storeId)
+                : $storeManager->getDefaultStoreView();
+            if ($store === null) {
+                $store = $storeManager->getStore();
+            }
+            $resolvedStoreId = (int) $store->getId();
+
+            $quoteFactory = MagentoBootstrap::get(\Magento\Quote\Model\QuoteFactory::class);
+            $cartRepository = MagentoBootstrap::get(\Magento\Quote\Api\CartRepositoryInterface::class);
+            $cartManagement = MagentoBootstrap::get(\Magento\Quote\Api\CartManagementInterface::class);
+            $productRepository = MagentoBootstrap::get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
+            $orderRepository = MagentoBootstrap::get(\Magento\Sales\Api\OrderRepositoryInterface::class);
+
+            $quote = $quoteFactory->create();
+            $quote->setStore($store);
+            $quote->setCustomerEmail($customerEmail);
+            $quote->setCustomerIsGuest(true);
+            $quote->setCustomerGroupId(\Magento\Customer\Api\Data\GroupInterface::NOT_LOGGED_IN_ID);
+
+            foreach ($items as $item) {
+                if (!is_array($item)) {
+                    return $this->errorResponse('Each item must be an object with sku and qty');
+                }
+
+                $sku = (string) ($item['sku'] ?? '');
+                $qty = (float) ($item['qty'] ?? 0);
+                if ($sku === '' || $qty <= 0) {
+                    return $this->errorResponse('Each item requires a non-empty sku and a positive qty');
+                }
+
+                $product = $productRepository->get($sku, false, $resolvedStoreId);
+                $added = $quote->addProduct($product, $qty);
+                if (is_string($added)) {
+                    return $this->errorResponse("Could not add '$sku': $added");
+                }
+            }
+
+            $addressData = [
+                'firstname' => $firstname,
+                'lastname' => $lastname,
+                'street' => $street,
+                'city' => $city,
+                'postcode' => $postcode,
+                'country_id' => $countryId,
+                'telephone' => $telephone,
+                'email' => $customerEmail,
+            ];
+            if ($regionId > 0) {
+                $addressData['region_id'] = $regionId;
+            } elseif ($region !== '') {
+                $addressData['region'] = $region;
+            }
+
+            $quote->getBillingAddress()->addData($addressData);
+            $shippingAddress = $quote->getShippingAddress();
+            $shippingAddress->addData($addressData);
+            $shippingAddress->setCollectShippingRates(true)
+                ->collectShippingRates()
+                ->setShippingMethod($shippingMethod);
+
+            $quote->getPayment()->setMethod($paymentMethod);
+
+            $quote->collectTotals();
+            $cartRepository->save($quote);
+
+            $orderId = (int) $cartManagement->placeOrder($quote->getId());
+            $order = $orderRepository->get($orderId);
+
+            return [
+                'success' => true,
+                'order_id' => $orderId,
+                'increment_id' => $order->getIncrementId(),
+                'status' => $order->getStatus(),
+                'grand_total' => (float) $order->getGrandTotal(),
+                'store_id' => $resolvedStoreId,
+            ];
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    #[McpTool(
         name: 'order-add-comment',
         description: 'Adds a comment to order history',
         meta: ['hidden' => true]

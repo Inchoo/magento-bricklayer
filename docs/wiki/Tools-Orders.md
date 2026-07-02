@@ -46,6 +46,27 @@ Add a comment to order history.
 | `status` | string | `""` | New status |
 | `notifyCustomer` | bool | false | Send notification |
 
+### `order-create`
+
+Create a new order from a guest quote: add line items by SKU, set a billing/shipping address, and place the order with the given shipping and payment methods. Disabled by default and blocked in production mode.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `customerEmail` | string | *required* | Guest order email |
+| `items` | array | *required* | Line items: `[{"sku": string, "qty": number}]` |
+| `firstname` | string | *required* | Billing / shipping first name |
+| `lastname` | string | *required* | Billing / shipping last name |
+| `street` | string | *required* | Street address |
+| `city` | string | *required* | City |
+| `postcode` | string | *required* | Postal code |
+| `countryId` | string | *required* | Country code (e.g. `US`, `DE`) |
+| `telephone` | string | *required* | Phone number |
+| `region` | string | `""` | Region name (for regions without an ID) |
+| `regionId` | int | 0 | Region ID (required for US states, etc.) |
+| `shippingMethod` | string | `flatrate_flatrate` | Shipping method code |
+| `paymentMethod` | string | `checkmo` | Payment method code |
+| `storeId` | int | 0 | Store view ID (0 = default) |
+
 ### `order-cancel`
 
 Cancel an order. Blocked in production mode.
