@@ -43,6 +43,83 @@ class Entity extends AbstractModel implements EntityInterface
 - Each class MUST be in a file by itself under a namespace
 - A PHP file MUST either contain declarations with no side effects, or logic with no declarations (exception: `registration.php`)
 
+## Template Files (.phtml)
+
+`.phtml` templates are PHP files and MUST follow every rule above, plus a fixed
+header structure. This applies to **both Luma and Hyvä** templates — the header
+and escaping approach are identical across themes for consistency.
+
+Every template MUST open with these three blocks, in this EXACT order:
+
+1. `declare(strict_types=1);` — immediately after the opening `<?php` tag
+2. All `use` statements — import every class referenced in the `@var` annotations and body
+3. All `@var` annotations — one per line, typed via the imported short class names
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+?>
+<div class="example">
+    <h1><?= $escaper->escapeHtml(__('Title')) ?></h1>
+</div>
+```
+
+### Output Escaping
+
+Every echoed value falls into exactly ONE of three cases. Pick the right one — do
+not escape blindly, and do not annotate blindly.
+
+**Case 1 — value needs escaping.** Any string that may contain user or store data.
+Wrap it in the `$escaper` object Magento injects into every template. Prefer
+`$escaper->escape*()` over the legacy `$block->escape*()` / `$this->escape*()`
+helpers so escaping is identical across Luma and Hyvä. Match the method to the
+output context:
+
+| Method | Use for |
+|--------|---------|
+| `$escaper->escapeHtml($v)` | Text content inside HTML |
+| `$escaper->escapeHtmlAttr($v)` | HTML attribute values |
+| `$escaper->escapeUrl($v)` | URLs (`href`, `src`) |
+| `$escaper->escapeJs($v)` | Values inside inline `<script>` |
+| `$escaper->escapeCss($v)` | Values inside inline styles |
+
+```php
+<h1><?= $escaper->escapeHtml($block->getTitle()) ?></h1>
+<a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">…</a>
+```
+
+**Case 2 — already-safe HTML from a self-describing expression.** A call whose name
+ends in `Html` (`getChildHtml()`, `getProductDetailsHtml()`, `toHtml()`, an icon
+`->…Html()`), or a value guarded by an `(int)`/`(float)`/`(bool)` cast. Output it
+directly with NO `$escaper` call and NO comment — the Magento phpcs sniff already
+treats these as safe, so a marker would only add noise:
+
+```php
+<?= $block->getChildHtml('child.block') ?>
+<?= $lucideIcons->shoppingCartHtml('', 24, 24) ?>
+<?= (int) $product->getId() ?>
+```
+
+**Case 3 — safe output the sniff cannot recognise.** A value that is genuinely safe
+but is NOT escaped, NOT `*Html`-suffixed, and NOT cast: a non-`Html` method that
+returns markup (`getProductPrice()`, `formatPrice()`), a ViewModel object rendered
+via `__toString()`, or a variable already holding rendered HTML. Mark it with an
+explicit single-star `/* @noEscape */` comment (NOT the docblock `/** @noEscape */`,
+which the sniff does not recognise) so phpcs passes and the intent stays auditable:
+
+```php
+<?= /* @noEscape */ $block->getProductPrice($product) ?>
+<?= /* @noEscape */ $modal ?>
+<?= /* @noEscape */ $safeHtml ?>
+```
+
 ## Naming Conventions
 
 | Element | Convention | Example |
