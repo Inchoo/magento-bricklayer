@@ -95,10 +95,12 @@ class CodeRunnerTools
             return $error;
         }
 
+        $writeBlockedByConfig = false;
         try {
             $configAllowWrite = (bool) $this->getConfigLoader()->get('tools.code-runner.allow_write', false);
             if ($allow_write && !$configAllowWrite) {
                 $allow_write = false;
+                $writeBlockedByConfig = true;
             }
         } catch (\Throwable $e) {
             // proceed with defaults
@@ -149,7 +151,7 @@ class CodeRunnerTools
         $this->logBuffer = [];
 
         try {
-            $result = $this->executeWithTransaction($code, $mode, $allow_write);
+            $result = $this->executeWithTransaction($code, $mode, $allow_write, $writeBlockedByConfig);
         } finally {
             set_time_limit($previousLimit);
         }
@@ -316,8 +318,12 @@ class CodeRunnerTools
         self::$definedFunctions = [];
     }
 
-    private function executeWithTransaction(string $code, string $mode, bool $allowWrite): array
-    {
+    private function executeWithTransaction(
+        string $code,
+        string $mode,
+        bool $allowWrite,
+        bool $writeBlockedByConfig = false
+    ): array {
         $connection = null;
         $rolledBack = false;
 
@@ -352,8 +358,15 @@ class CodeRunnerTools
 
         if ($rolledBack) {
             $result['read_only'] = true;
-            $result['note'] = 'Database changes were rolled back (read-only mode). '
-                . 'Use allow_write=true to persist changes.';
+            if ($writeBlockedByConfig) {
+                $result['write_blocked_by_config'] = true;
+                $result['note'] = 'Database changes were rolled back (read-only mode). '
+                    . 'allow_write=true was requested but is disabled by config: '
+                    . 'set "tools.code-runner.allow_write": true in .bricklayer.json to persist changes.';
+            } else {
+                $result['note'] = 'Database changes were rolled back (read-only mode). '
+                    . 'Use allow_write=true to persist changes.';
+            }
         }
 
         if ($allowWrite) {
