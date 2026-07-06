@@ -380,13 +380,18 @@ XML;
 
         $files[$templateFile] = <<<PHTML
 <?php
-/**
- * @var \Magento\Framework\View\Element\Template \$block
- */
+
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template \$block */
+/** @var Escaper \$escaper */
 ?>
 <div class="{$routeLower}-{$action}">
-    <h1><?= \$block->escapeHtml(__('{$actionClass} Page')) ?></h1>
-    <p><?= \$block->escapeHtml(__('This is the {$action} content.')) ?></p>
+    <h1><?= \$escaper->escapeHtml(__('{$actionClass} Page')) ?></h1>
+    <p><?= \$escaper->escapeHtml(__('This is the {$action} content.')) ?></p>
 </div>
 PHTML;
 

@@ -268,11 +268,11 @@ EOCONTENT
     );
 ?>
 
-<button type="button" class="text-primary underline" @click="<?= $sizeGuideModal->getShowJs() ?>">
+<button type="button" class="text-primary underline" @click="<?= /* @noEscape */ $sizeGuideModal->getShowJs() ?>">
     <?= $escaper->escapeHtml(__('Size Guide')) ?>
 </button>
 
-<?= /** @noEscape */ $sizeGuideModal ?>
+<?= /* @noEscape */ $sizeGuideModal ?>
 ```
 
 ## Template Override Patterns
@@ -304,7 +304,7 @@ Place the override in your child theme at the matching path:
             <?= $escaper->escapeHtml($product->getName()) ?>
         </a>
         <div class="mt-auto pt-3">
-            <?= /* @noEscape */ $productListItemViewModel->getProductPriceHtml($product) ?>
+            <?= $productListItemViewModel->getProductPriceHtml($product) ?>
         </div>
         <button class="btn btn-primary mt-3" data-addto="cart">
             <?= $lucideIcons->shoppingCartHtml('', 20, 20, ['aria-hidden' => 'true']) ?>

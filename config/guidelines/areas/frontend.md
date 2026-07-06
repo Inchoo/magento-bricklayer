@@ -138,19 +138,24 @@ class Custom extends Template
 
 ```php
 <?php
-/**
- * @var \Vendor\Module\Block\Custom $block
- */
+
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Vendor\Module\Block\Custom;
+
+/** @var Custom $block */
+/** @var Escaper $escaper */
 ?>
 <div class="custom-block">
-    <h2><?= $block->escapeHtml(__('Items')) ?></h2>
+    <h2><?= $escaper->escapeHtml(__('Items')) ?></h2>
 
     <?php if ($items = $block->getItems()): ?>
         <ul class="items-list">
             <?php foreach ($items as $item): ?>
                 <li class="item">
-                    <a href="<?= $block->escapeUrl($block->getItemUrl($item->getId())) ?>">
-                        <?= $block->escapeHtml($item->getName()) ?>
+                    <a href="<?= $escaper->escapeUrl($block->getItemUrl($item->getId())) ?>">
+                        <?= $escaper->escapeHtml($item->getName()) ?>
                     </a>
                     <span class="price">
                         <?= /* @noEscape */ $block->formatPrice($item->getPrice()) ?>
@@ -159,19 +164,25 @@ class Custom extends Template
             <?php endforeach; ?>
         </ul>
     <?php else: ?>
-        <p><?= $block->escapeHtml(__('No items found.')) ?></p>
+        <p><?= $escaper->escapeHtml(__('No items found.')) ?></p>
     <?php endif; ?>
 </div>
 ```
 
 ### Escaping
 
-Always escape output:
-- `$block->escapeHtml()` - For text content
-- `$block->escapeUrl()` - For URLs
-- `$block->escapeHtmlAttr()` - For HTML attributes
-- `$block->escapeJs()` - For JavaScript strings
-- `/* @noEscape */` - When output is already safe (use sparingly)
+Always escape output with the `$escaper` object injected into every template
+(prefer it over the legacy `$block->escape*()` helpers for consistency across
+Luma and Hyvä):
+- `$escaper->escapeHtml()` - For text content
+- `$escaper->escapeUrl()` - For URLs
+- `$escaper->escapeHtmlAttr()` - For HTML attributes
+- `$escaper->escapeJs()` - For JavaScript strings
+
+Not every value is escaped — there are three cases (see the coding-standards guideline for the full rule):
+1. **Needs escaping** → use `$escaper->escape*()` as above.
+2. **Already-safe HTML** from an `*Html`-suffixed call (`getChildHtml()`, `toHtml()`, icon `->…Html()`) or an `(int)` cast → output raw, no comment.
+3. **Safe but unrecognisable** by the phpcs sniff (non-`Html` method like `formatPrice()`, an object rendered via `__toString()`, a pre-rendered HTML variable) → mark `/* @noEscape */`.
 
 ## JavaScript (RequireJS)
 
