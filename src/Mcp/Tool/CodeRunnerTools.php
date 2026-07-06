@@ -642,6 +642,36 @@ class CodeRunnerTools
         // Using the ObjectManager's shared instance pool avoids eagerly
         // creating singletons that were never used.
         $this->resetSharedInstance($om, \Magento\Catalog\Model\Layer\Resolver::class, 'layer');
+
+        // Clear repository identity maps so out-of-process DB writes (e.g. a
+        // separate CLI/DDEV call, or a rolled-back transaction) are not masked
+        // by stale in-memory entities cached earlier in this long-lived process.
+        //
+        // The shared instance pool is keyed by the RESOLVED CONCRETE class, not
+        // the interface (ObjectManager::get() resolves the preference before
+        // keying _sharedInstances), so we must resolve each interface first.
+        try {
+            $config = $om->get(\Magento\Framework\ObjectManager\ConfigInterface::class);
+
+            $repositoryMaps = [
+                \Magento\Catalog\Api\ProductRepositoryInterface::class  => ['instances', 'instancesById'],
+                \Magento\Catalog\Api\CategoryRepositoryInterface::class => ['instances'],
+            ];
+            foreach ($repositoryMaps as $interface => $properties) {
+                $concrete = $config->getPreference(ltrim($interface, '\\'));
+                foreach ($properties as $property) {
+                    $this->resetSharedInstance($om, $concrete, $property);
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore — class may not exist or property may differ
+        }
+
+        // Customer entities are not cached on the repository; they live in the
+        // CustomerRegistry singleton's identity maps.
+        foreach (['customerRegistryById', 'customerRegistryByEmail'] as $property) {
+            $this->resetSharedInstance($om, \Magento\Customer\Model\CustomerRegistry::class, $property);
+        }
     }
 
     /**
