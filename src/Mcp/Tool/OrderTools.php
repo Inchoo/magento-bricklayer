@@ -121,6 +121,8 @@ class OrderTools
      *   - grouped:      "grouped_quantities" => {child sku: qty}  (the line "qty" is ignored)
      *   - bundle:       "bundle_selections" => [{selection_sku, qty}]
      *   - downloadable: "links" => [link id or title]  (only when links are sold separately; defaults to all)
+     *   - any type:     "custom_options" => {option title or id: value}  (select choices by title/id, a
+     *                   list for checkbox/multiple; text/date values pass through)
      *
      * @param array<int, array<string, mixed>> $items Line items to order; see the description above.
      * @param int $customerId Existing customer to attach the order to; 0 places a guest order.
@@ -134,6 +136,7 @@ class OrderTools
             . 'Grouped: add grouped_quantities {child sku: qty} (the line qty is ignored). '
             . 'Bundle: add bundle_selections [{selection_sku, qty}]. '
             . 'Downloadable with separately-priced links: optional links [link id or title] (defaults to all). '
+            . 'Any product may add custom_options {option title or id: value} (choice title/id for selects). '
             . 'One address is used for both billing and shipping.',
         meta: ['hidden' => true, 'prerequisite' => 'Products must be salable; shipping and payment methods active']
     )]
@@ -289,19 +292,38 @@ class OrderTools
     ): array|string {
         switch ((string) $product->getTypeId()) {
             case 'configurable':
-                return $this->buildConfigurableRequest($product, $qty, $item);
+                $request = $this->buildConfigurableRequest($product, $qty, $item);
+                break;
             case 'grouped':
-                return $this->buildGroupedRequest($product, $item);
+                $request = $this->buildGroupedRequest($product, $item);
+                break;
             case 'bundle':
-                return $this->buildBundleRequest($product, $qty, $item);
+                $request = $this->buildBundleRequest($product, $qty, $item);
+                break;
             case 'downloadable':
-                return $this->buildDownloadableRequest($product, $qty, $item);
+                $request = $this->buildDownloadableRequest($product, $qty, $item);
+                break;
             default:
                 if ($qty <= 0) {
                     return 'a positive qty is required';
                 }
-                return ['qty' => $qty];
+                $request = ['qty' => $qty];
         }
+
+        if (is_string($request)) {
+            return $request;
+        }
+
+        // Custom options apply to any product type; merge them onto the resolved buy request.
+        $customOptions = $this->resolveCustomOptions($product, $item);
+        if (is_string($customOptions)) {
+            return $customOptions;
+        }
+        if ($customOptions !== []) {
+            $request['options'] = $customOptions;
+        }
+
+        return $request;
     }
 
     /**
@@ -593,6 +615,97 @@ class OrderTools
         $request['links'] = $linkIds;
 
         return $request;
+    }
+
+    /**
+     * Resolve product custom options ("custom_options") into the {option id: value} map the buy
+     * request expects. Options are matched by title or id; select-type choices are matched by
+     * choice title or option_type_id (a list for checkbox/multiple); text/date/file values pass
+     * through unchanged. Required options left unset are reported by addProduct.
+     *
+     * @param array<string, mixed> $item
+     * @return array<int, mixed>|string
+     */
+    private function resolveCustomOptions(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        array $item
+    ): array|string {
+        $requested = $item['custom_options'] ?? null;
+        if ($requested === null || $requested === []) {
+            return [];
+        }
+        if (!is_array($requested)) {
+            return '"custom_options" must be a map of option (title or id) to value';
+        }
+
+        $productOptions = $product->getOptions() ?? [];
+        $selectTypes = ['drop_down', 'radio', 'checkbox', 'multiple'];
+
+        $resolved = [];
+        foreach ($requested as $optionKey => $value) {
+            $match = null;
+            foreach ($productOptions as $option) {
+                if (
+                    (string) $option->getOptionId() === (string) $optionKey
+                    || strcasecmp((string) $option->getTitle(), (string) $optionKey) === 0
+                ) {
+                    $match = $option;
+                    break;
+                }
+            }
+            if ($match === null) {
+                return "unknown custom option '$optionKey'";
+            }
+
+            $optionId = (int) $match->getOptionId();
+            if (in_array((string) $match->getType(), $selectTypes, true)) {
+                $ids = $this->resolveCustomOptionValues($match, $value);
+                if (is_string($ids)) {
+                    return $ids;
+                }
+                $multiple = in_array((string) $match->getType(), ['checkbox', 'multiple'], true);
+                $resolved[$optionId] = $multiple ? $ids : $ids[0];
+            } else {
+                $resolved[$optionId] = $value;
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Resolve the chosen value(s) of a select-type custom option to their option_type_id(s). Each
+     * value may be a choice title or an option_type_id; arrays are accepted for checkbox/multiple.
+     *
+     * @param mixed $value
+     * @return array<int, int>|string
+     */
+    private function resolveCustomOptionValues(
+        \Magento\Catalog\Api\Data\ProductCustomOptionInterface $option,
+        mixed $value
+    ): array|string {
+        $available = $option->getValues() ?? [];
+        $keys = is_array($value) ? $value : [$value];
+
+        $ids = [];
+        foreach ($keys as $key) {
+            $found = null;
+            foreach ($available as $optionValue) {
+                if (
+                    (string) $optionValue->getOptionTypeId() === (string) $key
+                    || strcasecmp((string) $optionValue->getTitle(), (string) $key) === 0
+                ) {
+                    $found = (int) $optionValue->getOptionTypeId();
+                    break;
+                }
+            }
+            if ($found === null) {
+                return "no choice '$key' for custom option '" . (string) $option->getTitle() . "'";
+            }
+            $ids[] = $found;
+        }
+
+        return $ids;
     }
 
     #[McpTool(
