@@ -114,13 +114,27 @@ class OrderTools
     /**
      * Create a new order from a guest quote, or for an existing customer when customerId is set.
      *
+     * Each entry in $items is one line item. Simple, virtual and downloadable products need only
+     * {sku, qty}. Option-bearing types carry extra, human-friendly keys that are resolved to the
+     * internal IDs Magento expects:
+     *   - configurable: "super_attribute" => {attribute code or label: option value or label}
+     *   - grouped:      "grouped_quantities" => {child sku: qty}  (the line "qty" is ignored)
+     *   - bundle:       "bundle_selections" => [{selection_sku, qty}]
+     *   - downloadable: "links" => [link id or title]  (only when links are sold separately; defaults to all)
+     *
+     * @param array<int, array<string, mixed>> $items Line items to order; see the description above.
      * @param int $customerId Existing customer to attach the order to; 0 places a guest order.
      *     When set, customerEmail is ignored in favour of the customer's own email.
      */
     #[McpTool(
         name: 'order-create',
-        description: 'Creates a new order from a guest quote, or for an existing customer via '
-            . 'customerId. items = list of {sku, qty}; one address is used for billing and shipping.',
+        description: 'Creates an order from a guest quote, or for an existing customer via '
+            . 'customerId. items = list of line objects. Simple/virtual/downloadable: {sku, qty}. '
+            . 'Configurable: add super_attribute {attribute code or label: option value or label}. '
+            . 'Grouped: add grouped_quantities {child sku: qty} (the line qty is ignored). '
+            . 'Bundle: add bundle_selections [{selection_sku, qty}]. '
+            . 'Downloadable with separately-priced links: optional links [link id or title] (defaults to all). '
+            . 'One address is used for both billing and shipping.',
         meta: ['hidden' => true, 'prerequisite' => 'Products must be salable; shipping and payment methods active']
     )]
     public function createOrder(
@@ -188,17 +202,26 @@ class OrderTools
 
             foreach ($items as $item) {
                 if (!is_array($item)) {
-                    return $this->errorResponse('Each item must be an object with sku and qty');
+                    return $this->errorResponse('Each item must be an object with a sku (and qty)');
                 }
 
                 $sku = (string) ($item['sku'] ?? '');
-                $qty = (float) ($item['qty'] ?? 0);
-                if ($sku === '' || $qty <= 0) {
-                    return $this->errorResponse('Each item requires a non-empty sku and a positive qty');
+                if ($sku === '') {
+                    return $this->errorResponse('Each item requires a non-empty sku');
                 }
+                $qty = (float) ($item['qty'] ?? 0);
 
                 $product = $productRepository->get($sku, false, $resolvedStoreId);
-                $added = $quote->addProduct($product, $qty);
+
+                $buyRequest = $this->resolveBuyRequest($product, $qty, $item);
+                if (is_string($buyRequest)) {
+                    return $this->errorResponse("Could not add '$sku': $buyRequest");
+                }
+
+                $added = $quote->addProduct(
+                    $product,
+                    MagentoBootstrap::create(\Magento\Framework\DataObject::class, ['data' => $buyRequest])
+                );
                 if (is_string($added)) {
                     return $this->errorResponse("Could not add '$sku': $added");
                 }
@@ -221,11 +244,14 @@ class OrderTools
             }
 
             $quote->getBillingAddress()->addData($addressData);
-            $shippingAddress = $quote->getShippingAddress();
-            $shippingAddress->addData($addressData);
-            $shippingAddress->setCollectShippingRates(true)
-                ->collectShippingRates()
-                ->setShippingMethod($shippingMethod);
+            // Virtual/downloadable-only quotes have no shippable items, so skip shipping entirely.
+            if (!$quote->isVirtual()) {
+                $shippingAddress = $quote->getShippingAddress();
+                $shippingAddress->addData($addressData);
+                $shippingAddress->setCollectShippingRates(true)
+                    ->collectShippingRates()
+                    ->setShippingMethod($shippingMethod);
+            }
 
             $quote->getPayment()->setMethod($paymentMethod);
 
@@ -246,6 +272,327 @@ class OrderTools
         } catch (\Throwable $e) {
             return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Build the addProduct buy-request payload for one line item, resolving type-specific option
+     * data (configurable / grouped / bundle) from human-friendly SKUs and labels into the internal
+     * IDs Magento expects. Simple, virtual and downloadable products just carry their qty.
+     *
+     * @param array<string, mixed> $item Raw line item supplied by the MCP client.
+     * @return array<string, mixed>|string The buy-request data, or an error message.
+     */
+    private function resolveBuyRequest(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        float $qty,
+        array $item
+    ): array|string {
+        switch ((string) $product->getTypeId()) {
+            case 'configurable':
+                return $this->buildConfigurableRequest($product, $qty, $item);
+            case 'grouped':
+                return $this->buildGroupedRequest($product, $item);
+            case 'bundle':
+                return $this->buildBundleRequest($product, $qty, $item);
+            case 'downloadable':
+                return $this->buildDownloadableRequest($product, $qty, $item);
+            default:
+                if ($qty <= 0) {
+                    return 'a positive qty is required';
+                }
+                return ['qty' => $qty];
+        }
+    }
+
+    /**
+     * Resolve a configurable product's chosen options into a super_attribute map.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>|string
+     */
+    private function buildConfigurableRequest(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        float $qty,
+        array $item
+    ): array|string {
+        if ($qty <= 0) {
+            return 'a positive qty is required';
+        }
+
+        $requested = $item['super_attribute'] ?? null;
+        if (!is_array($requested) || $requested === []) {
+            return 'configurable product requires "super_attribute" '
+                . 'mapping each attribute (code or label) to an option (value or label)';
+        }
+
+        $attributes = $product->getTypeInstance()->getConfigurableAttributesAsArray($product);
+
+        $superAttribute = [];
+        foreach ($requested as $attributeKey => $optionKey) {
+            $matched = null;
+            foreach ($attributes as $attribute) {
+                if ($this->matchesConfigurableAttribute((string) $attributeKey, $attribute)) {
+                    $matched = $attribute;
+                    break;
+                }
+            }
+            if ($matched === null) {
+                return "unknown configurable attribute '$attributeKey'";
+            }
+
+            $valueIndex = $this->resolveConfigurableOption((string) $optionKey, $matched['values'] ?? []);
+            if ($valueIndex === null) {
+                return "no option '$optionKey' for attribute '$attributeKey'";
+            }
+            $superAttribute[(int) $matched['attribute_id']] = $valueIndex;
+        }
+
+        foreach ($attributes as $attribute) {
+            if (!isset($superAttribute[(int) $attribute['attribute_id']])) {
+                $label = (string) ($attribute['attribute_code'] ?? $attribute['label'] ?? $attribute['attribute_id']);
+                return "missing selection for configurable attribute '$label'";
+            }
+        }
+
+        return ['qty' => $qty, 'super_attribute' => $superAttribute];
+    }
+
+    /**
+     * Match one configurable attribute entry by its code, label or id (case-insensitive).
+     *
+     * @param array<string, mixed> $attribute A getConfigurableAttributesAsArray() entry.
+     */
+    private function matchesConfigurableAttribute(string $key, array $attribute): bool
+    {
+        $candidates = [
+            $attribute['attribute_code'] ?? '',
+            $attribute['frontend_label'] ?? '',
+            $attribute['store_label'] ?? '',
+            $attribute['label'] ?? '',
+            $attribute['attribute_id'] ?? '',
+        ];
+        foreach ($candidates as $candidate) {
+            if ((string) $candidate !== '' && strcasecmp((string) $candidate, $key) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Resolve an option key (value index or any of its labels) to its numeric value index.
+     *
+     * @param array<int, array<string, mixed>> $values The attribute's option values.
+     */
+    private function resolveConfigurableOption(string $key, array $values): ?int
+    {
+        foreach ($values as $value) {
+            $candidates = [
+                $value['label'] ?? '',
+                $value['store_label'] ?? '',
+                $value['default_label'] ?? '',
+                $value['value_index'] ?? '',
+            ];
+            foreach ($candidates as $candidate) {
+                if ((string) $candidate !== '' && strcasecmp((string) $candidate, $key) === 0) {
+                    return (int) $value['value_index'];
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolve a grouped product's child quantities into a super_group map (child id => qty).
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>|string
+     */
+    private function buildGroupedRequest(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        array $item
+    ): array|string {
+        $quantities = $item['grouped_quantities'] ?? null;
+        if (!is_array($quantities) || $quantities === []) {
+            return 'grouped product requires "grouped_quantities" mapping each child sku to a qty';
+        }
+
+        $skuToId = [];
+        foreach ($product->getTypeInstance()->getAssociatedProducts($product) as $child) {
+            $skuToId[strtolower((string) $child->getSku())] = (int) $child->getId();
+        }
+
+        $superGroup = [];
+        foreach ($quantities as $childSku => $childQty) {
+            $lookup = strtolower((string) $childSku);
+            if (!isset($skuToId[$lookup])) {
+                return "child sku '$childSku' is not part of this grouped product";
+            }
+            $value = (float) $childQty;
+            if ($value > 0) {
+                $superGroup[$skuToId[$lookup]] = $value;
+            }
+        }
+
+        if ($superGroup === []) {
+            return 'grouped_quantities must include at least one child with qty > 0';
+        }
+
+        return ['super_group' => $superGroup];
+    }
+
+    /**
+     * Resolve a bundle product's selections (by child sku) into bundle_option / bundle_option_qty
+     * maps, and verify every required option has been chosen.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>|string
+     */
+    private function buildBundleRequest(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        float $qty,
+        array $item
+    ): array|string {
+        if ($qty <= 0) {
+            return 'a positive qty is required';
+        }
+
+        $selections = $item['bundle_selections'] ?? null;
+        if (!is_array($selections) || $selections === []) {
+            return 'bundle product requires "bundle_selections" as a list of {selection_sku, qty}';
+        }
+
+        $typeInstance = $product->getTypeInstance();
+        $optionsCollection = $typeInstance->getOptionsCollection($product);
+        $selectionsCollection = $typeInstance->getSelectionsCollection($optionsCollection->getAllIds(), $product);
+
+        $skuToSelection = [];
+        foreach ($selectionsCollection as $selection) {
+            $skuToSelection[strtolower((string) $selection->getSku())] = [
+                'option_id' => (int) $selection->getOptionId(),
+                'selection_id' => (int) $selection->getSelectionId(),
+                'product' => $selection,
+            ];
+        }
+
+        $bundleOption = [];
+        $bundleOptionQty = [];
+        $chosen = [];
+        foreach ($selections as $selection) {
+            if (!is_array($selection)) {
+                return 'each bundle_selections entry must be an object with selection_sku and qty';
+            }
+            $selectionSku = (string) ($selection['selection_sku'] ?? '');
+            $lookup = strtolower($selectionSku);
+            if ($lookup === '' || !isset($skuToSelection[$lookup])) {
+                return "selection sku '$selectionSku' is not part of this bundle";
+            }
+
+            $optionId = $skuToSelection[$lookup]['option_id'];
+            $selectionId = $skuToSelection[$lookup]['selection_id'];
+            $selectionQty = (float) ($selection['qty'] ?? 1);
+            if ($selectionQty <= 0) {
+                $selectionQty = 1;
+            }
+
+            if (isset($bundleOption[$optionId])) {
+                $bundleOption[$optionId] = array_merge((array) $bundleOption[$optionId], [$selectionId]);
+            } else {
+                $bundleOption[$optionId] = $selectionId;
+            }
+            $bundleOptionQty[$optionId] = $selectionQty;
+            $chosen[] = $skuToSelection[$lookup]['product'];
+        }
+
+        foreach ($optionsCollection as $option) {
+            if ((bool) $option->getRequired() && !isset($bundleOption[(int) $option->getOptionId()])) {
+                $title = (string) ($option->getTitle() ?: $option->getOptionId());
+                return "missing selection for required bundle option '$title'";
+            }
+        }
+
+        $request = [
+            'qty' => $qty,
+            'bundle_option' => $bundleOption,
+            'bundle_option_qty' => $bundleOptionQty,
+        ];
+
+        // Selections that are themselves downloadable with separately-priced links need those link
+        // ids on the parent buy request; the bundle passes it down and each selection keeps only its
+        // own links, so the union across chosen selections satisfies them all (defaults to all links).
+        $links = [];
+        foreach ($chosen as $selectionProduct) {
+            $isDownloadable = (string) $selectionProduct->getTypeId() === 'downloadable';
+            $separateLinks = (int) $selectionProduct->getData('links_purchased_separately') === 1;
+            if (!$isDownloadable || !$separateLinks) {
+                continue;
+            }
+            foreach ($selectionProduct->getTypeInstance()->getLinks($selectionProduct) as $link) {
+                $links[] = (int) $link->getId();
+            }
+        }
+        if ($links !== []) {
+            $request['links'] = array_values(array_unique($links));
+        }
+
+        return $request;
+    }
+
+    /**
+     * Build the buy-request for a downloadable product. Links only need to be chosen when they are
+     * sold separately; the requested "links" may be link ids or titles, and default to every link.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>|string
+     */
+    private function buildDownloadableRequest(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        float $qty,
+        array $item
+    ): array|string {
+        if ($qty <= 0) {
+            return 'a positive qty is required';
+        }
+
+        $request = ['qty' => $qty];
+        if ((int) $product->getData('links_purchased_separately') !== 1) {
+            return $request;
+        }
+
+        $available = [];
+        foreach ($product->getTypeInstance()->getLinks($product) as $link) {
+            $available[(int) $link->getId()] = (string) $link->getTitle();
+        }
+        if ($available === []) {
+            return $request;
+        }
+
+        $requested = $item['links'] ?? null;
+        if ($requested === null || $requested === []) {
+            $request['links'] = array_keys($available);
+            return $request;
+        }
+        if (!is_array($requested)) {
+            return '"links" must be a list of link ids or titles';
+        }
+
+        $linkIds = [];
+        foreach ($requested as $linkKey) {
+            $resolved = null;
+            foreach ($available as $id => $title) {
+                if ((string) $id === (string) $linkKey || strcasecmp($title, (string) $linkKey) === 0) {
+                    $resolved = $id;
+                    break;
+                }
+            }
+            if ($resolved === null) {
+                return "unknown downloadable link '$linkKey'";
+            }
+            $linkIds[] = $resolved;
+        }
+        $request['links'] = $linkIds;
+
+        return $request;
     }
 
     #[McpTool(
