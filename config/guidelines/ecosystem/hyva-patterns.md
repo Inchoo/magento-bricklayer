@@ -219,7 +219,7 @@ EOCONTENT
 echo $modal->getShowJs();
 ?>
 
-<?= /** @noEscape */ $modal ?>
+<?= /* @noEscape */ $modal ?>
 ```
 
 ## Module Compatibility

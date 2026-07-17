@@ -170,41 +170,40 @@ To override a template from a module:
 
 ```php
 <?php
-/**
- * Custom product list template
- *
- * @var \Magento\Catalog\Block\Product\ListProduct $block
- */
+
 declare(strict_types=1);
 
-$_productCollection = $block->getLoadedProductCollection();
-$_helper = $block->getData('outputHelper');
+use Magento\Catalog\Block\Product\ListProduct;
+use Magento\Framework\Escaper;
+
+/** @var ListProduct $block */
+/** @var Escaper $escaper */
+
+$productCollection = $block->getLoadedProductCollection();
 ?>
-<?php if (!$_productCollection->count()): ?>
+<?php if (!$productCollection->count()): ?>
     <div class="message info empty">
-        <div><?= $block->escapeHtml(__('We can\'t find products matching the selection.')) ?></div>
+        <div><?= $escaper->escapeHtml(__('We can\'t find products matching the selection.')) ?></div>
     </div>
 <?php else: ?>
     <div class="products wrapper grid products-grid">
         <ol class="products list items product-items">
-            <?php foreach ($_productCollection as $_product): ?>
+            <?php foreach ($productCollection as $product): ?>
                 <li class="item product product-item">
                     <div class="product-item-info">
-                        <?= $block->getProductDetailsHtml($_product) ?>
+                        <?= $block->getProductDetailsHtml($product) ?>
 
                         <strong class="product name product-item-name">
-                            <a href="<?= $block->escapeUrl($block->getProductUrl($_product)) ?>"
+                            <a href="<?= $escaper->escapeUrl($block->getProductUrl($product)) ?>"
                                class="product-item-link">
-                                <?= $block->escapeHtml($_product->getName()) ?>
+                                <?= $escaper->escapeHtml($product->getName()) ?>
                             </a>
                         </strong>
 
-                        <?= $block->getProductPrice($_product) ?>
-
-                        <?= $block->getProductDetailsHtml($_product) ?>
+                        <?= /* @noEscape */ $block->getProductPrice($product) ?>
 
                         <div class="product-item-actions">
-                            <?= $block->getAddToCartHtml($_product) ?>
+                            <?= $block->getAddToCartHtml($product) ?>
                         </div>
                     </div>
                 </li>
