@@ -251,8 +251,10 @@ class OrderTools
             if (!$quote->isVirtual()) {
                 $shippingAddress = $quote->getShippingAddress();
                 $shippingAddress->addData($addressData);
+                // Rates are collected by collectTotals(), which assembles the address item set
+                // first. Collecting them here would rate the unfiltered quote items - bundle
+                // children and virtuals included - and freeze that result.
                 $shippingAddress->setCollectShippingRates(true)
-                    ->collectShippingRates()
                     ->setShippingMethod($shippingMethod);
             }
 
