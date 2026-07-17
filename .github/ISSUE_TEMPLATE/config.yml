@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Inchoo/magento-bricklayer/security/advisories/new
+    about: >-
+      Never report security issues through public GitHub issues. code-runner executes
+      PHP inside a bootstrapped Magento by design — report vulnerabilities privately
+      via a security advisory. See SECURITY.md.
+  - name: Documentation
+    url: https://github.com/Inchoo/magento-bricklayer/wiki
+    about: Setup, tool reference, and usage docs live in the wiki — check there before filing a question.

@@ -1,0 +1,87 @@
+name: Bug report
+description: A tool call fails, returns wrong data, or the server misbehaves in your Magento installation.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Thanks for the report. Bricklayer runs inside a live Magento installation, so
+        environment details are not optional — without them most reports cannot be
+        reproduced. **Security issues do not belong here**: report them privately via
+        the [Security tab](https://github.com/Inchoo/magento-bricklayer/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+      placeholder: Called `eav-attributes entityType=catalog_product` and expected custom attributes; got an empty list even though attributes exist in the admin.
+    validations:
+      required: true
+  - type: textarea
+    id: tool-call
+    attributes:
+      label: Tool call and response
+      description: The exact tool name and parameters you called, and the response you received. For agent-driven calls, copy them from the agent transcript.
+      render: text
+      placeholder: |
+        Call:
+          eav-attributes entityType=catalog_product verbosity=minimal
+
+        Response:
+          { "error": ... }
+    validations:
+      required: true
+  - type: input
+    id: bricklayer-version
+    attributes:
+      label: Bricklayer version
+      description: Output of `vendor/bin/bricklayer --version`.
+      placeholder: "1.12.1"
+    validations:
+      required: true
+  - type: input
+    id: magento-version
+    attributes:
+      label: Magento version and deploy mode
+      placeholder: "Magento Open Source 2.4.7-p3, developer mode"
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "8.3.14"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - ddev
+        - warden
+        - docker-compose
+        - native
+        - other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: verify-output
+    attributes:
+      label: Output of `vendor/bin/bricklayer verify`
+      description: Run it from the Magento project root and paste the full output.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: MCP client / agent
+      description: Which client made the call, if agent-driven.
+      placeholder: "Claude Code 2.x / Cursor / manual JSON-RPC"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Relevant log entries, custom modules that might interfere, non-default Bricklayer config, etc.

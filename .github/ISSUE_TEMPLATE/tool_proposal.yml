@@ -1,0 +1,74 @@
+name: New tool proposal
+description: Propose a new MCP tool. Required before writing code — see the acceptance bar in CONTRIBUTING.md.
+title: "[Tool]: "
+labels: ["tool-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Bricklayer exists to expose what Magento resolves **at runtime** — merged DI,
+        plugin ordering, EAV attributes that live only in the database, theme-resolved
+        layout. Every proposed tool is judged against one question: *can an agent
+        already get this information reliably from static file reading alone?* If yes,
+        the tool needs strong justification. Opening this issue first saves you from
+        building something that won't be merged.
+  - type: textarea
+    id: runtime-state
+    attributes:
+      label: What runtime state does this tool expose?
+      description: Describe the information the tool returns and where Magento assembles it (DI merge, database, indexers, config scope resolution, ...).
+    validations:
+      required: true
+  - type: textarea
+    id: why-not-static
+    attributes:
+      label: Why can't static file reading get this?
+      description: Explain what an agent reading source files would miss or get wrong — cross-module merging, DB-only state, runtime resolution order, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: why-not-existing
+    attributes:
+      label: Why can't existing tools or code-runner cover it?
+      description: >-
+        Check `search-tools` and `code-runner` first. Convenience wrappers around
+        things they already handle usually won't make it in. If an existing tool is
+        close, consider proposing a routing parameter on it instead — one tool with a
+        `target=` parameter beats several near-identical tools.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: Proposed tool shape
+      description: Name, parameters, and an example call with the expected response shape.
+      render: text
+      placeholder: |
+        Name: cache-inspect
+        Parameters: target=types|status|invalidated, fields=...
+
+        Example:
+          cache-inspect target=invalidated
+          → [{ "type": "full_page", "status": "invalidated" }, ...]
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: Read-only or write?
+      description: Read-only introspection is the core. Write operations are the exception and carry extra requirements (`requireNonProduction`, disabled by default).
+      options:
+        - Read-only
+        - Write / destructive
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and open PRs for this proposal.
+          required: true
+        - label: I checked `search-tools` output for an existing tool that covers this.
+          required: true
+        - label: I'm willing to implement this myself if accepted.

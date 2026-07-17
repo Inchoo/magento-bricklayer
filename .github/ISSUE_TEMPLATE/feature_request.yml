@@ -1,0 +1,43 @@
+name: Feature request
+description: Improvement that is not a new MCP tool — CLI (`bricklayer install`/`verify`), generated agent files, prompts, docs, DX.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        For a **new MCP tool**, use the "New tool proposal" template instead — tools
+        have a specific acceptance bar.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI (install / verify / config)
+        - Generated agent files (CLAUDE.md, AGENTS.md, .cursorrules, ...)
+        - Existing tool behavior (parameters, output, token efficiency)
+        - Prompts / resources / development-context guidelines
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What friction do you hit today? Describe the workflow, not the solution.
+      placeholder: Every time an agent calls `product-list` without filters it pulls thousands of rows into context...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you'd like to happen. Concrete examples (commands, parameters, output) help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today, or other approaches and why they fall short.
