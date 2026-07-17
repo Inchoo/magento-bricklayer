@@ -84,7 +84,7 @@ Bricklayer is a Composer library that implements an MCP server for Magento 2. Wh
 - Generate Magento-compliant module scaffolding with conflict detection
 - Load domain-specific development guidelines and coding standards on demand
 
-Only 17 essential tools are visible at startup — the remaining 66 are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
+Only 17 essential tools are visible at startup — the remaining 67 are discoverable via `search-tools`, reducing token overhead while keeping all tools callable.
 
 The name "Bricklayer" reflects the methodical, structured approach to building Magento 2 modules and extensions, laying each component (the "bricks") in the correct order and position to construct a solid, maintainable codebase.
 
@@ -315,7 +315,7 @@ This is useful when container names vary between environments or are dynamically
 
 ## MCP Tools Overview
 
-Bricklayer uses **progressive disclosure** — 17 essential tools are visible in `tools/list` while 66 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
+Bricklayer uses **progressive disclosure** — 17 essential tools are visible in `tools/list` while 67 additional tools remain callable and discoverable via `search-tools`. This reduces token overhead for AI agents. Tools marked with **[tier 1]** are always visible; all others are tier 2.
 
 ### Application & Module Tools
 - `application-info` — Magento version, PHP version, deploy mode, module counts. Use `include=stores` for website/store hierarchy
