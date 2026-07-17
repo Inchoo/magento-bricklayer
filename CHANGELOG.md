@@ -1,4 +1,4 @@
-# Unreleased
+# 1.17.0
 
 A feature release adding an order-creation tool, plus `code-runner` correctness fixes, a canonical `.phtml` template convention, and community/contribution docs. No breaking changes.
 
