@@ -61,12 +61,12 @@ vendor/bin/bricklayer config:set tools.code-runner.allow_write false
 vendor/bin/bricklayer config:set tools.log.max_lines 1000
 ```
 
-**Interactive mode** (no arguments) lists all 35 runtime-configurable tools with their current values shown inline, lets you select a tool, then a setting, then prompts for the new value with type-aware validation:
+**Interactive mode** (no arguments) lists all 36 runtime-configurable tools with their current values shown inline, lets you select a tool, then a setting, then prompts for the new value with type-aware validation:
 
 ```
 Select a tool to configure
 --------------------------
- 35 runtime-configurable tools available.
+ 36 runtime-configurable tools available.
 
  Tool:
   [0 ] category-assign-products  (enabled=true)

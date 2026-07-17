@@ -1,6 +1,6 @@
 # Order Tools
 
-14 tools for managing orders, invoices, shipments, and credit memos.
+16 tools for managing orders, invoices, shipments, and credit memos.
 
 ## Orders
 

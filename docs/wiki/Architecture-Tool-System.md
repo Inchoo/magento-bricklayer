@@ -1,6 +1,6 @@
 # Tool System
 
-The tool system is the core of Magento Bricklayer, providing 83 MCP tools organized into groups with progressive disclosure and shared behavior traits.
+The tool system is the core of Magento Bricklayer, providing 84 MCP tools organized into groups with progressive disclosure and shared behavior traits.
 
 ## Tool Registration
 
@@ -48,7 +48,7 @@ public function getProduct(string $sku, string $fields = ''): array
 To reduce token overhead for AI agents, tools are split into two tiers:
 
 - **Tier 1 (17 tools)** — Always visible in `tools/list`. These are the most commonly needed tools.
-- **Tier 2 (66 tools)** — Hidden from `tools/list` but fully callable. Discoverable via `search-tools`.
+- **Tier 2 (67 tools)** — Hidden from `tools/list` but fully callable. Discoverable via `search-tools`.
 
 Tier 2 tools have `meta: ['hidden' => true]` in their registration.
 

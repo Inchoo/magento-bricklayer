@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.17.0
+
+A feature release adding an order-creation tool, plus `code-runner` correctness fixes, a canonical `.phtml` template convention, and community/contribution docs. No breaking changes.
+
+**New tools** (hidden, discover via `search-tools`)
+- **`order-create`** — build and place an order: line items by SKU, one billing/shipping address, chosen shipping and payment method. Supports all default product types (configurable, grouped, bundle, downloadable) with option data given by human-friendly codes/labels/SKUs, product custom options, existing-customer orders via `customerId` (0 = guest), and virtual/downloadable-only orders (shipping skipped automatically). Like other order-mutating tools it is **disabled by default** and blocked in production; enable via `tools.order-create.enabled=true` in `.bricklayer.json`.
+
+**Fixes**
+- **`code-runner`: a timeout no longer kills the MCP server.** The execution limit is now enforced by a catchable wall-clock SIGALRM (where `pcntl` is available) instead of `set_time_limit()`'s uncatchable fatal: on timeout the transaction rolls back and the call returns a normal error (`timed_out: true`) — the server keeps running and session state survives. Wall-clock also means stalled DB queries now count toward the limit.
+- **`code-runner`: fatals now report instead of silently dropping the connection.** A shutdown hook answers the in-flight request with a JSON-RPC tool error naming the fatal before the process dies, so the agent sees the real cause rather than `Connection closed`.
+- **`code-runner`: define-mode helpers no longer fatal on the second use.** Functions are declared once into the global namespace at define time (behind a `function_exists` guard); syntax errors surface at define time, and redefining an already-declared name returns a `warning` instead of fataling.
+- **`code-runner`: `timeout=0` no longer disables the execution limit.** The effective timeout is floored at 1s — previously `timeout<=0` reached `set_time_limit(0)`, which means *unlimited*.
+- **`database-query`: `SELECT(...)` is no longer rejected.** The SELECT guard now uses a word boundary, so `SELECT(1) AS x` passes while `SELECTED...` is still rejected.
+- **`code-runner`: state reset now clears repository identity maps** (product, category, `CustomerRegistry`), so changes made outside the MCP process are no longer hidden by stale cached entities.
+- **`code-runner`: clearer message when writes are blocked by config.** If `allow_write=true` is requested but disabled in `.bricklayer.json`, the response names the config key to enable (`write_blocked_by_config: true`) instead of suggesting a flag that was already set.
+
+**Guidelines & generated code**
+- **Standard `.phtml` template convention** (Luma and Hyvä): required header order (`declare` → `use` → `@var`) and clear escaping rules (`$escaper`, or `/* @noEscape */` for safe non-HTML output). `generate-controller` output and all guideline examples now follow it.
+
+**Docs**
+- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md`.
+
+**Counts:** 84 tools (was 83), 21 tool classes, 36 runtime-configurable tools, 3 reference resources.
+
 ## 1.16.0
 
 A feature release adding runtime introspection for the view layer and message-queue wiring — three read-only tools that surface resolved/merged state no single source file shows. No breaking changes.

@@ -74,7 +74,7 @@ An MCP server that gives AI coding agents runtime visibility into Magento 2. Age
 
 ## What is Bricklayer?
 
-Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 83 tools that AI agents can invoke to:
+Bricklayer is a Composer library that implements an MCP server for Magento 2. When started, it exposes 84 tools that AI agents can invoke to:
 
 - **Check runtime state before writing code** — see actual plugin chains, DI resolution, preferences, and event observers across all installed modules
 - Inspect database schema, EAV attributes, and system configuration as they exist at runtime
@@ -208,7 +208,7 @@ vendor/bin/bricklayer config:set tools.code-runner.allow_write false
 Options:
 - `--magento-root=PATH` — Specify Magento root directory (auto-detected by default)
 
-**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 35 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
+**Interactive mode** (no arguments) is the recommended path for newcomers. It lists all 36 runtime-configurable tools with their current values inline, lets you pick a tool, pick a setting (when more than one is available), and enter a new value with type-aware validation (bool picker, int validator that re-prompts on non-numeric input).
 
 **Scripted mode** (positional arguments) is for automation. Values are parsed automatically: `true`/`false` → bool, `null` → null, numeric → int/float, `[...]`/`{...}` → JSON-decoded, anything else → string.
 

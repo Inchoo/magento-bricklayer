@@ -1,6 +1,6 @@
 # Tools Reference
 
-Magento Bricklayer provides 83 MCP tools organized into 11 groups. Use `search-tools` at runtime to discover tools by keyword.
+Magento Bricklayer provides 84 MCP tools organized into 11 groups. Use `search-tools` at runtime to discover tools by keyword.
 
 ## Tool Groups
 
@@ -44,7 +44,7 @@ These 17 tools appear in the MCP `tools/list` response:
 
 ## Tier 2 Tools (Discoverable)
 
-The remaining 66 tools are hidden from `tools/list` to reduce token overhead but remain fully callable. Discover them using:
+The remaining 67 tools are hidden from `tools/list` to reduce token overhead but remain fully callable. Discover them using:
 
 ```
 search-tools query="product" detail="summary"

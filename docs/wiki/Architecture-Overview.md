@@ -14,7 +14,7 @@ Magento Bricklayer is a standalone Composer library (not a Magento module) that 
 │   Bricklayer MCP     │
 │      Server          │
 ├──────────────────────┤
-│  Tool Registry       │  83 tools, auto-discovered
+│  Tool Registry       │  84 tools, auto-discovered
 │  Resource Provider   │  Guidelines, Skills, Templates
 │  Prompt Provider     │  8 prompts
 ├──────────────────────┤
@@ -45,7 +45,7 @@ Magento Bricklayer is a standalone Composer library (not a Magento module) that 
 
 `ConfigLoader` implements a three-tier configuration strategy:
 
-1. **Built-in defaults** — Safe defaults for all 83 tools
+1. **Built-in defaults** — Safe defaults for all 84 tools
 2. **Project configuration** — `.bricklayer.json` in project root
 3. **Environment variables** — Highest priority overrides
 
@@ -60,7 +60,7 @@ Features:
 
 - **Auto-discovery** via PHP 8.1 `#[McpTool]` attributes
 - **21 tool classes** organized into 11 groups
-- **Progressive disclosure** — Tier 1 (17 tools) visible in `tools/list`; Tier 2 (66 tools) discoverable via `search-tools`
+- **Progressive disclosure** — Tier 1 (17 tools) visible in `tools/list`; Tier 2 (67 tools) discoverable via `search-tools`
 - **Shared traits** — `RequiresMagento`, `ChecksConfig`, `FiltersFields`, `ReadsLogFiles`
 
 ### MCP Resources
@@ -99,7 +99,7 @@ src/
 │   └── McpConfigWriter.php     # Write .mcp.json + agent files
 └── Mcp/
     ├── McpServerFactory.php    # MCP server creation
-    ├── Tool/                   # 21 tool classes (83 tools)
+    ├── Tool/                   # 21 tool classes (84 tools)
     │   ├── Concern/            # Shared traits
     │   ├── Diagnostic/         # Error parsing helpers
     │   └── ToolRegistry.php    # Central registry

@@ -77,5 +77,5 @@ Bricklayer auto-detects DDEV, Warden, and Docker environments. No additional con
 ## Next Steps
 
 - [Configuration](Configuration-Bricklayer-Json) — Customize tool behavior
-- [Tools Reference](Tools-Overview) — Explore all 83 tools
+- [Tools Reference](Tools-Overview) — Explore all 84 tools
 - [Security](Security-Overview) — Understand production safety defaults
