@@ -1,13 +1,19 @@
 # Unreleased
 
-A feature release adding an order-creation tool. No breaking changes.
+A feature release adding an order-creation tool, plus `code-runner` correctness fixes, a canonical `.phtml` template convention, and community/contribution docs. No breaking changes.
 
 **New tools** (hidden, discover via `search-tools`)
-* **`order-create`** — create a new order and place it via `CartManagementInterface::placeOrder`: add line items by SKU, set a billing/shipping address, and choose a shipping and payment method. Config-gated and, like other order-mutating tools, **disabled by default** (listed in `DESTRUCTIVE_TOOLS`) and blocked in production unless explicitly enabled via `tools.order-create.enabled=true` in `.bricklayer.json`. Capabilities:
-  * **All default product types**, with human-friendly option data resolved to Magento's internal ids: configurable (`super_attribute` by attribute/option code or label), grouped (`grouped_quantities` by child SKU), bundle (`bundle_selections` by child SKU — including bundles whose selections are downloadable products with separately-priced links), and downloadable (`links` by id or title, defaulting to all links when sold separately).
-  * **Product custom options** on any line via `custom_options` — select choices by title or option id (a list for checkbox/multiple); text/date/file values pass through.
-  * **Existing-customer orders** via `customerId` (0 = guest).
-  * Virtual/downloadable-only orders place cleanly (shipping is skipped automatically).
+* **`order-create`** — build and place an order: line items by SKU, one billing/shipping address, chosen shipping and payment method. Supports all default product types (configurable, grouped, bundle, downloadable) with option data given by human-friendly codes/labels/SKUs, product custom options, existing-customer orders via `customerId` (0 = guest), and virtual/downloadable-only orders (shipping skipped automatically). Like other order-mutating tools it is **disabled by default** and blocked in production; enable via `tools.order-create.enabled=true` in `.bricklayer.json`.
+
+**Fixes**
+* **`code-runner`: state reset now clears repository identity maps** (product, category, `CustomerRegistry`), so changes made outside the MCP process are no longer hidden by stale cached entities.
+* **`code-runner`: clearer message when writes are blocked by config.** If `allow_write=true` is requested but disabled in `.bricklayer.json`, the response now says so (`write_blocked_by_config: true`) and names the config key to enable, instead of suggesting a flag that was already set.
+
+**Guidelines & generated code**
+* **Standard `.phtml` template convention** (Luma and Hyvä): required header order (`declare` → `use` → `@var`) and clear escaping rules (`$escaper`, or `/* @noEscape */` for safe non-HTML output). `generate-controller` output and all guideline examples now follow it.
+
+**Docs**
+* Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md`.
 
 # 1.16.0
 
