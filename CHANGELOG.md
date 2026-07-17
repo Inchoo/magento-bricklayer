@@ -1,3 +1,14 @@
+# Unreleased
+
+A feature release adding an order-creation tool. No breaking changes.
+
+**New tools** (hidden, discover via `search-tools`)
+* **`order-create`** — create a new order and place it via `CartManagementInterface::placeOrder`: add line items by SKU, set a billing/shipping address, and choose a shipping and payment method. Config-gated and, like other order-mutating tools, **disabled by default** (listed in `DESTRUCTIVE_TOOLS`) and blocked in production unless explicitly enabled via `tools.order-create.enabled=true` in `.bricklayer.json`. Capabilities:
+  * **All default product types**, with human-friendly option data resolved to Magento's internal ids: configurable (`super_attribute` by attribute/option code or label), grouped (`grouped_quantities` by child SKU), bundle (`bundle_selections` by child SKU — including bundles whose selections are downloadable products with separately-priced links), and downloadable (`links` by id or title, defaulting to all links when sold separately).
+  * **Product custom options** on any line via `custom_options` — select choices by title or option id (a list for checkbox/multiple); text/date/file values pass through.
+  * **Existing-customer orders** via `customerId` (0 = guest).
+  * Virtual/downloadable-only orders place cleanly (shipping is skipped automatically).
+
 # 1.16.0
 
 A feature release adding runtime introspection for the view layer and message-queue wiring — three read-only tools that surface resolved/merged state no single source file shows. No breaking changes.

@@ -28,6 +28,7 @@ class ConfigInitializer
         'customer-delete',
         'customer-address-delete',
         'order-cancel',
+        'order-create',
         'creditmemo-create',
         'generate-module',
         'generate-model',

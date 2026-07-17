@@ -46,6 +46,49 @@ Add a comment to order history.
 | `status` | string | `""` | New status |
 | `notifyCustomer` | bool | false | Send notification |
 
+### `order-create`
+
+Create a new order from a guest quote — or for an existing customer via `customerId` — by adding line items by SKU, setting a billing/shipping address, and placing the order with the given shipping and payment methods. Disabled by default and blocked in production mode.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `customerEmail` | string | *required* | Order email (ignored when `customerId` is set) |
+| `items` | array | *required* | Line items; each has `sku` + `qty`, plus optional per-type option data (see below) |
+| `firstname` | string | *required* | Billing / shipping first name |
+| `lastname` | string | *required* | Billing / shipping last name |
+| `street` | string | *required* | Street address |
+| `city` | string | *required* | City |
+| `postcode` | string | *required* | Postal code |
+| `countryId` | string | *required* | Country code (e.g. `US`, `DE`) |
+| `telephone` | string | *required* | Phone number |
+| `region` | string | `""` | Region name (for regions without an ID) |
+| `regionId` | int | 0 | Region ID (required for US states, etc.) |
+| `shippingMethod` | string | `flatrate_flatrate` | Shipping method code |
+| `paymentMethod` | string | `checkmo` | Payment method code |
+| `customerId` | int | 0 | Attach to an existing customer account; 0 = guest order |
+| `storeId` | int | 0 | Store view ID (0 = default) |
+
+#### Line item option data
+
+Simple, virtual and link-free downloadable products need only `sku` + `qty`. Option-bearing types carry extra, human-friendly keys on the item that are resolved to Magento's internal ids:
+
+| Product type | Extra key | Shape |
+|--------------|-----------|-------|
+| Configurable | `super_attribute` | `{"<attribute code or label>": "<option value or label>"}` |
+| Grouped | `grouped_quantities` | `{"<child sku>": qty}` (the line `qty` is ignored) |
+| Bundle | `bundle_selections` | `[{"selection_sku": string, "qty": number}]` |
+| Downloadable | `links` | `["<link id or title>", …]` — only when links are sold separately; defaults to all |
+| *Any type* | `custom_options` | `{"<option title or id>": value}` — select choices by title/id (a list for checkbox/multiple); text/date/file pass through |
+
+```json
+[
+  {"sku": "hoodie", "qty": 1, "super_attribute": {"Color": "Red", "Size": "L"}},
+  {"sku": "set-of-3", "grouped_quantities": {"child-a": 1, "child-b": 2}},
+  {"sku": "gift-bundle", "qty": 1, "bundle_selections": [{"selection_sku": "wrap", "qty": 1}]},
+  {"sku": "mug", "qty": 2, "custom_options": {"Engraving": "Happy Birthday"}}
+]
+```
+
 ### `order-cancel`
 
 Cancel an order. Blocked in production mode.

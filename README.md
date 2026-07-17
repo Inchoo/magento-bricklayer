@@ -184,11 +184,11 @@ Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
 - `--force` - Overwrite existing `.bricklayer.json`
 
-The generated config contains **one entry per runtime-configurable tool** (35 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
+The generated config contains **one entry per runtime-configurable tool** (36 tools at the time of writing). The list is discovered by scanning the source for `requireToolEnabled()` call sites, so every key the file contains is one the runtime actually honors — no dead keys, no drift.
 
 Deploy-mode behavior:
-- **production** — 11 tools disabled (code-runner + all 10 destructive/code-generation tools), `database-query.max_rows` lowered to 50
-- **developer/default** — 10 destructive tools (`*-delete`, `order-cancel`, `creditmemo-create`, 4 `generate-*`) disabled by default, everything else enabled, `code-runner` read-only
+- **production** — 12 tools disabled (code-runner + all 11 destructive/code-generation tools), `database-query.max_rows` lowered to 50
+- **developer/default** — 11 destructive tools (`*-delete`, `order-cancel`, `order-create`, `creditmemo-create`, 4 `generate-*`) disabled by default, everything else enabled, `code-runner` read-only
 
 This command is also called automatically during `bricklayer install`. Additionally, `bricklayer verify` will auto-generate the file if it's missing.
 
@@ -365,7 +365,7 @@ Bricklayer uses **progressive disclosure** — 17 essential tools are visible in
 - `category-products`, `category-assign-products`
 
 ### Order Tools
-- `order-get` **[tier 1]**, `order-list`, `order-cancel`, `order-hold`, `order-unhold`
+- `order-get` **[tier 1]**, `order-list`, `order-create`, `order-cancel`, `order-hold`, `order-unhold`
 - `order-items`, `order-comments`, `order-add-comment`
 - `invoice-create`, `invoice-list`
 - `shipment-create`, `shipment-list`, `shipment-track-add`
@@ -629,7 +629,7 @@ Every write tool can be individually enabled or disabled via the `enabled` flag:
 }
 ```
 
-Destructive tools (`product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, `creditmemo-create`, and all 4 code generation tools) are **blocked by default in production mode**. They must be explicitly enabled in `.bricklayer.json` with `"enabled": true` to work in production.
+Destructive tools (`product-delete`, `category-delete`, `customer-delete`, `customer-address-delete`, `order-cancel`, `order-create`, `creditmemo-create`, and all 4 code generation tools) are **blocked by default in production mode**. They must be explicitly enabled in `.bricklayer.json` with `"enabled": true` to work in production.
 
 ### Recommended Production Configuration
 
