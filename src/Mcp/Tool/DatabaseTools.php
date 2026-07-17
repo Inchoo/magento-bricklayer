@@ -85,13 +85,17 @@ class DatabaseTools
         }
 
         $trimmedQuery = trim($query);
-        if (!preg_match('/^SELECT\s/i', $trimmedQuery)) {
+        // \b (not \s) so valid forms like SELECT(1) pass while SELECTED... is still rejected.
+        if (!preg_match('/^SELECT\b/i', $trimmedQuery)) {
             return [
                 'error' => true,
                 'message' => 'Only SELECT queries are allowed for security reasons',
             ];
         }
 
+        // NB: the actual protection against stacked statements is that Magento's PDO
+        // connection runs single-statement (multi-statements are not enabled); the checks
+        // below are defense-in-depth and intentionally conservative.
         $dangerous = [
             '/;\s*(?:INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|GRANT|REVOKE)/i',
             '/INTO\s+OUTFILE/i',

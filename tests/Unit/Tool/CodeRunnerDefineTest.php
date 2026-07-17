@@ -182,4 +182,39 @@ class CodeRunnerDefineTest extends TestCase
         $unique = array_unique($raw);
         $this->assertCount(1, $unique, 'Unique values should be 1 (same code block stored under both keys)');
     }
+
+    public function testDefineDeclaresCallableGlobalFunction(): void
+    {
+        (new CodeRunnerTools())->execute(
+            'function bricklayerFixtureAlpha($x) { return $x + 41; }',
+            mode: 'define'
+        );
+        $this->assertTrue(function_exists('bricklayerFixtureAlpha'));
+        $this->assertSame(42, bricklayerFixtureAlpha(1));
+    }
+
+    public function testRedefiningSameNameDoesNotFatalAndWarns(): void
+    {
+        $tools = new CodeRunnerTools();
+        $tools->execute('function bricklayerFixtureBeta() { return 1; }', mode: 'define');
+
+        // Previously this fataled with "Cannot redeclare" on the second execute.
+        $result = $tools->execute('function bricklayerFixtureBeta() { return 2; }', mode: 'define');
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('warning', $result);
+        $this->assertStringContainsString('bricklayerFixtureBeta', $result['warning']);
+        $this->assertTrue(function_exists('bricklayerFixtureBeta'));
+        $this->assertSame(1, bricklayerFixtureBeta()); // original body wins
+    }
+
+    public function testDefineWithSyntaxErrorReturnsErrorAtDefineTime(): void
+    {
+        $result = (new CodeRunnerTools())->execute(
+            'function bricklayerFixtureBroken( { return 1; }',
+            mode: 'define'
+        );
+        $this->assertTrue($result['error']);
+        $this->assertStringContainsString('Failed to declare', $result['message']);
+    }
 }

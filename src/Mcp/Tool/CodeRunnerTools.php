@@ -131,19 +131,13 @@ class CodeRunnerTools
         }
 
         $maxTimeout = $this->getMaxTimeout();
-        $effectiveTimeout = min($timeout, $maxTimeout);
+        // Floor at 1s: min(...) with timeout<=0 yields 0, and set_time_limit(0) means
+        // UNLIMITED — the opposite of the cap. Clamp to a sane minimum.
+        $effectiveTimeout = max(1, min($timeout, $maxTimeout));
         $previousLimit = (int) ini_get('max_execution_time');
         set_time_limit($effectiveTimeout);
 
         $this->resetApplicationState();
-
-        // Prepend any defined functions to the code
-        // Use array_unique because multi-function define calls store the same
-        // code block under each function name (for key-based lookup)
-        if (!empty(self::$definedFunctions)) {
-            $preamble = implode("\n", array_unique(self::$definedFunctions));
-            $code = $preamble . "\n" . $code;
-        }
 
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -279,16 +273,29 @@ class CodeRunnerTools
             ];
         }
 
-        // Store each function keyed by name
+        // Names already declared earlier in THIS process cannot be redeclared (PHP fatals on
+        // redeclare; reinitialize clears the stored list but cannot undeclare a function).
+        // Capture them BEFORE declaring so we can tell the caller their new body won't take effect.
+        $alreadyDeclared = array_values(array_filter($functionNames, 'function_exists'));
+
+        // Declare into the global namespace once; surfaces syntax errors at define time
+        // instead of as a fatal on the next execute.
+        try {
+            $this->registerDefinedFunctions($code, $functionNames);
+        } catch (\Throwable $e) {
+            return [
+                'error' => true,
+                'message' => 'Failed to declare function(s): ' . $e->getMessage(),
+                'code' => $code,
+            ];
+        }
+
+        // Track names for the capacity limit, listing, and the API response.
         foreach ($functionNames as $name) {
             self::$definedFunctions[$name] = $code;
         }
 
-        // Deduplicate: if multiple function names came from the same code block,
-        // we stored the same code under each name. That's fine for the key lookup
-        // but we need to deduplicate for the preamble.
-
-        return [
+        $response = [
             'success' => true,
             'message' => sprintf(
                 'Defined %d function(s): %s. Available in all subsequent code-runner calls.',
@@ -298,6 +305,16 @@ class CodeRunnerTools
             'defined_functions' => array_keys(self::$definedFunctions),
             'total_defined' => count(self::$definedFunctions),
         ];
+
+        if ($alreadyDeclared !== []) {
+            $response['warning'] = sprintf(
+                'Already declared earlier in this server process and NOT redeclared: %s. '
+                . 'The original definition remains in effect — restart the MCP server to redefine.',
+                implode(', ', $alreadyDeclared)
+            );
+        }
+
+        return $response;
     }
 
     /**
@@ -604,6 +621,37 @@ class CodeRunnerTools
         );
 
         self::$helpersRegistered = true;
+    }
+
+    /**
+     * Declare the session's defined functions in the GLOBAL namespace, once each.
+     *
+     * The MCP server process is long-lived, so a function can be declared only once —
+     * PHP fatals on redeclare. Each function is therefore eval'd into the global namespace
+     * behind a function_exists() guard, instead of prepending raw declarations to every
+     * execute() call (which redeclared on the second call and fataled).
+     *
+     * Global namespace is required so BOTH runtimes resolve a bare call(): PsySH executes in
+     * the global namespace, and the eval runtime's namespaced scope falls back to the global
+     * function table for unqualified function calls. Mirrors registerHelperGlobals().
+     *
+     * @param list<string> $functionNames Names declared in $code (already extracted + validated).
+     */
+    private function registerDefinedFunctions(string $code, array $functionNames): void
+    {
+        if ($functionNames === []) {
+            return;
+        }
+
+        $guards = [];
+        foreach ($functionNames as $name) {
+            $guards[] = '!function_exists(' . var_export($name, true) . ')';
+        }
+
+        // Guard on ALL names so a multi-function block is emitted atomically. A redefine
+        // that overlaps an already-declared name is skipped whole (see the caller's warning);
+        // this is strictly safer than the previous hard redeclare fatal.
+        eval('namespace { if (' . implode(' && ', $guards) . ') {' . "\n" . $code . "\n" . '} }');
     }
 
     private function validateCode(string $code): ?string
