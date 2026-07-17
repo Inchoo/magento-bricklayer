@@ -11,10 +11,13 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 
 use Inchoo\MagentoBricklayer\Bootstrap\AreaEmulator;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
+use Inchoo\MagentoBricklayer\Exception\ExecutionTimedOutException;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\ChecksConfig;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
+use Inchoo\MagentoBricklayer\Support\ExecutionGuard;
 use Mcp\Capability\Attribute\McpTool;
+use Mcp\Server\RequestContext;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 class CodeRunnerTools
@@ -66,7 +69,8 @@ class CodeRunnerTools
         string $area = '',
         bool $allow_write = false,
         int $timeout = 30,
-        string $mode = 'execute'
+        string $mode = 'execute',
+        ?RequestContext $context = null
     ): array {
         if (!in_array($mode, ['execute', 'define'], true)) {
             return [
@@ -137,6 +141,19 @@ class CodeRunnerTools
         $previousLimit = (int) ini_get('max_execution_time');
         set_time_limit($effectiveTimeout);
 
+        // Primary timeout: SIGALRM throwing ExecutionTimedOutException — wall-clock and
+        // catchable, so a timeout rolls back and responds instead of fataling the server.
+        // set_time_limit() above stays as a CPU-time backstop (and the only limit where
+        // pcntl is unavailable, e.g. Windows).
+        $useAlarm = ExecutionGuard::supportsAlarm();
+        if ($useAlarm) {
+            ExecutionGuard::startTimeout($effectiveTimeout);
+        }
+
+        // Let the shutdown hook answer this request with a real error if user code
+        // still manages to fatal the process (OOM, redeclare, CPU-backstop timeout).
+        ExecutionGuard::beginRequest('code-runner', $this->resolveRequestId($context));
+
         $this->resetApplicationState();
 
         $startTime = microtime(true);
@@ -147,7 +164,19 @@ class CodeRunnerTools
         try {
             $result = $this->executeWithTransaction($code, $mode, $allow_write, $writeBlockedByConfig);
         } finally {
+            if ($useAlarm) {
+                ExecutionGuard::stopTimeout();
+            }
+            ExecutionGuard::endRequest();
             set_time_limit($previousLimit);
+        }
+
+        if (
+            isset($result['error']['class'])
+            && $result['error']['class'] === ExecutionTimedOutException::class
+        ) {
+            $result['timed_out'] = true;
+            $result['effective_timeout_seconds'] = $effectiveTimeout;
         }
 
         $result['metrics'] = [
@@ -663,6 +692,20 @@ class CodeRunnerTools
         }
 
         return null;
+    }
+
+    /**
+     * JSON-RPC id of the in-flight request, for the fatal-error shutdown hook.
+     * The SDK injects RequestContext into RequestContext-typed parameters
+     * (excluded from the tool's input schema); null outside a live MCP request.
+     */
+    private function resolveRequestId(?RequestContext $context): int|string|null
+    {
+        try {
+            return $context?->getRequest()->getId();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function getMaxTimeout(): int
