@@ -81,7 +81,13 @@ class ContextTools
         'magewire' => [
             'skills' => ['magewire'],
             'guidelines' => ['ecosystem/hyva-architecture'],
-            'description' => 'Magewire reactive component development (standalone)',
+            'description' => 'Magewire V1 reactive component development',
+            'group' => 'Hyvä Theme',
+        ],
+        'magewire-three' => [
+            'skills' => ['magewire-three'],
+            'guidelines' => ['ecosystem/hyva-architecture'],
+            'description' => 'Magewire 3 component development and V1 migration',
             'group' => 'Hyvä Theme',
         ],
         'module' => [
@@ -479,8 +485,16 @@ class ContextTools
             'frontend', 'adminhtml', 'checkout', 'checkout-advanced' => [
                 'Check routes: route-list',
             ],
-            'hyva-checkout', 'hyva-checkout-config', 'hyva-checkout-api', 'magewire' => [
+            'hyva-checkout', 'hyva-checkout-config', 'hyva-checkout-api' => [
                 'Check installed modules: module-list (verify Hyva_Checkout and Magewirephp_Magewire are present)',
+            ],
+            'magewire' => [
+                'Check modules: module-list (verify Magewirephp_Magewire; confirm V1 in composer.lock)',
+            ],
+            'magewire-three' => [
+                'Check modules: module-list (verify Magewirephp_Magewire and the active V3 adapter)',
+                'Load focused resources from magento://skills/magewire-three/{topic}',
+                'Topics: architecture, javascript, theming, portman, backwards-compatibility, best-practices',
             ],
             'hyva-theme', 'hyva-theme-advanced', 'hyva-ui-component', 'hyva-ui-component-js' => [
                 'Check installed modules: module-list (verify Hyva_Theme is present)',
