@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Mcp\Resource;
 
+use Inchoo\MagentoBricklayer\Guidelines\LocalOverrideHelper;
 use Mcp\Capability\Attribute\McpResource;
 use Mcp\Capability\Attribute\McpResourceTemplate;
 
@@ -34,7 +35,25 @@ class SkillsResource
     )]
     public function getSkill(string $name): string
     {
-        return $this->loadConfigFile('skills', "{$name}/SKILL.md");
+        return $this->loadSkillMarkdown("{$name}/SKILL.md");
+    }
+
+    /**
+     * Focused sub-skill access via URI template.
+     *
+     * The MCP SDK matches each template variable as a single path segment, so nested
+     * skills (a topic directory inside a skill directory) need their own template.
+     * Handles: magento://skills/magewire-three/architecture, etc.
+     */
+    #[McpResourceTemplate(
+        uriTemplate: 'magento://skills/{name}/{topic}',
+        name: 'skill_topic',
+        description: 'Load a focused sub-skill by skill name and topic',
+        mimeType: 'text/markdown'
+    )]
+    public function getSkillTopic(string $name, string $topic): string
+    {
+        return $this->loadSkillMarkdown("{$name}/{$topic}/SKILL.md");
     }
 
     /**
@@ -93,5 +112,28 @@ class SkillsResource
     protected function getSkillsDir(): string
     {
         return dirname(__DIR__, 3) . '/config/skills';
+    }
+
+    /**
+     * Load a skill markdown file relative to the skills directory, with authoring
+     * frontmatter stripped so agents receive only the documentation body.
+     */
+    private function loadSkillMarkdown(string $relativePath): string
+    {
+        // Template variables match [^/]+, which still admits "..".
+        if (str_contains($relativePath, '..')) {
+            return $this->generatePlaceholder($relativePath);
+        }
+
+        $filePath = $this->getSkillsDir() . '/' . $relativePath;
+
+        if (file_exists($filePath)) {
+            $content = file_get_contents($filePath);
+            if ($content !== false) {
+                return LocalOverrideHelper::stripFrontmatter($content);
+            }
+        }
+
+        return $this->generatePlaceholder($relativePath);
     }
 }

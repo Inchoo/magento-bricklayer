@@ -70,7 +70,7 @@ Features:
 | Resource | Content |
 |----------|---------|
 | `GuidelinesResource` | 33 markdown development guidelines |
-| `SkillsResource` | 28 skill guides with code examples |
+| `SkillsResource` | 28 skill guides with code examples, plus focused sub-skills via `magento://skills/{name}/{topic}` |
 | `CodingStandardsResource` | PSR-12 and Magento standards |
 | `ReferenceResource` | Event names, DI patterns, ACL |
 | `TemplateResource` | Code templates for scaffolding |
