@@ -543,7 +543,7 @@ Use `magento://guidelines/index` for a complete listing.
 Magento coding standards reference with PSR-12 compliance and architecture guidelines (`magento://standards/coding`, `magento://standards/architecture`).
 
 ### Skills Resource
-28 development skills accessed via URI template `magento://skills/{name}`, covering:
+28 development skills accessed via URI template `magento://skills/{name}`. A skill can bundle focused sub-skills in topic sub-directories, served via `magento://skills/{name}/{topic}`. Skills cover:
 - Checkout customization (steps & layout processors, config providers & validation)
 - Cron job development
 - EAV attribute development
@@ -804,6 +804,10 @@ Drop a markdown file into `config/guidelines/{category}/{name}.md`. It becomes a
 ### Add a skill
 
 Create a directory `config/skills/{name}/` with a `SKILL.md` file inside. It becomes available as MCP resource `magento://skills/{name}` and appears in the skills index automatically.
+
+A large skill can split focused topics into sub-directories: `config/skills/{name}/{topic}/SKILL.md` is served as `magento://skills/{name}/{topic}`. Keep the parent `SKILL.md` as the day-to-day core and point to sub-skills for deep dives, so agents load the focused content only when the task needs it.
+
+An optional YAML frontmatter block (`---` delimited) at the top of any `SKILL.md` is stripped before the content is served to agents.
 
 ### Add a development-context category
 

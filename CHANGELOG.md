@@ -1,3 +1,9 @@
+# Unreleased
+
+**Improvements**
+* **Nested sub-skill resources.** A skill directory can now contain focused topic sub-directories (`config/skills/{name}/{topic}/SKILL.md`), served via the new `magento://skills/{name}/{topic}` resource template. Previously only flat `magento://skills/{name}` URIs resolved, so skill content pointing at sub-skills returned *Resource not found*.
+* **Frontmatter stripped from skill resources.** An optional YAML frontmatter block in a `SKILL.md` is now removed before the content is served over `resources/read`, matching `development-context` behavior. Path segments containing `..` are rejected.
+
 # 1.17.0
 
 A feature release adding an order-creation tool, plus `code-runner` correctness fixes, a canonical `.phtml` template convention, and community/contribution docs. No breaking changes.
