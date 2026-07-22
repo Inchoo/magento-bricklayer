@@ -78,8 +78,9 @@ class SearchTools
             'keywords' => [
                 'magewire', 'magewire v3', 'livewire v3', 'wire:', 'reactive', 'server-driven',
                 '$wire', 'entangle', 'dispatch', 'snapshot', 'synthesizer', 'backwards compatibility',
-                'mechanism', 'feature', 'component hook', 'resolver', 'portman', 'augmentation',
-                'alpine csp', 'addon', 'utility', 'theme compatibility',
+                'magewire mechanism', 'magewire feature', 'magewire hook',
+                'magewire component resolver', 'portman', 'augmentation',
+                'alpine csp', 'magewire addon', 'magewire utility', 'theme compatibility',
             ],
         ],
         'hyva-theme' => [
