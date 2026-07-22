@@ -1,10 +1,20 @@
 # Hyvä Checkout: Magewire Components
 
-> Related: See [magewire](../magewire/SKILL.md) for standalone Magewire fundamentals, [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config, and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and frontend APIs.
+> Related: See [magewire](../magewire/SKILL.md) for Magewire V1 fundamentals, [magewire-three](../magewire-three/SKILL.md) for Magewire V3 fundamentals and migrations, [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config, and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and frontend APIs.
 
 ## Overview
 
 Hyvä Checkout is a reactive, server-driven checkout for Magento 2 built on **Magewire** (a Magento 2 adaptation of Laravel Livewire). It replaces Magento's Luma/KnockoutJS checkout with PHP-based components that handle reactivity via AJAX round-trips. The checkout is composed of **steps** declared in `hyva_checkout.xml`, with **Magewire components** declared in Layout XML and rendered through `.phtml` templates using `wire:` directives.
+
+Check the installed Hyvä Checkout version before applying Magewire APIs:
+
+| Hyvä Checkout version | Magewire generation | Fundamentals |
+|---|---|---|
+| 1.0-1.3 | Magewire V1 | Use `magewire` |
+| 1.4+ | Magewire V3 | Use `magewire-three` |
+
+Use this skill for checkout-specific structure and APIs in either range. For component directives,
+events, lifecycle hooks, and state behavior, use the matching versioned Magewire skill.
 
 ## When to Use This Skill
 
@@ -46,7 +56,7 @@ Hyvä Checkout is a reactive, server-driven checkout for Magento 2 built on **Ma
 
 ## Magewire Quick Reference
 
-This section covers the essential Magewire patterns needed for checkout development. For comprehensive Magewire documentation (lifecycle hooks, loader configuration, flash messages, best practices), see the [`magewire`](../magewire/SKILL.md) skill.
+This quick reference reflects the Magewire V1 API used by Hyvä Checkout 1.0-1.3. For Hyvä Checkout 1.4+, use [`magewire-three`](../magewire-three/SKILL.md) for component syntax while retaining the checkout-specific patterns from this skill.
 
 ### Basic Component Class
 

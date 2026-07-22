@@ -142,7 +142,8 @@ Use `development-context category="list"` to see all available categories at run
 | `hyva-checkout` | Hyva Checkout step and component development |
 | `hyva-checkout-config` | Hyva Checkout XML configuration |
 | `hyva-checkout-api` | Hyva Checkout evaluation, form, frontend APIs |
-| `magewire` | Magewire reactive component development |
+| `magewire` | Magewire V1 reactive component development |
+| `magewire-three` | Magewire 3 component development and V1 migration |
 | `module` | Module scaffolding and structure |
 | `model` | Model, repository, data layer |
 | `plugin` | Plugin (interceptor) development |

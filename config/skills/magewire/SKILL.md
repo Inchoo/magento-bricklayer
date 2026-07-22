@@ -1,19 +1,21 @@
-# Magewire: Reactive PHP Components for Magento 2
+# Magewire V1: Reactive PHP Components for Magento 2
 
-> Related: See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for Hyvä Checkout-specific Magewire patterns, and [hyva-theme-setup](../hyva-theme-setup/SKILL.md) for Hyvä theme Alpine.js components.
+> This skill documents Magewire V1. Use [magewire-three](../magewire-three/SKILL.md) for Magewire V3 or V1-to-V3 migrations. See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for Hyvä Checkout-specific Magewire patterns, and [hyva-theme-setup](../hyva-theme-setup/SKILL.md) for Hyvä theme Alpine.js components.
 
 ## Overview
 
-Magewire (`Magewirephp_Magewire`) is a Magento 2 adaptation of Laravel Livewire that enables **server-driven reactive components** using PHP. Components are regular PHP classes with public properties that sync automatically with the frontend via AJAX round-trips. The browser UI updates without writing custom JavaScript — `wire:` directives in `.phtml` templates handle data binding, method calls, and DOM updates.
+Magewire V1 (`Magewirephp_Magewire`) is a Magento 2 adaptation of Laravel Livewire V2 concepts that enables **server-driven reactive components** using PHP. Components are regular PHP classes with public properties that sync automatically with the frontend via AJAX round-trips. The browser UI updates without writing custom JavaScript — `wire:` directives in `.phtml` templates handle data binding, method calls, and DOM updates.
 
-Magewire is a **standalone package** — it does not require Hyvä Checkout or the Hyvä theme. It can be used anywhere in Magento: admin panels, CMS pages, customer account sections, frontend widgets, or any layout where you need reactive behavior without a full JavaScript framework.
+Magewire V1 is a **standalone storefront package** — it does not require Hyvä Checkout or the Hyvä
+theme. Use it in frontend areas such as CMS pages, customer account sections, and widgets. Admin
+components are a Magewire V3 capability provided by `magewirephp/magewire-admin`.
 
 ## When to Use This Skill
 
 | Scenario | Use This Skill? |
 |----------|-----------------|
 | Building reactive forms (contact, newsletter, custom) | Yes |
-| Creating interactive admin panel components | Yes |
+| Creating interactive admin panel components | No (use `magewire-three`) |
 | Building CMS page widgets with server-driven state | Yes |
 | Adding reactive sections to customer account pages | Yes |
 | Building any non-checkout Magewire component | Yes |

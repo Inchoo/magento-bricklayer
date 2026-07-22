@@ -69,7 +69,19 @@ class SearchTools
             'keywords' => ['hyvä checkout', 'checkout step', 'payment method', 'shipping method'],
         ],
         'magewire' => [
-            'keywords' => ['magewire', 'livewire', 'wire:', 'reactive', 'server-driven', '$wire', 'entangle'],
+            'keywords' => [
+                'magewire', 'magewire v1', 'livewire', 'livewire v2', 'wire:', 'reactive',
+                'server-driven', '$wire', 'entangle', 'emit', 'wire:model.lazy',
+            ],
+        ],
+        'magewire-three' => [
+            'keywords' => [
+                'magewire', 'magewire v3', 'livewire v3', 'wire:', 'reactive', 'server-driven',
+                '$wire', 'entangle', 'dispatch', 'snapshot', 'synthesizer', 'backwards compatibility',
+                'magewire mechanism', 'magewire feature', 'magewire hook',
+                'magewire component resolver', 'portman', 'augmentation',
+                'alpine csp', 'magewire addon', 'magewire utility', 'theme compatibility',
+            ],
         ],
         'hyva-theme' => [
             'keywords' => ['alpine', 'alpinejs', 'tailwind', 'csp'],
