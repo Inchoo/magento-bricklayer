@@ -68,9 +68,10 @@ class SearchTools
         'hyva-checkout' => [
             'keywords' => [
                 'hyvä checkout', 'hyva checkout', 'checkout step', 'primary navigation',
-                'evaluation api', 'place order service', 'payment integration', 'frontend payment',
-                'shipping method', 'registerMethod', 'checkout frontend api', 'backport',
-                'version detection', 'compatibility profile', 'v1-on-v3',
+                'evaluation api', 'place order service', 'checkout payment integration',
+                'frontend payment', 'shipping method', 'registerMethod', 'checkout frontend api',
+                'frontend api backport', 'checkout version detection', 'compatibility profile',
+                'v1-on-v3',
             ],
         ],
         'magewire' => [
