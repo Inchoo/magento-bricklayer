@@ -1,5 +1,8 @@
 # Unreleased
 
+**New**
+* **OpenAI Codex agent support.** `install --agents=codex` writes the MCP server config to `.codex/config.toml` (environment-aware command; an existing file keeps user-managed settings — only the `[mcp_servers.magento-bricklayer]` section is replaced, idempotently) and compiles `AGENTS.md` guidelines. Gemini and Codex share `AGENTS.md`: it is written once and its footer lists both agents. Note: project-scoped `.codex/config.toml` requires a recent Codex CLI and a trusted project.
+
 **Fixes**
 * **Modules created mid-session are now visible after `reinitialize`.** Component registration (`registration.php`) runs once per PHP process via Composer's autoload hook, so a fresh ObjectManager reused the stale `ComponentRegistrar` registry: a new `app/code` module stayed invisible to `code-runner` and config readers, and — worse — reinitialization regenerated merged-config caches *without* the module and wrote them to the shared cache storage, breaking fresh CLI processes too. The new `Support\ComponentRegistration` re-runs the `registration_globlist.php` globs on every (re)init (`require_once` is idempotent — only files not yet loaded execute) and re-scans Composer's `autoload_files.php` on reinit for packages installed mid-session.
 * **`reinitialize` aborts before touching shared caches when the registry is irrecoverably stale.** If a module is enabled in `config.php` but not registered, or an *enabled* module's directory was deleted (registration cannot be undone in-process), reinit now refuses with an actionable "restart the MCP server" error and keeps the previous ObjectManager, instead of silently poisoning caches. Sentinel-triggered auto-reinit refuses the tool call with the same message rather than answering from stale state.

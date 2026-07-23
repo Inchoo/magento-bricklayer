@@ -177,6 +177,66 @@ class McpConfigWriter
         file_put_contents($ideaDir . '/mcp.json', $json . "\n");
     }
 
+    /**
+     * Write the Codex MCP server config into .codex/config.toml.
+     *
+     * Codex reads project-scoped MCP servers from .codex/config.toml (trusted
+     * projects only). If the file already exists, only the
+     * [mcp_servers.magento-bricklayer] section is replaced or appended so that
+     * user-managed settings in the same file are preserved.
+     */
+    public function writeCodexConfig(string $envType = 'native'): void
+    {
+        $codexDir = $this->projectRoot . '/.codex';
+        if (!is_dir($codexDir)) {
+            mkdir($codexDir, 0755, true);
+        }
+
+        $section = $this->buildCodexServerSection($envType);
+        $configPath = $codexDir . '/config.toml';
+
+        if (file_exists($configPath)) {
+            $existing = (string) file_get_contents($configPath);
+            // Section runs until the next table header at the start of a line
+            // (a bare [^\[]* would stop at the "[" inside args = [...]).
+            $pattern = '/(?:^|\n)\[mcp_servers\.magento-bricklayer\].*?(?=\n\[|\z)/s';
+            if (preg_match($pattern, $existing, $match, PREG_OFFSET_CAPTURE)) {
+                $replacement = ($match[0][1] > 0 ? "\n" : '') . $section;
+                $content = substr_replace($existing, $replacement, $match[0][1], strlen($match[0][0]));
+            } else {
+                $content = rtrim($existing) . "\n\n" . $section . "\n";
+            }
+        } else {
+            $content = $section . "\n";
+        }
+
+        file_put_contents($configPath, rtrim($content) . "\n");
+    }
+
+    private function buildCodexServerSection(string $envType): string
+    {
+        $server = $this->getMcpServerConfig($envType);
+
+        $args = implode(', ', array_map(
+            fn(string $arg) => $this->tomlString($arg),
+            $server['args']
+        ));
+
+        return implode("\n", [
+            '[mcp_servers.magento-bricklayer]',
+            'command = ' . $this->tomlString($server['command']),
+            "args = [$args]",
+            'required = true',
+            'startup_timeout_sec = 30',
+            'tool_timeout_sec = 120',
+        ]);
+    }
+
+    private function tomlString(string $value): string
+    {
+        return '"' . addcslashes($value, "\"\\") . '"';
+    }
+
     /** @return array<string> */
     public static function getAvailableEnvironmentTypes(): array
     {

@@ -24,6 +24,7 @@ class ConfigValidator
         'copilot',
         'phpstorm',
         'gemini',
+        'codex',
     ];
 
     private const KNOWN_GUIDELINE_CATEGORIES = [
