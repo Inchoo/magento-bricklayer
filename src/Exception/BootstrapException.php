@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -24,6 +25,29 @@ class BootstrapException extends BricklayerException
     {
         return new self(
             'Magento has not been initialized. Call MagentoBootstrap::initialize() first.'
+        );
+    }
+
+    /**
+     * @param string[] $unregisteredEnabled Modules enabled in config.php but not registered
+     * @param string[] $removedRegistered Modules registered but deleted from disk
+     */
+    public static function staleComponentRegistry(
+        array $unregisteredEnabled,
+        array $removedRegistered
+    ): self {
+        $parts = [];
+        if ($unregisteredEnabled !== []) {
+            $parts[] = 'enabled but not registered: ' . implode(', ', $unregisteredEnabled);
+        }
+        if ($removedRegistered !== []) {
+            $parts[] = 'registered but removed from disk: ' . implode(', ', $removedRegistered);
+        }
+
+        return new self(
+            'Component registry is stale (' . implode('; ', $parts) . '). '
+            . 'Reinitialization was aborted before touching shared caches — '
+            . 'restart the MCP server to recover.'
         );
     }
 }

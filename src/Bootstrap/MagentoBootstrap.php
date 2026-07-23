@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -10,6 +11,7 @@ namespace Inchoo\MagentoBricklayer\Bootstrap;
 
 use Inchoo\MagentoBricklayer\Exception\BootstrapException;
 use Inchoo\MagentoBricklayer\Exception\MagentoNotFoundException;
+use Inchoo\MagentoBricklayer\Support\ComponentRegistration;
 
 /**
  * Initializes Magento's ObjectManager from outside the module system.
@@ -24,6 +26,9 @@ class MagentoBootstrap
 
     /** @var array<string, int|false> mtime snapshot of sentinel files at last (re)init */
     private static array $sentinelMtimes = [];
+
+    /** @var array<string, string[]> files loaded by component re-registration at last reinit */
+    private static array $lastReinitStats = [];
 
     /**
      * Files that indicate Magento application state has changed.
@@ -68,6 +73,13 @@ class MagentoBootstrap
 
         try {
             require_once $bootstrapPath;
+
+            // Pick up registration.php files created after this process started.
+            // No-op on first init (the autoloader just ran them all); on reinit
+            // this is what makes new app/code modules visible to the fresh
+            // ObjectManager — Bootstrap::create() alone reuses the process-global
+            // ComponentRegistrar registry.
+            (new ComponentRegistration())->registerNewComponents($magentoRoot);
 
             $params = $_SERVER;
             $params[\Magento\Framework\App\Bootstrap::PARAM_REQUIRE_MAINTENANCE] = false;
@@ -191,10 +203,17 @@ class MagentoBootstrap
      * Call this after external changes that invalidate the in-memory state:
      * setup:upgrade, setup:di:compile, module:enable, cache:flush, etc.
      *
-     * Creates a completely new ObjectManager from current disk state
-     * (app/etc/config.php, generated/, merged config.xml, etc.).
+     * Before creating the new ObjectManager this re-runs component
+     * registration (new registration.php files and Composer autoload files
+     * are require_once'd — idempotent, only new files execute) and verifies
+     * the registry is consistent with app/etc/config.php. If it is not
+     * (e.g. a registered module was deleted from disk — registration cannot
+     * be undone in-process), it aborts BEFORE touching any shared cache and
+     * keeps the previous ObjectManager, because regenerating merged config
+     * from a stale registry would poison the cache for every other process.
      *
-     * @throws BootstrapException When Magento was never initialized or reinit fails
+     * @throws BootstrapException When Magento was never initialized, the
+     *         component registry is irrecoverably stale, or reinit fails
      */
     public static function reinitialize(): object
     {
@@ -204,14 +223,40 @@ class MagentoBootstrap
             throw BootstrapException::objectManagerNotInitialized();
         }
 
+        $registration = new ComponentRegistration();
+        self::$lastReinitStats = [
+            'registration_files' => $registration->registerNewComponents($magentoRoot),
+            'vendor_files' => $registration->registerNewVendorComponents($magentoRoot),
+        ];
+
+        $unregistered = $registration->getUnregisteredEnabledModules($magentoRoot);
+        $removed = $registration->getRemovedEnabledModules($magentoRoot);
+
+        if ($unregistered !== [] || $removed !== []) {
+            // Abort with the old ObjectManager intact — better a loud refusal
+            // than silently regenerating shared caches from a stale registry.
+            throw BootstrapException::staleComponentRegistry($unregistered, $removed);
+        }
+
         // Clear cached ObjectManager so initialize() will re-create it
         self::$objectManager = null;
-        // Keep $magentoRoot — still valid; $detector will be re-created by initialize()
+        // Keep $magentoRoot — still valid; $detector is re-created by initialize()
 
         // Note: initialize() uses require_once for the bootstrap file, which won't
-        // re-execute on reinit. This is intentional — autoloading from the first
-        // require persists, and Bootstrap::create() handles the actual reinitialization.
+        // re-execute on reinit. That is fine — autoloading from the first require
+        // persists, new components were registered above, and Bootstrap::create()
+        // builds the fresh ObjectManager.
         return self::initialize($magentoRoot);
+    }
+
+    /**
+     * Files loaded by component re-registration during the last reinitialize().
+     *
+     * @return array<string, string[]> Keys: registration_files, vendor_files
+     */
+    public static function getLastReinitStats(): array
+    {
+        return self::$lastReinitStats;
     }
 
     public static function reset(): void
@@ -219,5 +264,7 @@ class MagentoBootstrap
         self::$objectManager = null;
         self::$magentoRoot = null;
         self::$detector = null;
+        self::$sentinelMtimes = [];
+        self::$lastReinitStats = [];
     }
 }
