@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -11,6 +12,7 @@ namespace Inchoo\MagentoBricklayer\Mcp\Tool;
 use Inchoo\MagentoBricklayer\Bootstrap\MagentoBootstrap;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RequiresMagento;
 use Inchoo\MagentoBricklayer\Mcp\Tool\Concern\RespondsWithErrors;
+use Inchoo\MagentoBricklayer\Support\ComponentRegistration;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -39,7 +41,8 @@ class DevelopmentTools
      */
     #[McpTool(
         name: 'reinitialize',
-        description: 'Reinitialize Magento context. Call after setup:upgrade, setup:di:compile, or module changes to pick up new modules and config.',
+        description: 'Reinitialize Magento context. Call after setup:upgrade, setup:di:compile, '
+            . 'or module changes to pick up new modules and config.',
     )]
     public function reinitialize(): array
     {
@@ -60,11 +63,13 @@ class DevelopmentTools
         $elapsed = round((microtime(true) - $startTime) * 1000, 1);
 
         // Verify the new state
+        $moduleCountError = null;
         try {
             $moduleList = MagentoBootstrap::get(\Magento\Framework\Module\ModuleListInterface::class);
             $moduleCount = count($moduleList->getAll());
         } catch (\Throwable $e) {
             $moduleCount = null;
+            $moduleCountError = $e->getMessage();
         }
 
         try {
@@ -74,13 +79,56 @@ class DevelopmentTools
             $mode = 'unknown';
         }
 
-        return [
+        $registration = new ComponentRegistration();
+        $stats = MagentoBootstrap::getLastReinitStats();
+
+        $result = [
             'success' => true,
             'message' => 'Magento reinitialized with fresh ObjectManager.',
             'modules_loaded' => $moduleCount,
+            'registered_components' => count($registration->getRegisteredModules()),
+            'newly_registered_files' => count($stats['registration_files'] ?? [])
+                + count($stats['vendor_files'] ?? []),
             'mode' => $mode,
             'elapsed_ms' => $elapsed,
         ];
+
+        if ($moduleCountError !== null) {
+            $result['modules_loaded_error'] = $moduleCountError;
+        }
+
+        $warnings = [];
+
+        // Belt and braces: reinitialize() aborts on a stale registry, but if a
+        // mismatch appears anyway, surface it instead of letting code-runner
+        // and config readers return silently wrong answers.
+        $magentoRoot = MagentoBootstrap::getMagentoRoot();
+        if ($magentoRoot !== null) {
+            $unregistered = $registration->getUnregisteredEnabledModules($magentoRoot);
+            if ($unregistered !== []) {
+                $warnings[] = 'Modules enabled but not registered in this process: '
+                    . implode(', ', $unregistered)
+                    . ' — restart the MCP server.';
+            }
+        }
+
+        // A removed-but-disabled module cannot poison merged config (reinit
+        // proceeds), but Magento reads module.xml of EVERY registered
+        // component when enumerating modules, so full-list operations
+        // (module-list, application-info) fail until a restart clears the
+        // stale registry entry.
+        $removed = $registration->getRemovedRegisteredModules();
+        if ($removed !== []) {
+            $warnings[] = 'Registered components removed from disk: '
+                . implode(', ', $removed)
+                . ' — module enumeration will fail until the MCP server is restarted.';
+        }
+
+        if ($warnings !== []) {
+            $result['warning'] = implode(' ', $warnings);
+        }
+
+        return $result;
     }
 
     /**
@@ -406,8 +454,7 @@ class DevelopmentTools
 
             // Sort by group and job code
             usort($cronJobs, fn($a, $b) =>
-                strcmp($a['group'], $b['group']) ?: strcmp($a['job_code'], $b['job_code'])
-            );
+                strcmp($a['group'], $b['group']) ?: strcmp($a['job_code'], $b['job_code']));
 
             return [
                 'total' => count($cronJobs),
@@ -486,9 +533,12 @@ class DevelopmentTools
     private function getDeployModeDescription(string $mode): string
     {
         return match ($mode) {
-            \Magento\Framework\App\State::MODE_DEVELOPER => 'Developer mode - all errors displayed, no caching optimizations',
-            \Magento\Framework\App\State::MODE_PRODUCTION => 'Production mode - optimized for performance, errors logged',
-            \Magento\Framework\App\State::MODE_DEFAULT => 'Default mode - partial caching, some errors displayed',
+            \Magento\Framework\App\State::MODE_DEVELOPER
+                => 'Developer mode - all errors displayed, no caching optimizations',
+            \Magento\Framework\App\State::MODE_PRODUCTION
+                => 'Production mode - optimized for performance, errors logged',
+            \Magento\Framework\App\State::MODE_DEFAULT
+                => 'Default mode - partial caching, some errors displayed',
             default => 'Unknown mode',
         };
     }
