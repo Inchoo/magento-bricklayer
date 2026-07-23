@@ -1,5 +1,8 @@
 # Unreleased
 
+**Skills**
+* **Hyvä Checkout architecture and development** — added a central skill covering Evaluation results, primary navigation, Place Order Services, frontend payment methods and backports, layout-independent integrations, and a mandatory compatibility profile that selects Magewire V1 for checkout 1.0-1.3.*, native Magewire 3 for new components on 1.4+, or the backwards-compatibility migration track for existing V1 components. Corrected the existing API, configuration, and Magewire guides to remove component-owned order placement and direct step progression patterns.
+
 **Improvements**
 * **Nested sub-skill resources.** A skill directory can now contain focused topic sub-directories (`config/skills/{name}/{topic}/SKILL.md`), served via the new `magento://skills/{name}/{topic}` resource template. Previously only flat `magento://skills/{name}` URIs resolved, so skill content pointing at sub-skills returned *Resource not found*.
 * **Frontmatter stripped from skill resources.** An optional YAML frontmatter block in a `SKILL.md` is now removed before the content is served over `resources/read`, matching `development-context` behavior. Path segments containing `..` are rejected.

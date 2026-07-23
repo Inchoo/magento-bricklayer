@@ -66,7 +66,13 @@ class SearchTools
             'keywords' => ['test', 'phpunit', 'mftf', 'api functional'],
         ],
         'hyva-checkout' => [
-            'keywords' => ['hyvä checkout', 'checkout step', 'payment method', 'shipping method'],
+            'keywords' => [
+                'hyvä checkout', 'hyva checkout', 'checkout step', 'primary navigation',
+                'evaluation api', 'place order service', 'checkout payment integration',
+                'frontend payment', 'shipping method', 'registerMethod', 'checkout frontend api',
+                'frontend api backport', 'checkout version detection', 'compatibility profile',
+                'v1-on-v3',
+            ],
         ],
         'magewire' => [
             'keywords' => [
