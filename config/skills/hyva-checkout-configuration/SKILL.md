@@ -1,6 +1,17 @@
+---
+name: hyva-checkout-configuration
+description: Configure Hyva Checkout definitions, steps, conditions, layout handles, component placement, payment and shipping blocks, and Place Order Service DI. Use when editing hyva_checkout.xml or checkout layout XML, adding or moving components, or wiring payment and shipping integrations.
+---
+
 # Hyvä Checkout: Configuration & Layout
 
-> Related: See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for Magewire fundamentals, and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and frontend APIs.
+> Start with [hyva-checkout](../hyva-checkout/SKILL.md) for architecture and primary navigation
+> rules. See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for checkout component
+> behavior and [hyva-checkout-apis](../hyva-checkout-apis/SKILL.md) for evaluation, form, and
+> frontend APIs.
+
+Resolve the core skill's compatibility profile before attaching a Magewire class or copying
+component syntax. Layout concepts may span checkout versions; the component behind a block may not.
 
 ## Checkout XML Configuration
 
@@ -168,6 +179,11 @@ All checkout components are declared in the `hyva_checkout_components.xml` handl
 
 ## Payment Method Integration
 
+Payment layout registers selection UI; it does not own quote-to-order conversion. The primary Place
+Order action invokes the selected Place Order Service only after navigation, validation, and
+Evaluation checks pass. Build every payment view so it still works when payment is not the final or
+currently visible step.
+
 ### Auto-Registration
 
 Any enabled payment method automatically appears in the payment step. Methods needing no customer interaction (e.g., check/money order, bank transfer, cash on delivery) work out of the box.
@@ -271,19 +287,11 @@ declare(strict_types=1);
 namespace Vendor\Module\Model\Payment;
 
 use Hyva\Checkout\Model\Magewire\Payment\AbstractPlaceOrderService;
-use Hyva\Checkout\Model\Magewire\Payment\EvaluationResultFactory;
-use Hyva\Checkout\Model\Magewire\Payment\EvaluationResultInterface;
+use Hyva\Checkout\Model\Magewire\Component\EvaluationResultFactory;
+use Hyva\Checkout\Model\Magewire\Component\EvaluationResultInterface;
 
 class MyPaymentPlaceOrderService extends AbstractPlaceOrderService
 {
-    /**
-     * @return bool
-     */
-    public function canRedirect(): bool
-    {
-        return false; // Prevent auto-redirect after order placement
-    }
-
     /**
      * @param EvaluationResultFactory $resultFactory
      * @param int|null $orderId
@@ -293,29 +301,26 @@ class MyPaymentPlaceOrderService extends AbstractPlaceOrderService
         EvaluationResultFactory $resultFactory,
         ?int $orderId = null
     ): EvaluationResultInterface {
-        $successRedirect = $resultFactory->createRedirect('checkout/onepage/success');
+        $batch = $resultFactory->createBatch([
+            $resultFactory->createSuccess()
+        ]);
 
         if ($orderId === null) {
-            return $successRedirect;
+            $batch->push(
+                $resultFactory->createErrorMessage()
+                    ->withMessage('The order could not be confirmed.')
+            );
         }
 
-        // Trigger 3DS validation on frontend
-        $validate = $resultFactory->createValidation('my-payment-3ds');
-        $validate->withFailureResult($successRedirect);
-
-        // Navigate after validation completes
-        $navigationTask = $resultFactory->createNavigationTask(
-            'my-payment-redirect',
-            $successRedirect
-        );
-        $navigationTask->executeAfter(true);
-
-        return $resultFactory->createBatch()
-            ->push($validate)
-            ->push($navigationTask);
+        return $batch;
     }
 }
 ```
+
+`AbstractPlaceOrderService` already implements the complete contract. Override only the methods
+the integration needs: `placeOrder()`, `canPlaceOrder()`, `handleException()`, `canRedirect()`,
+`getRedirectUrl()`, `evaluateCompletion()`, or `getData()`. Use the Frontend Payment API for
+browser SDK and 3DS interaction rather than turning the payment component into the orchestrator.
 
 ### Redirect-Based Payment (Hosted Payment Page)
 
@@ -337,6 +342,10 @@ public function evaluateCompletion(
         ->withNotificationMessage('Redirecting to payment provider...');
 }
 ```
+
+Render PSP overlays, 3DS modals, and durable browser integration scripts outside the payment
+method's step-scoped markup, for example under `hyva.checkout.init-validation.after`. The Place
+Order action can run when the payment step is not visible.
 
 ## Shipping Method Integration
 

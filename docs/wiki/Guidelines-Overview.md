@@ -139,7 +139,7 @@ Use `development-context category="list"` to see all available categories at run
 | `hyva-theme-advanced` | Hyva ViewModels, module compatibility |
 | `hyva-ui-component` | Hyva UI component CSS and design system |
 | `hyva-ui-component-js` | Hyva UI component Alpine.js |
-| `hyva-checkout` | Hyva Checkout step and component development |
+| `hyva-checkout` | Hyva Checkout architecture and integration development |
 | `hyva-checkout-config` | Hyva Checkout XML configuration |
 | `hyva-checkout-api` | Hyva Checkout evaluation, form, frontend APIs |
 | `magewire` | Magewire V1 reactive component development |

@@ -543,12 +543,12 @@ Use `magento://guidelines/index` for a complete listing.
 Magento coding standards reference with PSR-12 compliance and architecture guidelines (`magento://standards/coding`, `magento://standards/architecture`).
 
 ### Skills Resource
-28 development skills accessed via URI template `magento://skills/{name}`. A skill can bundle focused sub-skills in topic sub-directories, served via `magento://skills/{name}/{topic}`. Skills cover:
+Development skills are auto-discovered and accessed through `magento://skills/{name}`. A skill can bundle focused sub-skills in topic sub-directories, served via `magento://skills/{name}/{topic}`. Skills cover:
 - Checkout customization (steps & layout processors, config providers & validation)
 - Cron job development
 - EAV attribute development
 - GraphQL API development
-- Hyvä Checkout (checkout steps & components, XML configuration, evaluation & form APIs)
+- Hyvä Checkout (architecture, navigation, payments, components, XML, evaluation, and forms)
 - Magewire standalone reactive components
 - Hyvä theme development (setup & Alpine.js CSP, ViewModels & compatibility)
 - Hyvä UI component development (CSS design system, Alpine.js interactivity)

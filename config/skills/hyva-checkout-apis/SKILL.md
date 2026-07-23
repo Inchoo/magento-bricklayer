@@ -1,10 +1,22 @@
+---
+name: hyva-checkout-apis
+description: Build and review Hyva Checkout Evaluation API results, frontend validators, forms, navigation tasks, messages, and frontend payment hooks while preserving the primary checkout flow.
+---
+
 # Hyvä Checkout: Evaluation, Form & Frontend APIs
 
-> Related: See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for Magewire fundamentals, and [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config.
+> Related: Start with [hyva-checkout](../hyva-checkout/SKILL.md) for checkout architecture. See [hyva-checkout-magewire](../hyva-checkout-magewire/SKILL.md) for component patterns, and [hyva-checkout-configuration](../hyva-checkout-configuration/SKILL.md) for checkout XML and layout config.
+
+Resolve the core skill's compatibility profile first. The checkout concepts in this resource span
+versions, but component lifecycle, event syntax, directives, and frontend availability must follow
+the selected V1, native V3, or migration track.
 
 ## Evaluation API
 
-The Evaluation API determines component "completeness" for step navigation and order placement.
+The Evaluation API lets a server component report whether checkout may proceed and attach typed
+frontend instructions. By default, results are bound to the primary navigation action and are
+processed when the customer clicks Next or Place Order. A dispatched result executes immediately
+after the current Magewire request instead.
 
 ### Implementing EvaluationInterface
 
@@ -49,9 +61,9 @@ class MyCheckoutComponent extends Component implements EvaluationInterface
 | Type | Factory Method | Purpose |
 |------|---------------|---------|
 | Success | `createSuccess()` | Component is complete |
-| Blocking | `createBlocking()` | Block navigation silently |
+| Blocking | `createBlocking()` | **Deprecated:** silently obstructs primary navigation; do not use in new code |
 | ErrorMessage | `createErrorMessage()` | Show flash message |
-| Event | `createEvent()` | Dispatch custom window event |
+| Event | `createEvent('name')` | Dispatch custom window event |
 | ErrorMessageEvent | `createErrorMessageEvent()` | Error message + custom event |
 | ErrorEvent | `createErrorEvent()` | False result bound to validation API |
 | Validation | `createValidation('name')` | Trigger frontend JS validator |
@@ -89,8 +101,18 @@ return $resultFactory->createRedirect('https://payment-gateway.com/pay')
 // Batch of multiple results
 return $resultFactory->createBatch()
     ->push($resultFactory->createErrorMessage()->withMessage('Warning.')->asWarning())
-    ->push($resultFactory->createEvent()->withCustomEvent('my-event')->dispatch());
+    ->push($resultFactory->createEvent('my-event')->dispatch());
 ```
+
+### Bound Versus Dispatched Results
+
+Return a normal, bound result for validation that should surface through the primary navigation
+pipeline. Call `dispatch()` only when the instruction must run as part of the current Magewire
+response, independent of a Next or Place Order click. An immediate success notification after a
+user action is a reasonable dispatch; silently advancing checkout is not.
+
+Keep `evaluateCompletion()` deterministic and inexpensive. Prepare remote payment state before
+evaluation, then evaluate the stored result rather than calling a PSP on every interaction.
 
 ### Evaluatable Trait for Sub-Evaluations
 
@@ -117,7 +139,8 @@ class PaymentMethodList extends Component implements EvaluationInterface
 
         return $this->evaluationBatch()->push(
             $this->evaluationBatch()->factory()
-                ->createSuccess([], 'payment:method:success')
+                ->createSuccess()
+                ->withCustomEvent('payment:method:success')
                 ->dispatch()
         );
     }
@@ -145,31 +168,34 @@ class PaymentMethodList extends Component implements EvaluationInterface
 ### Registering Frontend Validators
 
 ```javascript
-// Wait for checkout evaluation API initialization
-window.addEventListener('checkout:init:evaluation', () => {
-
-    // Synchronous validator (throw = failure)
-    hyvaCheckout.evaluation.registerValidator('validateMyField', (element, component) => {
-        const input = element.querySelector('#my-field');
-        if (!input || !input.value) {
-            throw new Error('Field is required');
+hyvaCheckout.api.after(() => {
+    // Return true to pass and false to execute the PHP failure result.
+    hyvaCheckout.evaluation.registerValidator(
+        'validateMyField',
+        (component, element, evaluation) => {
+            const input = element.querySelector('#my-field');
+            return Boolean(input?.value);
         }
-    });
+    );
 
-    // Async validator (Promise-based, e.g., 3DS authentication)
-    hyvaCheckout.evaluation.registerValidator('my-payment-3ds', (element) => {
-        return new Promise((resolve, reject) => {
+    // Async validators resolve to a boolean too.
+    hyvaCheckout.evaluation.registerValidator(
+        'my-payment-3ds',
+        (component, element, evaluation) => new Promise((resolve) => {
             window.dispatchEvent(new Event('my-payment:3ds:show'));
 
             window.addEventListener('my-payment:3ds:result', (event) => {
-                event.detail.success ? resolve() : reject();
-            });
-        });
-    });
+                resolve(Boolean(event.detail.success));
+            }, { once: true });
+        })
+    );
 });
 ```
 
 ### Navigation API
+
+Use navigation calls only for an explicit navigation task or other checkout-owned flow. A custom
+component must not call these methods to replace the primary Next/Place Order pipeline.
 
 ```javascript
 // Navigate to a specific step
@@ -188,6 +214,30 @@ hyvaCheckout.messenger.dispatch(
     'Please check your payment details.'
 );
 ```
+
+### Frontend Payment API
+
+For checkout 1.3.6+ or a compatible Frontend API backport, register browser-driven payment logic
+under the exact Magento payment method code. Override only the hooks the integration needs. The
+provided `fallback` function preserves the standard Place Order Service flow.
+
+```javascript
+hyvaCheckout.api.after(() => {
+    hyvaCheckout.payment.registerMethod({
+        code: 'vendor_gateway',
+        method: {
+            async placeOrder({ fallback }) {
+                await this.prepareProvider();
+                return fallback();
+            }
+        }
+    });
+});
+```
+
+Do not trigger the provider UI when the method is merely selected. Do not require the backport
+package from a payment module; document it as an installation prerequisite when needed. See the
+core architecture resource for Place Order Service and fallback decisions.
 
 ## Form API
 
@@ -230,7 +280,7 @@ class CustomForm extends AbstractEntityForm
             ])
         );
 
-        $this->setAttribute('wire:submit.prevent="submit"');
+        $this->setAttribute('wire:submit.prevent', 'submit');
         return $this;
     }
 
@@ -329,7 +379,7 @@ $form = $magewire->getPublicForm();
 
                     <?php if ($magewire->hasError($element->getTracePath())): ?>
                         <ul class="messages" role="list" aria-live="polite">
-                            <li><?= /** @noEscape */ $magewire->getError($element->getId()) ?></li>
+                            <li><?= /** @noEscape */ $magewire->getError($element->getTracePath()) ?></li>
                         </ul>
                     <?php endif ?>
                 </div>
@@ -371,15 +421,15 @@ declare(strict_types=1);
 namespace Vendor\Module\Model\Form\Modifier;
 
 use Hyva\Checkout\Model\Form\EntityFormInterface;
-use Hyva\Checkout\Model\Form\EntityFormModifier\AbstractEntityFormModifier;
+use Hyva\Checkout\Model\Form\EntityFormModifierInterface;
 
-class AddLoyaltyFieldModifier extends AbstractEntityFormModifier
+class AddLoyaltyFieldModifier implements EntityFormModifierInterface
 {
     /**
      * @param EntityFormInterface $form
      * @return EntityFormInterface
      */
-    public function modify(EntityFormInterface $form): EntityFormInterface
+    public function apply(EntityFormInterface $form): EntityFormInterface
     {
         $form->addField(
             $form->createField('loyalty_number', 'text', [
@@ -392,184 +442,12 @@ class AddLoyaltyFieldModifier extends AbstractEntityFormModifier
 }
 ```
 
-## Common Checkout Patterns
+### Version-Aware Component Coordination
 
-### Payment Method List Template Pattern
-
-```php
-<?php
-/** @var \Hyva\Checkout\Magewire\Checkout\Payment\MethodList $magewire */
-$viewModel = $viewModels->require(ViewModel::class);
-$methods = $viewModel->getList();
-?>
-<div id="payment-methods">
-    <div class="space-y-2" data-method="<?= $escaper->escapeHtmlAttr($magewire->method) ?>">
-        <?php foreach ($methods as $method): ?>
-            <div class="border-2 rounded-md
-                 <?= $magewire->method === $method->getCode()
-                     ? 'active bg-primary bg-opacity-10 border-primary'
-                     : 'inactive bg-white' ?>"
-                 wire:key="<?= $escaper->escapeHtmlAttr($method->getCode()) ?>">
-                <label class="flex items-center gap-x-2.5 mb-0 p-4 cursor-pointer">
-                    <input type="radio"
-                           name="payment-method-option"
-                           class="form-radio"
-                           value="<?= $escaper->escapeHtmlAttr($method->getCode()) ?>"
-                           wire:model="method" />
-                    <span class="text-gray-700 font-medium">
-                        <?= $escaper->escapeHtml($method->getTitle()) ?>
-                    </span>
-                </label>
-                <!-- Custom payment view renders here when selected -->
-            </div>
-        <?php endforeach ?>
-    </div>
-</div>
-```
-
-### Real Component Pattern: CouponCode
-
-```php
-class CouponCode extends Component
-{
-    /**
-     * @var string|null
-     */
-    public ?string $couponCode = null;
-
-    /**
-     * @var int
-     */
-    public int $couponHits = 0;
-
-    /**
-     * @return void
-     */
-    public function boot(): void
-    {
-        $couponCode = $this->couponManagement->get($this->sessionCheckout->getQuoteId());
-        $this->couponCode = ($couponCode && $couponCode != '') ? $couponCode : null;
-    }
-
-    /**
-     * @return void
-     */
-    public function applyCouponCode()
-    {
-        try {
-            $this->couponManagement->set($quoteId, $this->couponCode);
-            $this->dispatchSuccessMessage('Your coupon was successfully applied.');
-            $this->emit('coupon_code_applied', ['code' => $this->couponCode]);
-        } catch (LocalizedException $e) {
-            $this->couponCode = null;
-            $this->couponHits++;
-            return $this->dispatchWarningMessage($e->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    public function revokeCouponCode()
-    {
-        $this->couponManagement->remove($this->sessionCheckout->getQuoteId());
-        $this->reset();
-        $this->dispatchSuccessMessage('Your coupon was successfully removed.');
-        $this->emit('coupon_code_revoked', ['code' => $couponCode]);
-    }
-}
-```
-
-## Checkout Events Reference
-
-### Key Magewire Events (Component-to-Component)
-
-| Event | Emitted By | Listeners |
-|-------|-----------|-----------|
-| `billing_address_saved` | BillingDetails | PaymentMethodList |
-| `billing_address_submitted` | BillingDetails | AddressForm |
-| `shipping_address_saved` | ShippingDetails | PaymentMethodList |
-| `shipping_address_activated` | ShippingDetails | ShippingMethodList |
-| `shipping_method_selected` | ShippingMethodList | PriceSummary |
-| `payment_method_selected` | PaymentMethodList | PriceSummary |
-| `coupon_code_applied` | CouponCode | PaymentMethodList, ShippingMethodList |
-| `coupon_code_revoked` | CouponCode | PaymentMethodList, ShippingMethodList |
-
-### Key Magento Events
-
-| Event | Purpose |
-|-------|---------|
-| `hyva_checkout_init_after` | Initialize default addresses and methods |
-| `hyva_checkout_quote_id_changed` | Reset checkout session |
-| `checkout_submit_all_after` | Transfer quote comment to order |
-
-## Extending Existing Components
-
-### Override via Layout XML
-
-```xml
-<!-- Replace a template -->
-<referenceBlock name="checkout.payment.methods"
-                template="Vendor_Module::checkout/payment/custom-method-list.phtml" />
-
-<!-- Add a block before/after -->
-<referenceContainer name="checkout.payment.methods.before">
-    <block name="my.payment.notice"
-           template="Vendor_Module::checkout/payment/notice.phtml" />
-</referenceContainer>
-
-<referenceContainer name="checkout.payment.methods.after">
-    <block name="my.payment.help"
-           template="Vendor_Module::checkout/payment/help-text.phtml" />
-</referenceContainer>
-```
-
-### Override via Theme
-
-Place template overrides in your Hyva child theme:
-
-```
-app/design/frontend/Vendor/hyva-child/
-  Hyva_Checkout/
-    templates/
-      checkout/payment/method-list.phtml     # Override payment method list
-      checkout/shipping/method-list.phtml    # Override shipping method list
-      magewire/component/form.phtml          # Override form rendering
-```
-
-### Plugin on Magewire Component
-
-```php
-<!-- etc/frontend/di.xml -->
-<type name="Hyva\Checkout\Magewire\Checkout\Payment\MethodList">
-    <plugin name="vendor_module_payment_method_list"
-            type="Vendor\Module\Plugin\Checkout\Payment\MethodList" />
-</type>
-```
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Vendor\Module\Plugin\Checkout\Payment;
-
-use Hyva\Checkout\Magewire\Checkout\Payment\MethodList;
-
-class MethodListPlugin
-{
-    /**
-     * @param MethodList $subject
-     * @param string $result
-     * @return string
-     */
-    public function afterUpdatedMethod(MethodList $subject, string $result): string
-    {
-        // Custom logic after payment method selection
-        return $result;
-    }
-}
-```
+Checkout event names and payloads are contracts, but the Magewire event API depends on the
+installed generation. V1 components use `$listeners` and `emit*()`. New V3-native components use
+`#[On]` and `dispatch()`, and should opt out of backwards compatibility explicitly. Do not combine
+both styles in one example or silently translate an installed checkout event name.
 
 ## Order Summary & Totals
 
@@ -585,39 +463,19 @@ class MethodListPlugin
 
 The block alias (`as="custom_fee"`) must match the total collector name from Magento's total system.
 
-## Database Extensions
-
-Hyva Checkout adds:
-- `quote.customer_comment` (TEXT) - Customer order comment
-- `sales_order_status_history.is_customer_comment` (BOOLEAN) - Comment origin flag
-
-## Admin Configuration
-
-System config path: `hyva_themes_checkout/`
-
-Key config groups:
-- `component/` - Enable/disable coupon code, order comment
-- `design/` - Form field styling, icon sizes, price formatting
-- `developer/` - Debug mode, evaluation API, experimental features
-- `navigation/` - Back button, cart button display
-- `breadcrumbs/` - Breadcrumb rendering style
-- `signin_registration/` - Sign-in button display
-- `billing/` - Billing address configuration
-- `address_form/` - Address field customization
-
 ## Best Practices
 
-1. **Use `EvaluationInterface`** for any component that must validate before step navigation or order placement
-2. **Emit events** for cross-component communication instead of direct coupling
-3. **Use `$loader`** to show loading states during server round-trips
-4. **Use `boot()` for state restoration** - it runs on every request, unlike `mount()` which only runs on initial load
-5. **Use `updated{PropertyName}()` hooks** to trigger side effects when specific properties change
-6. **Declare components in `hyva_checkout_components.xml`** and use `<move>` in step layouts for flexibility
-7. **Match block alias to method code** for payment (`as="method_code"`) and shipping (`as="carrier_method"`)
-8. **Add messenger blocks** for each section to enable inline error display
-9. **Use `AbstractPlaceOrderService`** (not the deprecated `PlaceOrderServiceInterface`) for custom payment order placement
-10. **Register frontend validators** via `checkout:init:evaluation` event for client-side validation before server round-trip
-11. **Use form modifiers** to extend checkout forms from third-party modules without modifying original form classes
-12. **Keep components focused** - each component should handle one concern (address, payment, shipping, etc.)
-13. **Always escape output** in templates using `$escaper` methods
-14. **Use `wire:key`** on repeated elements to help Magewire track DOM updates correctly
+1. Use `EvaluationInterface` only when a component participates in primary navigation or Place Order readiness.
+2. Return bound results for normal checkout gates; dispatch only instructions that must run immediately.
+3. Register frontend APIs through `hyvaCheckout.api.after()` and match the installed API signatures.
+4. Resolve frontend validators to `true` or `false`; keep authoritative business validation in PHP.
+5. Use version-correct Magewire events: V1 `emit*()` or V3 `dispatch()` and `#[On]`.
+6. Use `wire:loading` and the installed checkout loading APIs instead of assuming `$loader` exists.
+7. Restore required per-request state in `boot()` or `booted()`; use `mount()` only for reliable first renders.
+8. Declare reusable components in `hyva_checkout_components.xml` and move them into step layouts.
+9. Match payment aliases to the method code and shipping aliases to `carrier_method`.
+10. Use `AbstractPlaceOrderService` for custom server order placement; never create the order in a component.
+11. Use form modifiers to extend third-party forms instead of replacing their form classes.
+12. Keep components focused and validate all public method arguments against authoritative quote state.
+13. Escape template output with the context-appropriate `$escaper` method.
+14. Use stable `wire:key` values on repeated elements.

@@ -61,9 +61,9 @@ class ContextTools
             'group' => 'Hyvä Theme',
         ],
         'hyva-checkout' => [
-            'skills' => ['hyva-checkout-magewire'],
+            'skills' => ['hyva-checkout'],
             'guidelines' => ['ecosystem/hyva-architecture'],
-            'description' => 'Hyvä Checkout step and component development',
+            'description' => 'Hyvä Checkout architecture and integration development',
             'group' => 'Hyvä Theme',
         ],
         'hyva-checkout-config' => [
@@ -485,8 +485,13 @@ class ContextTools
             'frontend', 'adminhtml', 'checkout', 'checkout-advanced' => [
                 'Check routes: route-list',
             ],
-            'hyva-checkout', 'hyva-checkout-config', 'hyva-checkout-api' => [
+            'hyva-checkout-config', 'hyva-checkout-api' => [
                 'Check installed modules: module-list (verify Hyva_Checkout and Magewirephp_Magewire are present)',
+            ],
+            'hyva-checkout' => [
+                'Before generating code, resolve the Hyva Checkout version from Composer metadata',
+                'Use Magewire V1 for checkout 1.0-1.3.*; use native Magewire 3 for new components on 1.4+',
+                'For an existing V1 component on 1.4+, load the backwards-compatibility migration resource',
             ],
             'magewire' => [
                 'Check modules: module-list (verify Magewirephp_Magewire; confirm V1 in composer.lock)',

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -26,7 +27,17 @@ trait RequiresMagento
             return ['error' => true, 'message' => 'Magento not initialized'];
         }
 
-        MagentoBootstrap::reinitializeIfStale();
+        try {
+            MagentoBootstrap::reinitializeIfStale();
+        } catch (\Throwable $e) {
+            // A failed auto-reinit means in-memory state no longer matches
+            // disk. Refuse the tool call instead of answering from stale state.
+            return [
+                'error' => true,
+                'message' => 'Magento state changed on disk but automatic '
+                    . 'reinitialization failed: ' . $e->getMessage(),
+            ];
+        }
 
         return null;
     }
