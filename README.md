@@ -159,6 +159,7 @@ The MCP server is automatically started by compatible agents. Your agent can now
 | JetBrains AI (PhpStorm) | `.mcp.json` + `.junie/guidelines.md` | Supported |
 | Gemini CLI | `.mcp.json` + `AGENTS.md` | Supported |
 | OpenAI Codex | `.codex/config.toml` + `AGENTS.md` | Supported¹ |
+| Mistral Vibe | `.vibe/config.toml` + `AGENTS.md` | Supported |
 
 ¹ Project-scoped `.codex/config.toml` requires a recent Codex CLI release and is only loaded after you mark the project as trusted in Codex.
 
@@ -173,7 +174,7 @@ vendor/bin/bricklayer install [options]
 
 Options:
 - `--magento-root=PATH` - Specify Magento root directory (auto-detected by default)
-- `--agents=AGENT` - Agent to configure; **repeat the flag** for multiple (e.g. `--agents=claude-code --agents=cursor`). Valid values: claude-code, cursor, phpstorm, copilot, gemini, codex. Omit to choose interactively
+- `--agents=AGENT` - Agent to configure; **repeat the flag** for multiple (e.g. `--agents=claude-code --agents=cursor`). Valid values: claude-code, cursor, phpstorm, copilot, gemini, codex, mistral-vibe. Omit to choose interactively
 - `--force` - Overwrite existing configuration files
 
 ### init

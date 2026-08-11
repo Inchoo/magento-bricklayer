@@ -43,7 +43,7 @@ class InstallCommand extends AbstractBricklayerCommand
                 'agents',
                 'a',
                 InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-                'Agents to configure (claude-code, cursor, copilot, phpstorm, gemini, codex)'
+                'Agents to configure (claude-code, cursor, copilot, phpstorm, gemini, codex, mistral-vibe)'
             )
             ->addOption(
                 'env',
@@ -72,6 +72,7 @@ Available agents:
   - <comment>phpstorm</comment> - Creates .junie/guidelines.md
   - <comment>gemini</comment> - Creates AGENTS.md
   - <comment>codex</comment> - Creates AGENTS.md and .codex/config.toml
+  - <comment>mistral-vibe</comment> - Creates AGENTS.md and .vibe/config.toml
 
 You can also specify options directly via command line:
 
@@ -181,7 +182,7 @@ HELP
                 $existingFiles[] = '.mcp.json';
             }
 
-            // Check agent config files (gemini and codex share AGENTS.md)
+            // Check agent config files (gemini, codex and mistral-vibe share AGENTS.md)
             foreach ($agents as $agent) {
                 $filename = $compiler->getFilename($agent);
                 if (file_exists($magentoRoot . '/' . $filename) && !in_array($filename, $existingFiles, true)) {
@@ -192,6 +193,11 @@ HELP
             // Check Codex MCP config
             if (in_array('codex', $agents, true) && file_exists($magentoRoot . '/.codex/config.toml')) {
                 $existingFiles[] = '.codex/config.toml';
+            }
+
+            // Check Mistral Vibe MCP config
+            if (in_array('mistral-vibe', $agents, true) && file_exists($magentoRoot . '/.vibe/config.toml')) {
+                $existingFiles[] = '.vibe/config.toml';
             }
 
             if (!empty($existingFiles)) {
@@ -262,8 +268,21 @@ HELP
             );
         }
 
-        // Generate agent-specific files; gemini and codex share AGENTS.md,
-        // so write each distinct file only once
+        // Generate Mistral Vibe MCP config when mistral-vibe agent is selected
+        if (in_array('mistral-vibe', $agents, true)) {
+            $this->writeMcpConfigFile(
+                $magentoRoot,
+                '.vibe/config.toml',
+                fn() => $configWriter->writeVibeConfig($envType),
+                $force,
+                $envType,
+                $createdFiles,
+                $skippedFiles
+            );
+        }
+
+        // Generate agent-specific files; gemini, codex and mistral-vibe share
+        // AGENTS.md, so write each distinct file only once
         $generatedAgentFiles = [];
         foreach ($agents as $agent) {
             $filename = (new GuidelinesCompiler($magentoRoot))->getFilename($agent);
@@ -308,6 +327,9 @@ HELP
             if (in_array('codex', $agents, true)) {
                 $instructions[] = 'Codex: Mark the project as trusted so .codex/config.toml is loaded';
             }
+            if (in_array('mistral-vibe', $agents, true)) {
+                $instructions[] = 'Mistral Vibe: Configuration applied automatically (.vibe/config.toml is picked up on next start)';
+            }
 
             foreach ($instructions as $instruction) {
                 $io->text("  $instruction");
@@ -342,7 +364,7 @@ HELP
      */
     private function buildAgentLabels(GuidelinesCompiler $compiler): array
     {
-        $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini', 'codex'];
+        $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini', 'codex', 'mistral-vibe'];
         $map = [];
         foreach ($agents as $agent) {
             $filename = $compiler->getFilename($agent);
@@ -353,6 +375,7 @@ HELP
                 'phpstorm' => "PhpStorm/JetBrains ($filename)",
                 'gemini' => "Google Gemini ($filename)",
                 'codex' => "OpenAI Codex ($filename + .codex/config.toml)",
+                'mistral-vibe' => "Mistral Vibe ($filename + .vibe/config.toml)",
             };
         }
         return $map;
