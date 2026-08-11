@@ -67,7 +67,7 @@ HELP
             $detector = new MagentoDetector();
             $envType = $detector->getEnvironmentType($magentoRoot);
 
-            $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini'];
+            $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini', 'codex'];
 
             $regenerated = [];
             $appliedOverrides = [];
@@ -75,6 +75,10 @@ HELP
             foreach ($agents as $agent) {
                 $file = $compiler->getFilename($agent);
                 $filepath = $magentoRoot . '/' . $file;
+                // gemini and codex share AGENTS.md — regenerate each file once
+                if (in_array($file, $regenerated, true)) {
+                    continue;
+                }
                 if (file_exists($filepath)) {
                     $content = $compiler->compile($agent, $envType);
                     file_put_contents($filepath, $content);

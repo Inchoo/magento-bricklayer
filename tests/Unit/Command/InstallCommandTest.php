@@ -102,6 +102,80 @@ class InstallCommandTest extends TestCase
         $this->assertStringContainsString('.idea/mcp.json', $agentResult['message']);
     }
 
+    public function testItGeneratesACodexTomlConfigDuringInstall(): void
+    {
+        $magentoRoot = $this->makeSyntheticMagentoRoot();
+
+        $app = new Application();
+        $command = $app->find('install');
+        $tester = new CommandTester($command);
+
+        $tester->execute([
+            '--magento-root' => $magentoRoot,
+            '--agents' => ['codex'],
+            '--env' => 'native',
+            '--force' => true,
+        ]);
+
+        $expectedPath = $magentoRoot . '/.codex/config.toml';
+        $this->assertFileExists(
+            $expectedPath,
+            'install with --agents=codex must create .codex/config.toml via writeCodexConfig()'
+        );
+
+        $toml = (string) file_get_contents($expectedPath);
+        $this->assertStringContainsString('[mcp_servers.magento-bricklayer]', $toml);
+        $this->assertStringContainsString('command = "php"', $toml);
+        $this->assertStringContainsString('args = ["vendor/bin/bricklayer-mcp"]', $toml);
+        $this->assertStringContainsString('required = true', $toml);
+        $this->assertStringContainsString('startup_timeout_sec = 30', $toml);
+        $this->assertStringContainsString('tool_timeout_sec = 120', $toml);
+
+        $this->assertFileExists(
+            $magentoRoot . '/AGENTS.md',
+            'install with --agents=codex must also compile AGENTS.md guidelines'
+        );
+    }
+
+    public function testItPreservesUserSettingsWhenUpdatingAnExistingCodexConfig(): void
+    {
+        $existing = <<<TOML
+        model = "gpt-5"
+
+        [mcp_servers.magento-bricklayer]
+        command = "stale"
+        args = ["old"]
+
+        [mcp_servers.other-server]
+        command = "node"
+        args = ["server.js"]
+        TOML;
+
+        mkdir($this->tmpDir . '/.codex', 0755, true);
+        file_put_contents($this->tmpDir . '/.codex/config.toml', $existing . "\n");
+
+        $writer = new McpConfigWriter($this->tmpDir);
+        $writer->writeCodexConfig('ddev');
+
+        $toml = (string) file_get_contents($this->tmpDir . '/.codex/config.toml');
+
+        // User-managed settings survive
+        $this->assertStringContainsString('model = "gpt-5"', $toml);
+        $this->assertStringContainsString('[mcp_servers.other-server]', $toml);
+        $this->assertStringContainsString('args = ["server.js"]', $toml);
+
+        // Stale bricklayer section fully replaced, not duplicated, no orphan leftovers
+        $this->assertSame(1, substr_count($toml, '[mcp_servers.magento-bricklayer]'));
+        $this->assertStringNotContainsString('command = "stale"', $toml);
+        $this->assertStringNotContainsString('["old"]', $toml);
+        $this->assertStringContainsString('command = "ddev"', $toml);
+        $this->assertStringContainsString('args = ["exec", "php", "vendor/bin/bricklayer-mcp"]', $toml);
+
+        // Idempotent: a second run must not change the file
+        $writer->writeCodexConfig('ddev');
+        $this->assertSame($toml, (string) file_get_contents($this->tmpDir . '/.codex/config.toml'));
+    }
+
     public function testItExposesAvailableEnvironmentTypesFromASingleSource(): void
     {
         $types = McpConfigWriter::getAvailableEnvironmentTypes();

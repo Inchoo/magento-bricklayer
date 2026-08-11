@@ -43,7 +43,7 @@ class InstallCommand extends AbstractBricklayerCommand
                 'agents',
                 'a',
                 InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-                'Agents to configure (claude-code, cursor, copilot, phpstorm, gemini)'
+                'Agents to configure (claude-code, cursor, copilot, phpstorm, gemini, codex)'
             )
             ->addOption(
                 'env',
@@ -71,6 +71,7 @@ Available agents:
   - <comment>copilot</comment> - Creates .github/copilot-instructions.md
   - <comment>phpstorm</comment> - Creates .junie/guidelines.md
   - <comment>gemini</comment> - Creates AGENTS.md
+  - <comment>codex</comment> - Creates AGENTS.md and .codex/config.toml
 
 You can also specify options directly via command line:
 
@@ -180,12 +181,17 @@ HELP
                 $existingFiles[] = '.mcp.json';
             }
 
-            // Check agent config files
+            // Check agent config files (gemini and codex share AGENTS.md)
             foreach ($agents as $agent) {
                 $filename = $compiler->getFilename($agent);
-                if (file_exists($magentoRoot . '/' . $filename)) {
+                if (file_exists($magentoRoot . '/' . $filename) && !in_array($filename, $existingFiles, true)) {
                     $existingFiles[] = $filename;
                 }
+            }
+
+            // Check Codex MCP config
+            if (in_array('codex', $agents, true) && file_exists($magentoRoot . '/.codex/config.toml')) {
+                $existingFiles[] = '.codex/config.toml';
             }
 
             if (!empty($existingFiles)) {
@@ -212,13 +218,15 @@ HELP
         $skippedFiles = [];
 
         // Generate MCP configuration
-        $mcpConfigPath = $magentoRoot . '/.mcp.json';
-        if ($force || !file_exists($mcpConfigPath)) {
-            $configWriter->writeMcpConfig($envType);
-            $createdFiles[] = '.mcp.json' . ($envType !== 'native' ? " (configured for $envType)" : '');
-        } else {
-            $skippedFiles[] = '.mcp.json (exists, use --force to overwrite)';
-        }
+        $this->writeMcpConfigFile(
+            $magentoRoot,
+            '.mcp.json',
+            fn() => $configWriter->writeMcpConfig($envType),
+            $force,
+            $envType,
+            $createdFiles,
+            $skippedFiles
+        );
 
         // Generate .bricklayer.json configuration
         $initCommand = $this->getApplication()->find('init');
@@ -230,17 +238,40 @@ HELP
 
         // Generate PhpStorm MCP config when phpstorm agent is selected
         if (in_array('phpstorm', $agents, true)) {
-            $phpStormConfigPath = $magentoRoot . '/.idea/mcp.json';
-            if ($force || !file_exists($phpStormConfigPath)) {
-                $configWriter->writePhpStormConfig($envType);
-                $createdFiles[] = '.idea/mcp.json' . ($envType !== 'native' ? " (configured for $envType)" : '');
-            } else {
-                $skippedFiles[] = '.idea/mcp.json (exists, use --force to overwrite)';
-            }
+            $this->writeMcpConfigFile(
+                $magentoRoot,
+                '.idea/mcp.json',
+                fn() => $configWriter->writePhpStormConfig($envType),
+                $force,
+                $envType,
+                $createdFiles,
+                $skippedFiles
+            );
         }
 
-        // Generate agent-specific files
+        // Generate Codex MCP config when codex agent is selected
+        if (in_array('codex', $agents, true)) {
+            $this->writeMcpConfigFile(
+                $magentoRoot,
+                '.codex/config.toml',
+                fn() => $configWriter->writeCodexConfig($envType),
+                $force,
+                $envType,
+                $createdFiles,
+                $skippedFiles
+            );
+        }
+
+        // Generate agent-specific files; gemini and codex share AGENTS.md,
+        // so write each distinct file only once
+        $generatedAgentFiles = [];
         foreach ($agents as $agent) {
+            $filename = (new GuidelinesCompiler($magentoRoot))->getFilename($agent);
+            if (in_array($filename, $generatedAgentFiles, true)) {
+                continue;
+            }
+            $generatedAgentFiles[] = $filename;
+
             $result = $this->generateAgentConfig($magentoRoot, $agent, $force, $envType);
             if ($result['created']) {
                 $createdFiles[] = $result['file'];
@@ -273,6 +304,9 @@ HELP
             }
             if (in_array('phpstorm', $agents, true)) {
                 $instructions[] = 'PhpStorm: Settings → Tools → AI Assistant → MCP Servers → Enable';
+            }
+            if (in_array('codex', $agents, true)) {
+                $instructions[] = 'Codex: Mark the project as trusted so .codex/config.toml is loaded';
             }
 
             foreach ($instructions as $instruction) {
@@ -308,7 +342,7 @@ HELP
      */
     private function buildAgentLabels(GuidelinesCompiler $compiler): array
     {
-        $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini'];
+        $agents = ['claude-code', 'cursor', 'copilot', 'phpstorm', 'gemini', 'codex'];
         $map = [];
         foreach ($agents as $agent) {
             $filename = $compiler->getFilename($agent);
@@ -318,6 +352,7 @@ HELP
                 'copilot' => "GitHub Copilot ($filename)",
                 'phpstorm' => "PhpStorm/JetBrains ($filename)",
                 'gemini' => "Google Gemini ($filename)",
+                'codex' => "OpenAI Codex ($filename + .codex/config.toml)",
             };
         }
         return $map;
@@ -343,5 +378,31 @@ HELP
         file_put_contents($filepath, $content);
 
         return ['created' => true, 'file' => $filename];
+    }
+
+    /**
+     * Write an MCP config file unless it already exists and --force is not
+     * set, recording the outcome in the created/skipped lists.
+     *
+     * @param callable(): void $writer
+     * @param list<string> $createdFiles
+     * @param list<string> $skippedFiles
+     */
+    private function writeMcpConfigFile(
+        string $magentoRoot,
+        string $relativePath,
+        callable $writer,
+        bool $force,
+        string $envType,
+        array &$createdFiles,
+        array &$skippedFiles
+    ): void {
+        if (!$force && file_exists($magentoRoot . '/' . $relativePath)) {
+            $skippedFiles[] = "$relativePath (exists, use --force to overwrite)";
+            return;
+        }
+
+        $writer();
+        $createdFiles[] = $relativePath . ($envType !== 'native' ? " (configured for $envType)" : '');
     }
 }

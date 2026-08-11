@@ -177,6 +177,78 @@ class McpConfigWriter
         file_put_contents($ideaDir . '/mcp.json', $json . "\n");
     }
 
+    /**
+     * Write the Codex MCP server config into .codex/config.toml.
+     *
+     * Codex reads project-scoped MCP servers from .codex/config.toml (trusted
+     * projects only). If the file already exists, only the
+     * [mcp_servers.magento-bricklayer] section is replaced or appended so that
+     * user-managed settings in the same file are preserved.
+     */
+    public function writeCodexConfig(string $envType = 'native'): void
+    {
+        $codexDir = $this->projectRoot . '/.codex';
+        if (!is_dir($codexDir)) {
+            mkdir($codexDir, 0755, true);
+        }
+
+        $configPath = $codexDir . '/config.toml';
+        $existing = file_exists($configPath) ? (string) file_get_contents($configPath) : '';
+        $section = $this->buildCodexServerSection($envType);
+
+        $content = $this->replaceCodexServerSection($existing, $section);
+
+        file_put_contents($configPath, rtrim($content) . "\n");
+    }
+
+    /**
+     * Replace the [mcp_servers.magento-bricklayer] section in an existing
+     * config, or append it, leaving user-managed settings untouched.
+     */
+    private function replaceCodexServerSection(string $existing, string $section): string
+    {
+        if ($existing === '') {
+            return $section;
+        }
+
+        // A section runs until the next table header at the start of a line
+        // (a bare [^\[]* would stop at the "[" inside args = [...]).
+        $pattern = '/(?:^|\n)\[mcp_servers\.magento-bricklayer\].*?(?=\n\[|\z)/s';
+        if (!preg_match($pattern, $existing, $match, PREG_OFFSET_CAPTURE)) {
+            return rtrim($existing) . "\n\n" . $section;
+        }
+
+        [$currentSection, $offset] = $match[0];
+        $isAtStartOfFile = $offset === 0;
+        $replacement = ($isAtStartOfFile ? '' : "\n") . $section;
+
+        return substr_replace($existing, $replacement, $offset, strlen($currentSection));
+    }
+
+    private function buildCodexServerSection(string $envType): string
+    {
+        $server = $this->getMcpServerConfig($envType);
+
+        $args = implode(', ', array_map(
+            fn(string $arg) => $this->tomlString($arg),
+            $server['args']
+        ));
+
+        return implode("\n", [
+            '[mcp_servers.magento-bricklayer]',
+            'command = ' . $this->tomlString($server['command']),
+            "args = [$args]",
+            'required = true',
+            'startup_timeout_sec = 30',
+            'tool_timeout_sec = 120',
+        ]);
+    }
+
+    private function tomlString(string $value): string
+    {
+        return '"' . addcslashes($value, "\"\\") . '"';
+    }
+
     /** @return array<string> */
     public static function getAvailableEnvironmentTypes(): array
     {
