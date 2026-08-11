@@ -192,25 +192,37 @@ class McpConfigWriter
             mkdir($codexDir, 0755, true);
         }
 
-        $section = $this->buildCodexServerSection($envType);
         $configPath = $codexDir . '/config.toml';
+        $existing = file_exists($configPath) ? (string) file_get_contents($configPath) : '';
+        $section = $this->buildCodexServerSection($envType);
 
-        if (file_exists($configPath)) {
-            $existing = (string) file_get_contents($configPath);
-            // Section runs until the next table header at the start of a line
-            // (a bare [^\[]* would stop at the "[" inside args = [...]).
-            $pattern = '/(?:^|\n)\[mcp_servers\.magento-bricklayer\].*?(?=\n\[|\z)/s';
-            if (preg_match($pattern, $existing, $match, PREG_OFFSET_CAPTURE)) {
-                $replacement = ($match[0][1] > 0 ? "\n" : '') . $section;
-                $content = substr_replace($existing, $replacement, $match[0][1], strlen($match[0][0]));
-            } else {
-                $content = rtrim($existing) . "\n\n" . $section . "\n";
-            }
-        } else {
-            $content = $section . "\n";
-        }
+        $content = $this->replaceCodexServerSection($existing, $section);
 
         file_put_contents($configPath, rtrim($content) . "\n");
+    }
+
+    /**
+     * Replace the [mcp_servers.magento-bricklayer] section in an existing
+     * config, or append it, leaving user-managed settings untouched.
+     */
+    private function replaceCodexServerSection(string $existing, string $section): string
+    {
+        if ($existing === '') {
+            return $section;
+        }
+
+        // A section runs until the next table header at the start of a line
+        // (a bare [^\[]* would stop at the "[" inside args = [...]).
+        $pattern = '/(?:^|\n)\[mcp_servers\.magento-bricklayer\].*?(?=\n\[|\z)/s';
+        if (!preg_match($pattern, $existing, $match, PREG_OFFSET_CAPTURE)) {
+            return rtrim($existing) . "\n\n" . $section;
+        }
+
+        [$currentSection, $offset] = $match[0];
+        $isAtStartOfFile = $offset === 0;
+        $replacement = ($isAtStartOfFile ? '' : "\n") . $section;
+
+        return substr_replace($existing, $replacement, $offset, strlen($currentSection));
     }
 
     private function buildCodexServerSection(string $envType): string

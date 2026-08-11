@@ -218,13 +218,15 @@ HELP
         $skippedFiles = [];
 
         // Generate MCP configuration
-        $mcpConfigPath = $magentoRoot . '/.mcp.json';
-        if ($force || !file_exists($mcpConfigPath)) {
-            $configWriter->writeMcpConfig($envType);
-            $createdFiles[] = '.mcp.json' . ($envType !== 'native' ? " (configured for $envType)" : '');
-        } else {
-            $skippedFiles[] = '.mcp.json (exists, use --force to overwrite)';
-        }
+        $this->writeMcpConfigFile(
+            $magentoRoot,
+            '.mcp.json',
+            fn() => $configWriter->writeMcpConfig($envType),
+            $force,
+            $envType,
+            $createdFiles,
+            $skippedFiles
+        );
 
         // Generate .bricklayer.json configuration
         $initCommand = $this->getApplication()->find('init');
@@ -236,24 +238,28 @@ HELP
 
         // Generate PhpStorm MCP config when phpstorm agent is selected
         if (in_array('phpstorm', $agents, true)) {
-            $phpStormConfigPath = $magentoRoot . '/.idea/mcp.json';
-            if ($force || !file_exists($phpStormConfigPath)) {
-                $configWriter->writePhpStormConfig($envType);
-                $createdFiles[] = '.idea/mcp.json' . ($envType !== 'native' ? " (configured for $envType)" : '');
-            } else {
-                $skippedFiles[] = '.idea/mcp.json (exists, use --force to overwrite)';
-            }
+            $this->writeMcpConfigFile(
+                $magentoRoot,
+                '.idea/mcp.json',
+                fn() => $configWriter->writePhpStormConfig($envType),
+                $force,
+                $envType,
+                $createdFiles,
+                $skippedFiles
+            );
         }
 
         // Generate Codex MCP config when codex agent is selected
         if (in_array('codex', $agents, true)) {
-            $codexConfigPath = $magentoRoot . '/.codex/config.toml';
-            if ($force || !file_exists($codexConfigPath)) {
-                $configWriter->writeCodexConfig($envType);
-                $createdFiles[] = '.codex/config.toml' . ($envType !== 'native' ? " (configured for $envType)" : '');
-            } else {
-                $skippedFiles[] = '.codex/config.toml (exists, use --force to overwrite)';
-            }
+            $this->writeMcpConfigFile(
+                $magentoRoot,
+                '.codex/config.toml',
+                fn() => $configWriter->writeCodexConfig($envType),
+                $force,
+                $envType,
+                $createdFiles,
+                $skippedFiles
+            );
         }
 
         // Generate agent-specific files; gemini and codex share AGENTS.md,
@@ -372,5 +378,31 @@ HELP
         file_put_contents($filepath, $content);
 
         return ['created' => true, 'file' => $filename];
+    }
+
+    /**
+     * Write an MCP config file unless it already exists and --force is not
+     * set, recording the outcome in the created/skipped lists.
+     *
+     * @param callable(): void $writer
+     * @param list<string> $createdFiles
+     * @param list<string> $skippedFiles
+     */
+    private function writeMcpConfigFile(
+        string $magentoRoot,
+        string $relativePath,
+        callable $writer,
+        bool $force,
+        string $envType,
+        array &$createdFiles,
+        array &$skippedFiles
+    ): void {
+        if (!$force && file_exists($magentoRoot . '/' . $relativePath)) {
+            $skippedFiles[] = "$relativePath (exists, use --force to overwrite)";
+            return;
+        }
+
+        $writer();
+        $createdFiles[] = $relativePath . ($envType !== 'native' ? " (configured for $envType)" : '');
     }
 }
