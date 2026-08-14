@@ -1,0 +1,13 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.inchoo/magento-bricklayer",
+  "title": "Magento Bricklayer",
+  "description": "Magento 2 runtime introspection for agents: resolved DI, plugins, preferences, EAV, layout...",
+  "repository": {
+    "url": "https://github.com/Inchoo/magento-bricklayer",
+    "source": "github"
+  },
+  "version": "1.18.0",
+  "websiteUrl": "https://github.com/Inchoo/magento-bricklayer",
+  "packages": []
+}
