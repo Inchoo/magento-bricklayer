@@ -7,12 +7,14 @@ parameters:
         - src
         - tests
     excludePaths:
-        - vendor
+        - vendor (?)
         - tests/Stubs
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
+        # Successors of the pre-2.x checkMissingIterableValueType /
+        # checkGenericClassInNonGenericObjectType boolean switches
+        - identifier: missingType.iterableValue
+        - identifier: missingType.generics
         # Magento classes may not be available during static analysis
         - '#Class Magento\\[a-zA-Z0-9\\]+ not found#'
         - '#Interface Magento\\[a-zA-Z0-9\\]+ not found#'

@@ -1,2 +1,4 @@
 .phpunit.cache/
 .wiki-publish/
+/vendor/
+/composer.lock
