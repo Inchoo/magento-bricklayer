@@ -62,7 +62,8 @@ class OrderTools
 
     #[McpTool(
         name: 'order-list',
-        description: 'Search orders. Filter by status. Use fields to limit response. Set count_only=true to check size before fetching.',
+        description: 'Search orders. Filter by status. Use fields to limit response. '
+            . 'Set count_only=true to check size before fetching.',
         meta: ['hidden' => true]
     )]
     public function listOrders(
@@ -1158,7 +1159,9 @@ class OrderTools
         try {
             $shipmentRepository = MagentoBootstrap::get(\Magento\Sales\Api\ShipmentRepositoryInterface::class);
             $trackFactory = MagentoBootstrap::get(\Magento\Sales\Api\Data\ShipmentTrackInterfaceFactory::class);
-            $shipmentTrackRepository = MagentoBootstrap::get(\Magento\Sales\Api\ShipmentTrackRepositoryInterface::class);
+            $shipmentTrackRepository = MagentoBootstrap::get(
+                \Magento\Sales\Api\ShipmentTrackRepositoryInterface::class
+            );
 
             $shipment = $shipmentRepository->get($shipmentId);
 

@@ -62,7 +62,8 @@ class CustomerTools
             foreach ($customer->getCustomAttributes() ?? [] as $attr) {
                 $eavAttribute = $eavConfig->getAttribute('customer', $attr->getAttributeCode());
                 if ($eavAttribute && $eavAttribute->getIsUserDefined()) {
-                    $result['_hint'] = 'Custom attributes present. Use eav-attributes entity_type=customer for metadata';
+                    $result['_hint'] = 'Custom attributes present. Use eav-attributes entity_type=customer '
+                        . 'for metadata';
                     break;
                 }
             }
@@ -86,7 +87,8 @@ class CustomerTools
      */
     #[McpTool(
         name: 'customer-list',
-        description: 'Search customers. Use fields to limit response. Set count_only=true to check size before fetching.',
+        description: 'Search customers. Use fields to limit response. Set count_only=true to check size '
+            . 'before fetching.',
         meta: ['hidden' => true]
     )]
     public function listCustomers(

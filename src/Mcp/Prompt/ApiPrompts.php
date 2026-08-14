@@ -104,6 +104,7 @@ PROMPT);
         $moduleName = "{$vendor}_{$module}";
         $type = $returnType ?: ucfirst($queryName) . 'Output';
 
+        // phpcs:disable Generic.Files.LineLength -- GraphQL SDL heredoc content
         return $this->userMessage(<<<PROMPT
 Create a GraphQL query for {$queryName}:
 
@@ -147,6 +148,7 @@ Resolver requirements:
 - Handle authorization if needed
 - Return array matching the schema structure
 PROMPT);
+        // phpcs:enable Generic.Files.LineLength
     }
 
     /**
@@ -171,6 +173,7 @@ PROMPT);
         $moduleName = "{$vendor}_{$module}";
         $input = $inputType ?: ucfirst($mutationName) . 'Input';
 
+        // phpcs:disable Generic.Files.LineLength -- GraphQL SDL heredoc content
         return $this->userMessage(<<<PROMPT
 Create a GraphQL mutation for {$mutationName}:
 
@@ -208,6 +211,7 @@ Mutation resolver requirements:
 - Handle exceptions gracefully
 - Return structured response with success status
 PROMPT);
+        // phpcs:enable Generic.Files.LineLength
     }
 
     /**

@@ -8,9 +8,8 @@
     <arg name="colors"/>
     <arg value="p"/>
 
-    <!-- Warnings (line length) stay visible but do not fail the gate; errors do. -->
-    <config name="ignore_warnings_on_exit" value="1"/>
-
+    <!-- Strict gate: warnings fail the build too. Heredoc/nowdoc bodies that cannot
+         wrap without changing string content carry scoped phpcs:disable guards. -->
     <rule ref="PSR12"/>
 
     <!-- Descriptive test method names are exempt from the camelCase sniff. -->

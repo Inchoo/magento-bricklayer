@@ -306,7 +306,8 @@ class DiagnosticTools
             'suggestions' => [
                 [
                     'action' => 'Check the di.xml preference for the return type interface',
-                    'reason' => 'A repository or service method returns a concrete class that does not implement the expected interface',
+                    'reason' => 'A repository or service method returns a concrete class that does not implement '
+                        . 'the expected interface',
                     'command' => null,
                     'confidence' => 'high',
                 ],
@@ -319,7 +320,8 @@ class DiagnosticTools
             ],
         ],
         [
-            'match' => '/TypeError|ValueError|ArgumentCountError|ArithmeticError|DivisionByZeroError|UnhandledMatchError/',
+            'match' =>
+                '/TypeError|ValueError|ArgumentCountError|ArithmeticError|DivisionByZeroError|UnhandledMatchError/',
             'category' => 'type',
             'relevant_caches' => [],
             'suggestions' => [
@@ -373,7 +375,9 @@ class DiagnosticTools
      */
     #[McpTool(
         name: 'diagnose-error',
-        description: 'FIRST STEP for any Magento error — combines exception log, stack trace, DI context, and plugin chain analysis into actionable diagnosis with fix suggestions. Use index for older errors, since/pattern to filter.'
+        description: 'FIRST STEP for any Magento error — combines exception log, stack trace, DI context, '
+            . 'and plugin chain analysis into actionable diagnosis with fix suggestions. '
+            . 'Use index for older errors, since/pattern to filter.'
     )]
     public function diagnoseError(
         int $index = 0,
@@ -899,7 +903,10 @@ class DiagnosticTools
 
         // Add indexer suggestion if relevant
         $invalidIndexers = $env['indexers_invalid'] ?? [];
-        if (!empty($invalidIndexers) && in_array($matched['category'] ?? '', ['catalog', 'search', 'database', 'eav'])) {
+        if (
+            !empty($invalidIndexers)
+            && in_array($matched['category'] ?? '', ['catalog', 'search', 'database', 'eav'])
+        ) {
             $enriched[] = [
                 'action' => 'Reindex invalid indexers: ' . implode(', ', $invalidIndexers),
                 'reason' => count($invalidIndexers) . ' indexer(s) need reindexing, which may be related',

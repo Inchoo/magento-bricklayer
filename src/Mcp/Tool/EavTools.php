@@ -30,10 +30,14 @@ class EavTools
 
     #[McpTool(
         name: 'eav-attributes',
-        description: 'Check BEFORE working with product/customer/category data — shows all attributes including custom ones that exist only in database, not in code. Use verbosity for detail control.'
+        description: 'Check BEFORE working with product/customer/category data — shows all attributes '
+            . 'including custom ones that exist only in database, not in code. Use verbosity for detail control.'
     )]
-    public function getEavAttributes(string $entityType, bool $userDefinedOnly = false, string $verbosity = 'standard'): array
-    {
+    public function getEavAttributes(
+        string $entityType,
+        bool $userDefinedOnly = false,
+        string $verbosity = 'standard'
+    ): array {
         if ($error = $this->requireValidVerbosity($verbosity)) {
             return $error;
         }
@@ -88,7 +92,9 @@ class EavTools
                         'is_unique' => (bool) $attribute->getIsUnique(),
                         'default_value' => $attribute->getDefaultValue(),
                         'note' => method_exists($attribute, 'getNote') ? $attribute->getNote() : null,
-                        'sort_order' => method_exists($attribute, 'getSortOrder') ? (int) $attribute->getSortOrder() : null,
+                        'sort_order' => method_exists($attribute, 'getSortOrder')
+                            ? (int) $attribute->getSortOrder()
+                            : null,
                     ],
                     default => [
                         'attribute_id' => (int) $attribute->getAttributeId(),
@@ -115,7 +121,8 @@ class EavTools
                 'attributes' => $attributes,
             ];
 
-            $result['_skill_hint'] = 'For EAV attribute creation and management patterns: development-context category=eav';
+            $result['_skill_hint'] = 'For EAV attribute creation and management patterns: '
+                . 'development-context category=eav';
 
             return $result;
         } catch (\Throwable $e) {

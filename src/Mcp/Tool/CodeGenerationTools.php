@@ -24,8 +24,13 @@ class CodeGenerationTools
         description: 'Scaffold a new module.',
         meta: ['hidden' => true]
     )]
-    public function generateModule(string $vendor, string $module, string $version = '1.0.0', bool $dry_run = false, bool $force = false): array
-    {
+    public function generateModule(
+        string $vendor,
+        string $module,
+        string $version = '1.0.0',
+        bool $dry_run = false,
+        bool $force = false
+    ): array {
         if ($vendor === '' || $module === '') {
             return ['error' => true, 'message' => 'Vendor and module names are required'];
         }

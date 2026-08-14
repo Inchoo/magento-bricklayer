@@ -77,7 +77,13 @@ trait ReadsLogFiles
             return null;
         }
 
-        if (preg_match('/^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(\w+)\.(\w+):\s*(.*)$/', $entry, $matches)) {
+        if (
+            preg_match(
+                '/^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(\w+)\.(\w+):\s*(.*)$/',
+                $entry,
+                $matches
+            )
+        ) {
             return [
                 'timestamp' => $matches[1],
                 'channel' => $matches[2],

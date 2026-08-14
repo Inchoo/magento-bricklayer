@@ -67,7 +67,11 @@ class ProgressiveDisclosureTest extends TestCase
         $this->assertSame(
             17,
             $tier1Count,
-            sprintf('Expected 17 Tier 1 (visible) tools, found %d: %s', $tier1Count, implode(', ', array_keys(array_filter(self::$toolVisibility, fn(bool $hidden) => !$hidden))))
+            sprintf(
+                'Expected 17 Tier 1 (visible) tools, found %d: %s',
+                $tier1Count,
+                implode(', ', array_keys(array_filter(self::$toolVisibility, fn(bool $hidden) => !$hidden)))
+            )
         );
     }
 

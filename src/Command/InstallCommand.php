@@ -328,7 +328,8 @@ HELP
                 $instructions[] = 'Codex: Mark the project as trusted so .codex/config.toml is loaded';
             }
             if (in_array('mistral-vibe', $agents, true)) {
-                $instructions[] = 'Mistral Vibe: Configuration applied automatically (.vibe/config.toml is picked up on next start)';
+                $instructions[] = 'Mistral Vibe: Configuration applied automatically (.vibe/config.toml is picked '
+                    . 'up on next start)';
             }
 
             foreach ($instructions as $instruction) {
@@ -381,8 +382,12 @@ HELP
         return $map;
     }
 
-    private function generateAgentConfig(string $projectRoot, string $agent, bool $force, string $envType = 'native'): array
-    {
+    private function generateAgentConfig(
+        string $projectRoot,
+        string $agent,
+        bool $force,
+        string $envType = 'native'
+    ): array {
         $compiler = new GuidelinesCompiler($projectRoot);
         $filename = $compiler->getFilename($agent);
         $filepath = $projectRoot . '/' . $filename;

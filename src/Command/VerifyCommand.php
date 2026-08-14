@@ -252,7 +252,11 @@ HELP
                 $summary = $disabled > 0 ? "$disabled tools disabled" : 'all tools enabled';
                 $this->addResult('Bricklayer config', 'pass', ".bricklayer.json ($summary)");
             } catch (\Throwable $e) {
-                $this->addResult('Bricklayer config', 'warn', '.bricklayer.json exists but has errors: ' . $e->getMessage());
+                $this->addResult(
+                    'Bricklayer config',
+                    'warn',
+                    '.bricklayer.json exists but has errors: ' . $e->getMessage()
+                );
             }
             return;
         }

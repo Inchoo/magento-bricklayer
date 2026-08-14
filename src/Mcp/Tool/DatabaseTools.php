@@ -25,7 +25,8 @@ class DatabaseTools
 
     #[McpTool(
         name: 'database-schema',
-        description: 'Check BEFORE writing db_schema.xml — shows actual database table structure. Runtime schema may differ from declarative schema due to third-party modules or patches.'
+        description: 'Check BEFORE writing db_schema.xml — shows actual database table structure. '
+            . 'Runtime schema may differ from declarative schema due to third-party modules or patches.'
     )]
     public function getDatabaseSchema(string $table = '', string $pattern = ''): array
     {

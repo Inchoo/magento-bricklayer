@@ -25,7 +25,9 @@ class ExceptionParserTest extends TestCase
     {
         $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            "[$timestamp] main.CRITICAL: Exception message here {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Exception message here at /var/www/html/vendor/magento/framework/View/Layout.php:345)\"} []",
+            "[$timestamp] main.CRITICAL: Exception message here {\"exception\":\"[object] "
+                . "(Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Exception message here at "
+                . "/var/www/html/vendor/magento/framework/View/Layout.php:345)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');
@@ -72,7 +74,11 @@ class ExceptionParserTest extends TestCase
     {
         $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Magento\\\\Framework\\\\Exception\\\\RuntimeException(code: 0): Inner cause at /var/www/html/app/code/Vendor/Module/Block/Custom.php:28)\"} []",
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] "
+                . "(Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at "
+                . "/var/www/html/vendor/magento/framework/View/Layout.php:345, "
+                . "Magento\\\\Framework\\\\Exception\\\\RuntimeException(code: 0): Inner cause at "
+                . "/var/www/html/app/code/Vendor/Module/Block/Custom.php:28)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');
@@ -98,8 +104,10 @@ class ExceptionParserTest extends TestCase
         $recentTimestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-30 minutes'));
 
         $lines = [
-            "[$oldTimestamp] main.CRITICAL: Old error {\"exception\":\"[object] (RuntimeError(code: 0): Old error at /var/www/html/test.php:1)\"} []",
-            "[$recentTimestamp] main.CRITICAL: Recent error {\"exception\":\"[object] (RuntimeError(code: 0): Recent error at /var/www/html/test.php:2)\"} []",
+            "[$oldTimestamp] main.CRITICAL: Old error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Old error at /var/www/html/test.php:1)\"} []",
+            "[$recentTimestamp] main.CRITICAL: Recent error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Recent error at /var/www/html/test.php:2)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h');
@@ -113,8 +121,10 @@ class ExceptionParserTest extends TestCase
         $timestamp = date('Y-m-d\TH:i:s.u+00:00');
 
         $lines = [
-            "[$timestamp] main.CRITICAL: Invalid block type error {\"exception\":\"[object] (RuntimeError(code: 0): Invalid block type error at /var/www/html/test.php:1)\"} []",
-            "[$timestamp] main.CRITICAL: Database connection failed {\"exception\":\"[object] (RuntimeError(code: 0): Database connection failed at /var/www/html/test.php:2)\"} []",
+            "[$timestamp] main.CRITICAL: Invalid block type error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Invalid block type error at /var/www/html/test.php:1)\"} []",
+            "[$timestamp] main.CRITICAL: Database connection failed {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Database connection failed at /var/www/html/test.php:2)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h', 'block');
@@ -128,9 +138,12 @@ class ExceptionParserTest extends TestCase
         $timestamp = date('Y-m-d\TH:i:s.u+00:00');
 
         $lines = [
-            "[$timestamp] main.CRITICAL: Error one {\"exception\":\"[object] (RuntimeError(code: 0): Error one at /var/www/html/test.php:1)\"} []",
-            "[$timestamp] main.CRITICAL: Error two {\"exception\":\"[object] (RuntimeError(code: 0): Error two at /var/www/html/test.php:2)\"} []",
-            "[$timestamp] main.CRITICAL: Error three {\"exception\":\"[object] (RuntimeError(code: 0): Error three at /var/www/html/test.php:3)\"} []",
+            "[$timestamp] main.CRITICAL: Error one {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Error one at /var/www/html/test.php:1)\"} []",
+            "[$timestamp] main.CRITICAL: Error two {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Error two at /var/www/html/test.php:2)\"} []",
+            "[$timestamp] main.CRITICAL: Error three {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Error three at /var/www/html/test.php:3)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h');
@@ -149,7 +162,8 @@ class ExceptionParserTest extends TestCase
         $lines = [
             'Random text without any timestamp format',
             'Another line of junk data',
-            "[$timestamp] main.CRITICAL: Valid error {\"exception\":\"[object] (RuntimeError(code: 0): Valid error at /var/www/html/test.php:1)\"} []",
+            "[$timestamp] main.CRITICAL: Valid error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Valid error at /var/www/html/test.php:1)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h');
@@ -188,8 +202,10 @@ class ExceptionParserTest extends TestCase
         $newer = date('Y-m-d\TH:i:s.u+00:00', strtotime('-5 minutes'));
 
         $lines = [
-            "[$older] main.CRITICAL: First error {\"exception\":\"[object] (RuntimeError(code: 0): First error at /test.php:1)\"} []",
-            "[$newer] main.CRITICAL: Second error {\"exception\":\"[object] (RuntimeError(code: 0): Second error at /test.php:2)\"} []",
+            "[$older] main.CRITICAL: First error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): First error at /test.php:1)\"} []",
+            "[$newer] main.CRITICAL: Second error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Second error at /test.php:2)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h');
@@ -204,9 +220,11 @@ class ExceptionParserTest extends TestCase
     public function testRawPhpFatalErrorWithUncaughtException(): void
     {
         $lines = [
-            'PHP Fatal error: Uncaught TypeError: Argument 1 passed to Vendor\\Module\\Model\\Service::process() must be of type int, string given in /var/www/html/app/code/Vendor/Module/Model/Service.php:42',
+            'PHP Fatal error: Uncaught TypeError: Argument 1 passed to Vendor\\Module\\Model\\Service::process() '
+                . 'must be of type int, string given in /var/www/html/app/code/Vendor/Module/Model/Service.php:42',
             'Stack trace:',
-            '#0 /var/www/html/vendor/magento/framework/Interception/Interceptor.php(58): Vendor\\Module\\Model\\Service->process()',
+            '#0 /var/www/html/vendor/magento/framework/Interception/Interceptor.php(58): '
+                . 'Vendor\\Module\\Model\\Service->process()',
             '#1 {main}',
         ];
 
@@ -226,7 +244,8 @@ class ExceptionParserTest extends TestCase
     public function testRawPhpParseError(): void
     {
         $lines = [
-            "PHP Parse error: syntax error, unexpected '}' in /var/www/html/app/code/Vendor/Module/Helper/Data.php on line 55",
+            "PHP Parse error: syntax error, unexpected '}' "
+                . "in /var/www/html/app/code/Vendor/Module/Helper/Data.php on line 55",
         ];
 
         // Parse error format differs — "on line 55" vs "in file:55", so class extraction may not match.
@@ -241,7 +260,8 @@ class ExceptionParserTest extends TestCase
     public function testBareExceptionClassFormat(): void
     {
         $lines = [
-            'ValueError: strlen(): Argument #1 ($string) must be of type string, null given in /var/www/html/vendor/magento/framework/Serialize/Serializer/Json.php:30',
+            'ValueError: strlen(): Argument #1 ($string) must be of type string, null given '
+                . 'in /var/www/html/vendor/magento/framework/Serialize/Serializer/Json.php:30',
         ];
 
         $result = $this->parser->parse($lines, '24h');
@@ -259,9 +279,11 @@ class ExceptionParserTest extends TestCase
         $timestamp2 = date('Y-m-d\TH:i:s.u+00:00', strtotime('-5 minutes'));
 
         $lines = [
-            "[$timestamp1] main.CRITICAL: First monolog error {\"exception\":\"[object] (RuntimeError(code: 0): First monolog error at /test.php:1)\"} []",
+            "[$timestamp1] main.CRITICAL: First monolog error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): First monolog error at /test.php:1)\"} []",
             'PHP Fatal error: Uncaught TypeError: Raw PHP error in /var/www/html/test.php:99',
-            "[$timestamp2] main.CRITICAL: Second monolog error {\"exception\":\"[object] (RuntimeError(code: 0): Second monolog error at /test.php:3)\"} []",
+            "[$timestamp2] main.CRITICAL: Second monolog error {\"exception\":\"[object] "
+                . "(RuntimeError(code: 0): Second monolog error at /test.php:3)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '1h');
@@ -281,8 +303,10 @@ class ExceptionParserTest extends TestCase
     public function testParseReportFile_StandardFormat(): void
     {
         $reportData = [
-            0 => 'TypeError: Return value must be of type string, null returned in /var/www/html/app/code/Vendor/Module/Model/Config.php:87',
-            1 => "#0 /var/www/html/vendor/magento/framework/App/Http.php(116): ...\n#1 /var/www/html/pub/index.php(7): ...",
+            0 => 'TypeError: Return value must be of type string, null returned '
+                . 'in /var/www/html/app/code/Vendor/Module/Model/Config.php:87',
+            1 => "#0 /var/www/html/vendor/magento/framework/App/Http.php(116): "
+                . "...\n#1 /var/www/html/pub/index.php(7): ...",
             'url' => '/checkout/cart/',
             'script_name' => '/var/www/html/pub/index.php',
             'report_time' => '2026-02-10 14:30:00',
@@ -387,7 +411,11 @@ class ExceptionParserTest extends TestCase
     {
         $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Vendor\\\\Module2\\\\Exception\\\\Custom2Exception(code: 1): Inner cause at /var/www/html/app/code/Vendor/Module2/Block/Custom.php:28)\"} []",
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] "
+                . "(Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at "
+                . "/var/www/html/vendor/magento/framework/View/Layout.php:345, "
+                . "Vendor\\\\Module2\\\\Exception\\\\Custom2Exception(code: 1): Inner cause at "
+                . "/var/www/html/app/code/Vendor/Module2/Block/Custom.php:28)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');
@@ -402,7 +430,11 @@ class ExceptionParserTest extends TestCase
     {
         $timestamp = date('Y-m-d\TH:i:s.u+00:00', strtotime('-10 minutes'));
         $lines = [
-            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] (Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at /var/www/html/vendor/magento/framework/View/Layout.php:345, Vendor\\\\Module\\\\Exception\\\\Custom_Exception(code: 2): Underscore cause at /var/www/html/app/code/Vendor/Module/Block/Custom.php:42)\"} []",
+            "[$timestamp] main.CRITICAL: Outer exception {\"exception\":\"[object] "
+                . "(Magento\\\\Framework\\\\Exception\\\\LocalizedException(code: 0): Outer exception at "
+                . "/var/www/html/vendor/magento/framework/View/Layout.php:345, "
+                . "Vendor\\\\Module\\\\Exception\\\\Custom_Exception(code: 2): Underscore cause at "
+                . "/var/www/html/app/code/Vendor/Module/Block/Custom.php:42)\"} []",
         ];
 
         $result = $this->parser->parse($lines, '24h');

@@ -74,7 +74,8 @@ class ConfigSetCommand extends AbstractBricklayerCommand
             ->addArgument(
                 'key',
                 InputArgument::OPTIONAL,
-                'Dot-notation key (e.g. "tools.product-delete.enabled"). If omitted, the command prompts you to pick one.'
+                'Dot-notation key (e.g. "tools.product-delete.enabled"). If omitted, the command prompts you '
+                    . 'to pick one.'
             )
             ->addArgument(
                 'value',

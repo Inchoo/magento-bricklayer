@@ -81,7 +81,9 @@ class ConfigurationTools
 
     #[McpTool(
         name: 'check-class',
-        description: 'Essential pre-check before modifying any class — returns combined plugin list, DI configuration, and preferences in one call. Shows the full runtime picture that file reading misses.'
+        description: 'Essential pre-check before modifying any class — returns combined plugin list, '
+            . 'DI configuration, and preferences in one call. '
+            . 'Shows the full runtime picture that file reading misses.'
     )]
     public function checkClass(string $className): array
     {
@@ -130,7 +132,8 @@ class ConfigurationTools
             $result['preferences'] = ['error' => $e->getMessage()];
         }
 
-        $result['_skill_hint'] = 'Load relevant development guidelines with development-context based on what you plan to modify.';
+        $result['_skill_hint'] = 'Load relevant development guidelines with development-context '
+            . 'based on what you plan to modify.';
 
         return $result;
     }
@@ -144,7 +147,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'di-configuration',
-        description: 'Check BEFORE modifying DI — shows runtime-resolved config for a class including preferences, arguments, and virtual types from all modules. File reading misses cross-module overrides.'
+        description: 'Check BEFORE modifying DI — shows runtime-resolved config for a class including preferences, '
+            . 'arguments, and virtual types from all modules. File reading misses cross-module overrides.'
     )]
     public function getDiConfiguration(string $className, string $area = 'global'): array
     {
@@ -195,7 +199,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'plugin-list',
-        description: 'Check BEFORE writing a plugin — lists existing plugins on a class with sortOrder. Prevents sortOrder conflicts and reveals the full interceptor chain across all modules.'
+        description: 'Check BEFORE writing a plugin — lists existing plugins on a class with sortOrder. '
+            . 'Prevents sortOrder conflicts and reveals the full interceptor chain across all modules.'
     )]
     public function getPluginList(string $className, string $method = ''): array
     {
@@ -240,7 +245,8 @@ class ConfigurationTools
                 'plugins' => $plugins,
             ];
 
-            $result['_skill_hint'] = 'For plugin development patterns and sortOrder best practices: development-context category=plugin';
+            $result['_skill_hint'] = 'For plugin development patterns and sortOrder best practices: '
+                . 'development-context category=plugin';
 
             return $result;
         } catch (\Throwable $e) {
@@ -303,7 +309,10 @@ class ConfigurationTools
                 if ($area === 'global') {
                     if (
                         !preg_match('#/etc/events\.xml$#', $relativePath)
-                        || preg_match('#/etc/(frontend|adminhtml|webapi_rest|webapi_soap|graphql|crontab)/#', $relativePath)
+                        || preg_match(
+                            '#/etc/(frontend|adminhtml|webapi_rest|webapi_soap|graphql|crontab)/#',
+                            $relativePath
+                        )
                     ) {
                         continue;
                     }
@@ -449,7 +458,8 @@ class ConfigurationTools
      */
     #[McpTool(
         name: 'preference-list',
-        description: 'Check BEFORE overriding a class — lists all preferences (rewrites). Reveals if another module already replaces the target class, preventing conflicts.'
+        description: 'Check BEFORE overriding a class — lists all preferences (rewrites). '
+            . 'Reveals if another module already replaces the target class, preventing conflicts.'
     )]
     public function getPreferenceList(string $interface = ''): array
     {
@@ -508,7 +518,8 @@ class ConfigurationTools
                 'preferences' => $preferences,
             ];
 
-            $result['_skill_hint'] = 'For preference and class override patterns: development-context category=preference';
+            $result['_skill_hint'] = 'For preference and class override patterns: '
+                . 'development-context category=preference';
 
             return $result;
         } catch (\Throwable $e) {

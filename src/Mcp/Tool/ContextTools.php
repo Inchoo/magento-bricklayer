@@ -282,12 +282,15 @@ class ContextTools
      *
      * Use category "list" to see all available categories.
      *
-     * @param string $category The development task category (e.g., "hyva-checkout", "plugin", "eav") or "list" to see available categories
+     * @param string $category The development task category (e.g., "hyva-checkout", "plugin", "eav")
+     *     or "list" to see available categories
      * @return array<string, mixed> Context with compiled skills and guidelines markdown
      */
     #[McpTool(
         name: 'development-context',
-        description: 'Load coding guidelines and development patterns BEFORE writing code. Use category "list" to see available categories. Always load "coding-standards" for any PHP file.'
+        description: 'Load coding guidelines and development patterns BEFORE writing code. '
+            . 'Use category "list" to see available categories. '
+            . 'Always load "coding-standards" for any PHP file.'
     )]
     public function getDevelopmentContext(string $category): array
     {
@@ -306,7 +309,8 @@ class ContextTools
             }
             return [
                 'error' => true,
-                'message' => "Unknown category: '$category'. Available categories: $available. Use category 'list' for descriptions.",
+                'message' => "Unknown category: '$category'. Available categories: $available. "
+                    . "Use category 'list' for descriptions.",
             ];
         }
 
