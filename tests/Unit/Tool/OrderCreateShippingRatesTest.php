@@ -283,7 +283,6 @@ class OrderCreateShippingRatesTest extends TestCase
 
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty('objectManager');
-        $prop->setAccessible(true);
         $prop->setValue(null, $objectManager);
     }
 }

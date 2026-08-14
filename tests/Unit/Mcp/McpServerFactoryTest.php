@@ -25,7 +25,6 @@ class McpServerFactoryTest extends TestCase
         $factory = new McpServerFactory();
         $ref = new \ReflectionClass($factory);
         $method = $ref->getMethod('getServerInstructions');
-        $method->setAccessible(true);
 
         $instructions = $method->invoke($factory);
 
@@ -44,7 +43,6 @@ class McpServerFactoryTest extends TestCase
 
         $ref = new \ReflectionClass($factory);
         $method = $ref->getMethod('getServerInstructions');
-        $method->setAccessible(true);
 
         $instructions = $method->invoke($factory);
 

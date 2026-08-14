@@ -57,11 +57,9 @@ class BootstrapCommentAndCatchTest extends TestCase
         $ref = new \ReflectionClass(MagentoBootstrap::class);
 
         $detectorProp = $ref->getProperty('detector');
-        $detectorProp->setAccessible(true);
         $detectorProp->setValue(null, $originalDetector);
 
         $rootProp = $ref->getProperty('magentoRoot');
-        $rootProp->setAccessible(true);
         $rootProp->setValue(null, $this->tmpDir); // invalid Magento root → will throw
 
         // reinitialize() will call initialize(), which runs self::$detector = new MagentoDetector()
@@ -129,7 +127,6 @@ class BootstrapCommentAndCatchTest extends TestCase
         // Inject objectManager into MagentoBootstrap static state
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $omProp = $ref->getProperty('objectManager');
-        $omProp->setAccessible(true);
         $omProp->setValue(null, $objectManagerMock);
 
         $areaEmulator = new AreaEmulator();
@@ -140,7 +137,6 @@ class BootstrapCommentAndCatchTest extends TestCase
         // Verify $currentArea was set to 'adminhtml' via reflection
         $emulatorRef = new \ReflectionClass(AreaEmulator::class);
         $currentAreaProp = $emulatorRef->getProperty('currentArea');
-        $currentAreaProp->setAccessible(true);
 
         $this->assertSame('adminhtml', $currentAreaProp->getValue($areaEmulator));
     }
@@ -183,7 +179,6 @@ class BootstrapCommentAndCatchTest extends TestCase
         // Inject mock objectManager
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $omProp = $ref->getProperty('objectManager');
-        $omProp->setAccessible(true);
         $omProp->setValue(null, $objectManagerMock);
 
         $areaEmulator = new AreaEmulator();

@@ -236,7 +236,6 @@ class LogDiagnosticBugTest extends TestCase
     ): array {
         $ref = new \ReflectionClass($diag);
         $method = $ref->getMethod('buildHistory');
-        $method->setAccessible(true);
         return $method->invoke($diag, $error, $requestedSource, $analysisHours);
     }
 
@@ -262,7 +261,6 @@ class LogDiagnosticBugTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty('magentoRoot');
-        $prop->setAccessible(true);
         $prop->setValue(null, $path);
     }
 
