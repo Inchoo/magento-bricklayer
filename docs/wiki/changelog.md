@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.18.0
+
+A feature release adding Mistral Vibe and OpenAI Codex agent support, a Magewire 3 skill suite contributed by the Magewire author, a Hyvä Checkout architecture skill, and nested sub-skill resources — plus `reinitialize` fixes that make modules created mid-session visible and stop stale-registry cache poisoning. No breaking changes.
+
+**New**
+- **Mistral Vibe agent support.** `install --agents=mistral-vibe` writes the MCP server config to `.vibe/config.toml` (idempotent — an existing file keeps user-managed settings, only the `[[mcp_servers]]` entry named `magento-bricklayer` is replaced) and compiles `AGENTS.md` guidelines. Vibe reads project-scoped config from `./.vibe/config.toml` automatically, so no extra setup is needed.
+- **OpenAI Codex agent support.** `install --agents=codex` writes the MCP server config to `.codex/config.toml` (idempotent — only the `[mcp_servers.magento-bricklayer]` section is replaced) and compiles `AGENTS.md` guidelines. Note: project-scoped `.codex/config.toml` requires a recent Codex CLI and a trusted project. Gemini, Codex and Mistral Vibe share `AGENTS.md`: it is written once and its footer lists every agent it serves.
+
+**Fixes**
+- **Modules created mid-session are now visible after `reinitialize`.** Component registration runs once per PHP process via Composer's autoload hook, so a fresh ObjectManager reused the stale `ComponentRegistrar` registry: a new `app/code` module stayed invisible to `code-runner` and config readers, and reinitialization could regenerate merged-config caches *without* the module into shared cache storage. Registration globs now re-run on every (re)init, and Composer's `autoload_files.php` is re-scanned on reinit for packages installed mid-session.
+- **`reinitialize` aborts before touching shared caches when the registry is irrecoverably stale** — a module enabled in `config.php` but not registered, or an *enabled* module's directory deleted. Reinit refuses with an actionable "restart the MCP server" error and keeps the previous ObjectManager instead of silently poisoning caches; sentinel-triggered auto-reinit refuses the tool call the same way rather than answering from stale state.
+- **`reinitialize` response is honest about registry state.** Reports `registered_components` and `newly_registered_files` alongside `modules_loaded`, surfaces a failed module-count read as `modules_loaded_error`, and a `warning` field flags enabled-but-unregistered modules and registered components removed from disk.
+- **`MagentoBootstrap::reset()` now clears the sentinel-mtime snapshot and reinit stats**, not just the ObjectManager and root path.
+
+**Skills**
+- **Magewire 3 development suite** — a new `magewire-three` skill covering greenfield Magewire 3 components, Magewire V1→V3 migration, Livewire V3-style directives and events, component resolvers, snapshots, synthesizers, compiled templates, and Alpine CSP integration — with nested sub-skills for architecture internals, the per-component backwards-compatibility layer, application-code best practices, CSP-compatible JavaScript, theme compatibility modules, and the Portman framework-maintainer workflow. Contributed by Magewire author Willem Poortman.
+- **Hyvä Checkout architecture and development** — a central skill covering Evaluation results, primary navigation, Place Order Services, frontend payment methods and backports, layout-independent integrations, and a mandatory compatibility profile that selects Magewire V1 for checkout 1.0-1.3.*, native Magewire 3 for new components on 1.4+, or the backwards-compatibility migration track for existing V1 components. The existing API, configuration, and Magewire guides were corrected to remove component-owned order placement and direct step progression patterns.
+
+**Improvements**
+- **Nested sub-skill resources.** A skill directory can now contain focused topic sub-directories, served via the new `magento://skills/{name}/{topic}` resource template. Previously only flat `magento://skills/{name}` URIs resolved.
+- **Frontmatter stripped from skill resources.** An optional YAML frontmatter block in a `SKILL.md` is removed before the content is served over `resources/read`, matching `development-context` behavior. Path segments containing `..` are rejected.
+
+**Counts:** 84 tools (unchanged), 21 tool classes, 36 runtime-configurable tools, 3 reference resources.
+
 ## 1.17.0
 
 A feature release adding an order-creation tool, plus `code-runner` correctness fixes, a canonical `.phtml` template convention, and community/contribution docs. No breaking changes.

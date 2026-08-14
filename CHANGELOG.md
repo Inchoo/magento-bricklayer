@@ -1,4 +1,6 @@
-# Unreleased
+# 1.18.0
+
+A feature release adding Mistral Vibe and OpenAI Codex agent support, a Magewire 3 skill suite contributed by the Magewire author, a Hyvä Checkout architecture skill, and nested sub-skill resources — plus `reinitialize` fixes that make modules created mid-session visible and stop stale-registry cache poisoning. No breaking changes.
 
 **New**
 * **Mistral Vibe agent support.** `install --agents=mistral-vibe` writes the MCP server config to `.vibe/config.toml` (environment-aware command; an existing file keeps user-managed settings — only the `[[mcp_servers]]` entry named `magento-bricklayer` is replaced, idempotently) and compiles `AGENTS.md` guidelines. Vibe reads project-scoped config from `./.vibe/config.toml` automatically, so no extra setup is needed. Gemini, Codex and Mistral Vibe share `AGENTS.md`: it is written once and its footer lists all agents it serves.
@@ -11,6 +13,7 @@
 * **`MagentoBootstrap::reset()` now clears the sentinel-mtime snapshot and reinit stats**, not just the ObjectManager and root path.
 
 **Skills**
+* **Magewire 3 development suite** — a new `magewire-three` skill covering greenfield Magewire 3 components, Magewire V1→V3 migration, Livewire V3-style directives and events, component resolvers, snapshots, synthesizers, compiled templates, and Alpine CSP integration — with nested sub-skills for architecture internals (boot modes, Mechanisms, Features, Component Hooks), the per-component backwards-compatibility layer, application-code best practices, CSP-compatible JavaScript, theme compatibility modules (Hyvä Theme, Hyvä Checkout, adminhtml), and the Portman framework-maintainer workflow. Contributed by Magewire author Willem Poortman. Bare index keywords are now domain-prefixed so unrelated searches (e.g. "graphql resolver") no longer surface the Magewire 3 guide.
 * **Hyvä Checkout architecture and development** — added a central skill covering Evaluation results, primary navigation, Place Order Services, frontend payment methods and backports, layout-independent integrations, and a mandatory compatibility profile that selects Magewire V1 for checkout 1.0-1.3.*, native Magewire 3 for new components on 1.4+, or the backwards-compatibility migration track for existing V1 components. Corrected the existing API, configuration, and Magewire guides to remove component-owned order placement and direct step progression patterns.
 
 **Improvements**
