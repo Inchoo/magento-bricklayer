@@ -244,6 +244,78 @@ class McpConfigWriter
         ]);
     }
 
+    /**
+     * Write the Mistral Vibe MCP server config into .vibe/config.toml.
+     *
+     * Vibe reads project-scoped settings from ./.vibe/config.toml (falling back
+     * to ~/.vibe/config.toml) and declares MCP servers as [[mcp_servers]]
+     * array-of-tables entries identified by their "name" key. If the file
+     * already exists, only the magento-bricklayer entry is replaced or appended
+     * so that user-managed settings in the same file are preserved.
+     */
+    public function writeVibeConfig(string $envType = 'native'): void
+    {
+        $vibeDir = $this->projectRoot . '/.vibe';
+        if (!is_dir($vibeDir)) {
+            mkdir($vibeDir, 0755, true);
+        }
+
+        $configPath = $vibeDir . '/config.toml';
+        $existing = file_exists($configPath) ? (string) file_get_contents($configPath) : '';
+        $section = $this->buildVibeServerSection($envType);
+
+        $content = $this->replaceVibeServerSection($existing, $section);
+
+        file_put_contents($configPath, rtrim($content) . "\n");
+    }
+
+    /**
+     * Replace the [[mcp_servers]] entry named magento-bricklayer in an
+     * existing config, or append it, leaving user-managed settings untouched.
+     */
+    private function replaceVibeServerSection(string $existing, string $section): string
+    {
+        if ($existing === '') {
+            return $section;
+        }
+
+        // An entry runs until the next table header at the start of a line
+        // (a bare [^\[]* would stop at the "[" inside args = [...]).
+        $pattern = '/(?:^|\n)\[\[mcp_servers\]\].*?(?=\n\[|\z)/s';
+        preg_match_all($pattern, $existing, $matches, PREG_OFFSET_CAPTURE);
+
+        foreach ($matches[0] as [$currentSection, $offset]) {
+            if (!preg_match('/^\s*name\s*=\s*"magento-bricklayer"\s*$/m', $currentSection)) {
+                continue;
+            }
+
+            $isAtStartOfFile = $offset === 0;
+            $replacement = ($isAtStartOfFile ? '' : "\n") . $section;
+
+            return substr_replace($existing, $replacement, $offset, strlen($currentSection));
+        }
+
+        return rtrim($existing) . "\n\n" . $section;
+    }
+
+    private function buildVibeServerSection(string $envType): string
+    {
+        $server = $this->getMcpServerConfig($envType);
+
+        $args = implode(', ', array_map(
+            fn(string $arg) => $this->tomlString($arg),
+            $server['args']
+        ));
+
+        return implode("\n", [
+            '[[mcp_servers]]',
+            'name = "magento-bricklayer"',
+            'transport = "stdio"',
+            'command = ' . $this->tomlString($server['command']),
+            "args = [$args]",
+        ]);
+    }
+
     private function tomlString(string $value): string
     {
         return '"' . addcslashes($value, "\"\\") . '"';

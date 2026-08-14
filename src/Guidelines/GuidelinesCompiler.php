@@ -22,6 +22,7 @@ class GuidelinesCompiler
         'phpstorm' => '.junie/guidelines.md',
         'gemini' => 'AGENTS.md',
         'codex' => 'AGENTS.md',
+        'mistral-vibe' => 'AGENTS.md',
     ];
 
     private readonly string $packageRoot;

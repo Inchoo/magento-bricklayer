@@ -25,6 +25,7 @@ class ConfigValidator
         'phpstorm',
         'gemini',
         'codex',
+        'mistral-vibe',
     ];
 
     private const KNOWN_GUIDELINE_CATEGORIES = [

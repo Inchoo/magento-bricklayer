@@ -176,6 +176,83 @@ class InstallCommandTest extends TestCase
         $this->assertSame($toml, (string) file_get_contents($this->tmpDir . '/.codex/config.toml'));
     }
 
+    public function testItGeneratesAVibeTomlConfigDuringInstall(): void
+    {
+        $magentoRoot = $this->makeSyntheticMagentoRoot();
+
+        $app = new Application();
+        $command = $app->find('install');
+        $tester = new CommandTester($command);
+
+        $tester->execute([
+            '--magento-root' => $magentoRoot,
+            '--agents' => ['mistral-vibe'],
+            '--env' => 'native',
+            '--force' => true,
+        ]);
+
+        $expectedPath = $magentoRoot . '/.vibe/config.toml';
+        $this->assertFileExists(
+            $expectedPath,
+            'install with --agents=mistral-vibe must create .vibe/config.toml via writeVibeConfig()'
+        );
+
+        $toml = (string) file_get_contents($expectedPath);
+        $this->assertStringContainsString('[[mcp_servers]]', $toml);
+        $this->assertStringContainsString('name = "magento-bricklayer"', $toml);
+        $this->assertStringContainsString('transport = "stdio"', $toml);
+        $this->assertStringContainsString('command = "php"', $toml);
+        $this->assertStringContainsString('args = ["vendor/bin/bricklayer-mcp"]', $toml);
+
+        $this->assertFileExists(
+            $magentoRoot . '/AGENTS.md',
+            'install with --agents=mistral-vibe must also compile AGENTS.md guidelines'
+        );
+    }
+
+    public function testItPreservesUserSettingsWhenUpdatingAnExistingVibeConfig(): void
+    {
+        $existing = <<<TOML
+        active_model = "devstral"
+
+        [[mcp_servers]]
+        name = "magento-bricklayer"
+        transport = "stdio"
+        command = "stale"
+        args = ["old"]
+
+        [[mcp_servers]]
+        name = "other-server"
+        transport = "stdio"
+        command = "node"
+        args = ["server.js"]
+        TOML;
+
+        mkdir($this->tmpDir . '/.vibe', 0755, true);
+        file_put_contents($this->tmpDir . '/.vibe/config.toml', $existing . "\n");
+
+        $writer = new McpConfigWriter($this->tmpDir);
+        $writer->writeVibeConfig('ddev');
+
+        $toml = (string) file_get_contents($this->tmpDir . '/.vibe/config.toml');
+
+        // User-managed settings survive
+        $this->assertStringContainsString('active_model = "devstral"', $toml);
+        $this->assertStringContainsString('name = "other-server"', $toml);
+        $this->assertStringContainsString('args = ["server.js"]', $toml);
+
+        // Stale bricklayer entry fully replaced, not duplicated, no orphan leftovers
+        $this->assertSame(1, substr_count($toml, 'name = "magento-bricklayer"'));
+        $this->assertStringNotContainsString('command = "stale"', $toml);
+        $this->assertStringNotContainsString('["old"]', $toml);
+        $this->assertStringContainsString('command = "ddev"', $toml);
+        $this->assertStringContainsString('args = ["exec", "php", "vendor/bin/bricklayer-mcp"]', $toml);
+
+        // Idempotent: a second run must not change the file
+        $writer->writeVibeConfig('ddev');
+        $this->assertSame($toml, (string) file_get_contents($this->tmpDir . '/.vibe/config.toml'));
+    }
+
     public function testItExposesAvailableEnvironmentTypesFromASingleSource(): void
     {
         $types = McpConfigWriter::getAvailableEnvironmentTypes();

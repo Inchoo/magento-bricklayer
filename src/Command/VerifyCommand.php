@@ -212,6 +212,7 @@ HELP
             '.vscode/mcp.json' => $magentoRoot . '/.vscode/mcp.json',
             '.idea/mcp.json' => $magentoRoot . '/.idea/mcp.json',
             '.codex/config.toml' => $magentoRoot . '/.codex/config.toml',
+            '.vibe/config.toml' => $magentoRoot . '/.vibe/config.toml',
         ];
 
         $found = [];
