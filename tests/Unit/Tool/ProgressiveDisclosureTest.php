@@ -11,6 +11,7 @@ namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use Mcp\Capability\Attribute\McpTool;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -90,9 +91,7 @@ class ProgressiveDisclosureTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider expectedTier1ToolsProvider
-     */
+    #[DataProvider('expectedTier1ToolsProvider')]
     public function testSpecificTier1ToolIsNotHidden(string $toolName): void
     {
         $this->assertArrayHasKey(

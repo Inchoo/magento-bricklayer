@@ -92,26 +92,39 @@ class BootstrapCommentAndCatchTest extends TestCase
      * B25 happy path: setArea() completes without error when objectManager is available
      * and setAreaCode() succeeds on the State mock.
      *
-     * NOTE: this test uses a plain stdClass mock with an added setAreaCode() method
+     * NOTE: this test uses a plain anonymous-class fake with a setAreaCode() method
      * because Magento\Framework\App\State is not available as a compile-time
      * dependency in this standalone library. Any non-throwing setAreaCode() is
      * sufficient to verify the happy path.
      */
     public function testItSetsTheAreaWithoutErrorInTheHappyPath(): void
     {
-        // Build a mock State that has setAreaCode() and does not throw
-        $stateMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['setAreaCode', 'getAreaCode'])
-            ->getMock();
-        $stateMock->method('setAreaCode')->willReturn(null);
+        // Build a fake State that has setAreaCode() and does not throw
+        $stateMock = new class {
+            public ?string $areaCode = null;
 
-        // Build an objectManager mock that returns the state mock
-        $objectManagerMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['get'])
-            ->getMock();
-        $objectManagerMock
-            ->method('get')
-            ->willReturn($stateMock);
+            public function setAreaCode(string $areaCode): void
+            {
+                $this->areaCode = $areaCode;
+            }
+
+            public function getAreaCode(): ?string
+            {
+                return $this->areaCode;
+            }
+        };
+
+        // Build an objectManager fake that returns the state fake
+        $objectManagerMock = new class ($stateMock) {
+            public function __construct(private object $state)
+            {
+            }
+
+            public function get(string $type): object
+            {
+                return $this->state;
+            }
+        };
 
         // Inject objectManager into MagentoBootstrap static state
         $ref = new \ReflectionClass(MagentoBootstrap::class);
@@ -155,13 +168,17 @@ class BootstrapCommentAndCatchTest extends TestCase
             new \Magento\Framework\Phrase('Simulated: area already set')
         );
 
-        // Build an objectManager whose get() throws LocalizedException
-        $objectManagerMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['get'])
-            ->getMock();
-        $objectManagerMock
-            ->method('get')
-            ->willThrowException($localizedException);
+        // Build an objectManager fake whose get() throws LocalizedException
+        $objectManagerMock = new class ($localizedException) {
+            public function __construct(private \Throwable $exception)
+            {
+            }
+
+            public function get(string $type): object
+            {
+                throw $this->exception;
+            }
+        };
 
         // Inject mock objectManager
         $ref = new \ReflectionClass(MagentoBootstrap::class);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\ContextTools;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,9 +26,7 @@ class NextStepsTest extends TestCase
         $this->tools = new ContextTools();
     }
 
-    /**
-     * @dataProvider categoriesWithNextStepsProvider
-     */
+    #[DataProvider('categoriesWithNextStepsProvider')]
     public function testCategoryHasNextSteps(string $category): void
     {
         $result = $this->tools->getDevelopmentContext($category);
@@ -62,9 +61,7 @@ class NextStepsTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider categoriesWithoutNextStepsProvider
-     */
+    #[DataProvider('categoriesWithoutNextStepsProvider')]
     public function testCategoryHasNullNextSteps(string $category): void
     {
         $result = $this->tools->getDevelopmentContext($category);

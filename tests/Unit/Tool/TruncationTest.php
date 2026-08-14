@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class TruncationTest extends TestCase
@@ -99,9 +100,8 @@ class TruncationTest extends TestCase
      * B11: output must never exceed maxLength even when the cap is smaller than the
      * descriptive separator, and even when the tail budget rounds down to zero
      * (a naive substr($text, -0) would otherwise return the whole string).
-     *
-     * @dataProvider smallCapProvider
      */
+    #[DataProvider('smallCapProvider')]
     public function testItNeverExceedsMaxLengthForAnyCap(int $maxLength): void
     {
         $longText = str_repeat('z', 200);

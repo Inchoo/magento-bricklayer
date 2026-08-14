@@ -1921,7 +1921,7 @@ parameters:
 			path: tests/Unit/Bootstrap/BootstrapCommentAndCatchTest.php
 
 		-
-			message: '#^Parameter \#1 \$exception of method PHPUnit\\Framework\\MockObject\\Builder\\InvocationMocker\:\:willThrowException\(\) expects Throwable, Magento\\Framework\\Exception\\LocalizedException given\.$#'
+			message: '#^Parameter \#1 \$exception of class class@anonymous/tests/Unit/Bootstrap/BootstrapCommentAndCatchTest\.php\:172 constructor expects Throwable, Magento\\Framework\\Exception\\LocalizedException given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Unit/Bootstrap/BootstrapCommentAndCatchTest.php
