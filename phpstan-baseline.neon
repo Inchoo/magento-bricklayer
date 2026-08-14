@@ -1,0 +1,1711 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Call to an undefined method object\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Bootstrap/AreaEmulator.php
+
+		-
+			message: "#^Call to method emulateAreaCode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Bootstrap/AreaEmulator.php
+
+		-
+			message: "#^Caught class Magento\\\\Framework\\\\Exception\\\\LocalizedException not found\\.$#"
+			count: 1
+			path: src/Bootstrap/AreaEmulator.php
+
+		-
+			message: "#^PHPDoc tag @var for variable \\$state contains unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Bootstrap/AreaEmulator.php
+
+		-
+			message: "#^Access to constant PARAM_REQUIRE_IS_INSTALLED on an unknown class Magento\\\\Framework\\\\App\\\\Bootstrap\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Access to constant PARAM_REQUIRE_MAINTENANCE on an unknown class Magento\\\\Framework\\\\App\\\\Bootstrap\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:create\\(\\)\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Call to static method create\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Bootstrap\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Constant BP not found\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoBootstrap.php
+
+		-
+			message: "#^Parameter \\#2 \\$string of function explode expects string, string\\|null given\\.$#"
+			count: 1
+			path: src/Bootstrap/MagentoDetector.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Indexer\\\\Model\\\\Indexer\\\\CollectionFactory\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getAll\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\ModuleListInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getEdition\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getNames\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\FullModuleList\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getStores\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getTypes\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Cache\\\\TypeListInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getVersion\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Call to method getWebsites\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$haystack of function str_starts_with expects string, int\\|string given\\.$#"
+			count: 1
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$messages of method Symfony\\\\Component\\\\Console\\\\Output\\\\OutputInterface\\:\\:writeln\\(\\) expects iterable\\|string, string\\|false given\\.$#"
+			count: 2
+			path: src/Command/InspectCommand.php
+
+		-
+			message: "#^Cannot call method find\\(\\) on Symfony\\\\Component\\\\Console\\\\Application\\|null\\.$#"
+			count: 2
+			path: src/Command/InstallCommand.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Command/VerifyCommand.php
+
+		-
+			message: "#^Call to method getEdition\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Command/VerifyCommand.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Command/VerifyCommand.php
+
+		-
+			message: "#^Call to method getVersion\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Command/VerifyCommand.php
+
+		-
+			message: "#^Dead catch \\- ReflectionException is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Config/ConfigValidator.php
+
+		-
+			message: "#^Negated boolean expression is always true\\.$#"
+			count: 1
+			path: src/Guidelines/ToolScanner.php
+
+		-
+			message: "#^Call to method getEdition\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Mcp/McpServerFactory.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/McpServerFactory.php
+
+		-
+			message: "#^Call to method getVersion\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Mcp/McpServerFactory.php
+
+		-
+			message: "#^Call to method getAll\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\ModuleListInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getEdition\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getGroups\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getNames\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\FullModuleList\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getStores\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getTypes\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Cache\\\\TypeListInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getVersion\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ProductMetadataInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Call to method getWebsites\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Parameter \\#1 \\$haystack of function str_starts_with expects string, int\\|string given\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ApplicationTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getAttributeSetId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getChildrenData\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCreatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomAttributes\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getId\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getIsActive\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getLevel\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getName\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getPrice\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getProductCount\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getSku\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getStatus\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getTypeId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getUpdatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getVisibility\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method addSortOrder\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method assignProductToCategories\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryLinkManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\CategoryInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductAttributeMediaGalleryEntryInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductLinkInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductAttributeMediaGalleryManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\Data\\\\ImageContentInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method deleteById\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method deleteByIdentifier\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryRepositoryInterface\\.$#"
+			count: 3
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getAssignedProducts\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryLinkManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getAttribute\\(\\) on an unknown class Magento\\\\Eav\\\\Model\\\\Config\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getLinkedItemsByType\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductLinkManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductAttributeMediaGalleryManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getStockItemBySku\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\StockRegistryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method getTree\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method register\\(\\) on an unknown class Magento\\\\Framework\\\\Registry\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\CategoryRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method setField\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SortOrderBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method setProductLinks\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductLinkManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method unregister\\(\\) on an unknown class Magento\\\\Framework\\\\Registry\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Call to method updateStockItemBySku\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\StockRegistryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Caught class Magento\\\\Framework\\\\Exception\\\\NoSuchEntityException not found\\.$#"
+			count: 7
+			path: src/Mcp/Tool/CatalogTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Offset 'message' on array\\{written\\: false, conflicts\\: non\\-empty\\-array\\<string\\>\\} on left side of \\?\\? does not exist\\.$#"
+			count: 4
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Parameter \\#2 \\$files of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\CodeGenerationTools\\:\\:annotateFiles\\(\\) expects array\\<string, string\\>, array\\<string, string\\|false\\> given\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Parameter \\#2 \\$files of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\CodeGenerationTools\\:\\:writeFiles\\(\\) expects array\\<string, string\\>, array\\<string, string\\|false\\> given\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Undefined variable\\: \\$data$#"
+			count: 1
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Undefined variable\\: \\$id$#"
+			count: 2
+			path: src/Mcp/Tool/CodeGenerationTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Access to constant SCOPE_STORE on an unknown class Magento\\\\Store\\\\Model\\\\ScopeInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Access to constant SCOPE_TYPE_DEFAULT on an unknown class Magento\\\\Framework\\\\App\\\\Config\\\\ScopeConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Access to constant SCOPE_WEBSITE on an unknown class Magento\\\\Store\\\\Model\\\\ScopeInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:create\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:get\\(\\)\\.$#"
+			count: 6
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method count\\(\\) on an unknown class Magento\\\\Framework\\\\Data\\\\Collection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getData\\(\\) on an unknown class Magento\\\\Framework\\\\DataObject\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getIsInStock\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\Data\\\\StockItemInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getItems\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchResultsInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getManageStock\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\Data\\\\StockItemInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getMinQty\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\Data\\\\StockItemInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getQty\\(\\) on an unknown class Magento\\\\CatalogInventory\\\\Api\\\\Data\\\\StockItemInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Call to method getTotalCount\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchResultsInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Cannot call method getQueryCount\\(\\) on class\\-string\\|object\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Iterating over an object of an unknown class Magento\\\\Framework\\\\Data\\\\Collection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CodeRunnerTools.php
+
+		-
+			message: "#^Access to constant SCOPE_STORE on an unknown class Magento\\\\Store\\\\Model\\\\ScopeInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Access to constant SCOPE_TYPE_DEFAULT on an unknown class Magento\\\\Framework\\\\App\\\\Config\\\\ScopeConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Access to constant SCOPE_WEBSITE on an unknown class Magento\\\\Store\\\\Model\\\\ScopeInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:get\\(\\)\\.$#"
+			count: 4
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Call to method getElement\\(\\) on an unknown class Magento\\\\Config\\\\Model\\\\Config\\\\Structure\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Call to method getTabs\\(\\) on an unknown class Magento\\\\Config\\\\Model\\\\Config\\\\Structure\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Call to method getValue\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Config\\\\ScopeConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Cannot call method get\\(\\) on class\\-string\\|object\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^PHPDoc tag @var for variable \\$configStructure contains unknown class Magento\\\\Config\\\\Model\\\\Config\\\\Structure\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ConfigurationTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getAddresses\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCity\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCountryId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCreatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomerId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getEmail\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getFirstname\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getGroupId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getId\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getLastname\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getPostcode\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getRegion\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getStoreId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getStreet\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getTelephone\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getUpdatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getWebsiteId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:isDefaultBilling\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:isDefaultShipping\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method addFilter\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method addSortOrder\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\Data\\\\AddressInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\Data\\\\CustomerInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\Data\\\\RegionInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method deleteById\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\AddressRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method deleteById\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getAttribute\\(\\) on an unknown class Magento\\\\Eav\\\\Model\\\\Config\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getById\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\AddressRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getById\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\GroupRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method register\\(\\) on an unknown class Magento\\\\Framework\\\\Registry\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\AddressRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method setField\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SortOrderBuilder\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Call to method unregister\\(\\) on an unknown class Magento\\\\Framework\\\\Registry\\.$#"
+			count: 2
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Caught class Magento\\\\Framework\\\\Exception\\\\NoSuchEntityException not found\\.$#"
+			count: 6
+			path: src/Mcp/Tool/CustomerTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:fetchAll\\(\\)\\.$#"
+			count: 3
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:fetchCol\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:fetchRow\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DatabaseTools.php
+
+		-
+			message: "#^Access to constant MODE_DEFAULT on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Access to constant MODE_DEVELOPER on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Access to constant STATUS_INVALID on an unknown class Magento\\\\Framework\\\\Indexer\\\\StateInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Access to constant STATUS_VALID on an unknown class Magento\\\\Framework\\\\Indexer\\\\StateInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Access to constant STATUS_WORKING on an unknown class Magento\\\\Framework\\\\Indexer\\\\StateInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Indexer\\\\Model\\\\Indexer\\\\CollectionFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\DeploymentConfig\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getAll\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\ModuleListInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getDir\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\Dir\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getJobs\\(\\) on an unknown class Magento\\\\Cron\\\\Model\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getTableName\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Call to method getTypes\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Cache\\\\TypeListInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DevelopmentTools.php
+
+		-
+			message: "#^Offset 0 on non\\-empty\\-array\\<string, mixed\\> on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: src/Mcp/Tool/Diagnostic/ExceptionParser.php
+
+		-
+			message: "#^Offset 1 on non\\-empty\\-array\\<string, mixed\\> on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: src/Mcp/Tool/Diagnostic/ExceptionParser.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: src/Mcp/Tool/Diagnostic/ExceptionParser.php
+
+		-
+			message: "#^Parameter \\#1 \\$magentoRoot of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\DiagnosticTools\\:\\:scanReportFiles\\(\\) expects string, string\\|null given\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DiagnosticTools.php
+
+		-
+			message: "#^Parameter \\#1 \\$root of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\DiagnosticTools\\:\\:getGeneratedCodeAge\\(\\) expects string, string\\|null given\\.$#"
+			count: 1
+			path: src/Mcp/Tool/DiagnosticTools.php
+
+		-
+			message: "#^Call to method addFilter\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 1
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Call to method getEntityType\\(\\) on an unknown class Magento\\\\Eav\\\\Model\\\\Config\\.$#"
+			count: 2
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Eav\\\\Api\\\\AttributeRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Cannot call method getNote\\(\\) on class\\-string\\|object\\.$#"
+			count: 1
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Cannot call method getSortOrder\\(\\) on class\\-string\\|object\\.$#"
+			count: 1
+			path: src/Mcp/Tool/EavTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:configure\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/GraphqlTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:get\\(\\)\\.$#"
+			count: 2
+			path: src/Mcp/Tool/GraphqlTools.php
+
+		-
+			message: "#^Dead catch \\- Throwable is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Mcp/Tool/GraphqlTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/LogTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/LogTools.php
+
+		-
+			message: "#^Call to method getBinds\\(\\) on an unknown class Magento\\\\Framework\\\\MessageQueue\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/MessageQueueTools.php
+
+		-
+			message: "#^Call to method getConsumers\\(\\) on an unknown class Magento\\\\Framework\\\\MessageQueue\\\\Consumer\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/MessageQueueTools.php
+
+		-
+			message: "#^Call to method getExchanges\\(\\) on an unknown class Magento\\\\Framework\\\\MessageQueue\\\\Topology\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/MessageQueueTools.php
+
+		-
+			message: "#^Call to method getPublishers\\(\\) on an unknown class Magento\\\\Framework\\\\MessageQueue\\\\Publisher\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/MessageQueueTools.php
+
+		-
+			message: "#^Call to method getTopics\\(\\) on an unknown class Magento\\\\Framework\\\\Communication\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/MessageQueueTools.php
+
+		-
+			message: "#^Call to method getAll\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\ModuleListInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ModuleTools.php
+
+		-
+			message: "#^Call to method getDir\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\Dir\\.$#"
+			count: 2
+			path: src/Mcp/Tool/ModuleTools.php
+
+		-
+			message: "#^Call to method getNames\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\FullModuleList\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ModuleTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Access to constant NOT_LOGGED_IN_ID on an unknown class Magento\\\\Customer\\\\Api\\\\Data\\\\GroupInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCreatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomerEmail\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomerFirstname\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomerId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getCustomerLastname\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getEntityId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getGrandTotal\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getIncrementId\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getItems\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getShippingAmount\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getState\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getStatus\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getSubtotal\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getTaxAmount\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getTotalQtyOrdered\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:getUpdatedAt\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method addFilter\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 5
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method addSortOrder\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SearchCriteriaBuilder\\.$#"
+			count: 4
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method cancel\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Quote\\\\Model\\\\QuoteFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\Data\\\\ShipmentTrackInterfaceFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method create\\(\\) on an unknown class Magento\\\\Sales\\\\Model\\\\Order\\\\Status\\\\HistoryFactory\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method execute\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\InvoiceOrderInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method execute\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\RefundOrderInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method execute\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\ShipOrderInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\ProductRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderRepositoryInterface\\.$#"
+			count: 4
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method get\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\ShipmentRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getById\\(\\) on an unknown class Magento\\\\Customer\\\\Api\\\\CustomerRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getData\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getDefaultStoreView\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\CreditmemoRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\InvoiceRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderRepositoryInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getList\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\ShipmentRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getOptions\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getStore\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getTitle\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductCustomOptionInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getTypeId\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getTypeInstance\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 4
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method getValues\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductCustomOptionInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method hold\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method placeOrder\\(\\) on an unknown class Magento\\\\Quote\\\\Api\\\\CartManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Quote\\\\Api\\\\CartRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method save\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\ShipmentTrackRepositoryInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method setField\\(\\) on an unknown class Magento\\\\Framework\\\\Api\\\\SortOrderBuilder\\.$#"
+			count: 4
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Call to method unHold\\(\\) on an unknown class Magento\\\\Sales\\\\Api\\\\OrderManagementInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Caught class Magento\\\\Framework\\\\Exception\\\\NoSuchEntityException not found\\.$#"
+			count: 3
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$option of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:resolveCustomOptionValues\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductCustomOptionInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:buildBundleRequest\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:buildConfigurableRequest\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:buildDownloadableRequest\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:buildGroupedRequest\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:resolveBuyRequest\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Parameter \\$product of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\OrderTools\\:\\:resolveCustomOptions\\(\\) has invalid type Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/OrderTools.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Access to constant STATUS_VALID on an unknown class Magento\\\\Framework\\\\Indexer\\\\StateInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 3
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Call to method getTableName\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 2
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Call to method isSetFlag\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Config\\\\ScopeConfigInterface\\.$#"
+			count: 3
+			path: src/Mcp/Tool/PerformanceTools.php
+
+		-
+			message: "#^Call to method getConnection\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Call to method getDir\\(\\) on an unknown class Magento\\\\Framework\\\\Module\\\\Dir\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Call to method getModulesByFrontName\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Route\\\\ConfigInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Call to method getServices\\(\\) on an unknown class Magento\\\\Webapi\\\\Model\\\\Config\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Call to method getTableName\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\ResourceConnection\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Call to method read\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\Route\\\\Config\\\\Reader\\.$#"
+			count: 1
+			path: src/Mcp/Tool/RoutingTools.php
+
+		-
+			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
+			count: 1
+			path: src/Mcp/Tool/SearchTools.php
+
+		-
+			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ToolRegistry.php
+
+		-
+			message: "#^Call to an undefined method ReflectionType\\:\\:getName\\(\\)\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ToolRegistry.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method addHandle\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method asSimplexml\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getAvailableHandles\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getData\\(\\) on an unknown class Magento\\\\Ui\\\\Model\\\\Manager\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getDefaultStoreView\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\StoreManagerInterface\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getPageLayout\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getTemplateFileName\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\FileSystem\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method getUpdate\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\LayoutInterface\\.$#"
+			count: 2
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method load\\(\\) on an unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method prepareData\\(\\) on an unknown class Magento\\\\Ui\\\\Model\\\\Manager\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method startEnvironmentEmulation\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\App\\\\Emulation\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Call to method stopEnvironmentEmulation\\(\\) on an unknown class Magento\\\\Store\\\\Model\\\\App\\\\Emulation\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^PHPDoc tag @var for variable \\$update contains unknown class Magento\\\\Framework\\\\View\\\\Model\\\\Layout\\\\Merge\\.$#"
+			count: 2
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Parameter \\$fileSystem of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\ViewTools\\:\\:parseNode\\(\\) has invalid type Magento\\\\Framework\\\\View\\\\FileSystem\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Parameter \\$fileSystem of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\ViewTools\\:\\:resolveTemplate\\(\\) has invalid type Magento\\\\Framework\\\\View\\\\FileSystem\\.$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Unable to resolve the template type T in call to function array_values$#"
+			count: 1
+			path: src/Mcp/Tool/ViewTools.php
+
+		-
+			message: "#^Instantiated class Magento\\\\Framework\\\\Exception\\\\LocalizedException not found\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/BootstrapCommentAndCatchTest.php
+
+		-
+			message: "#^Instantiated class Magento\\\\Framework\\\\Phrase not found\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/BootstrapCommentAndCatchTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$exception of method PHPUnit\\\\Framework\\\\MockObject\\\\Builder\\\\InvocationMocker\\:\\:willThrowException\\(\\) expects Throwable, Magento\\\\Framework\\\\Exception\\\\LocalizedException given\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/BootstrapCommentAndCatchTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/MagentoDetectorTest.php
+
+		-
+			message: "#^Access to constant MODULE on an unknown class Magento\\\\Framework\\\\Component\\\\ComponentRegistrar\\.$#"
+			count: 2
+			path: tests/Unit/Bootstrap/ReinitializeGuardTest.php
+
+		-
+			message: "#^Call to static method register\\(\\) on an unknown class Magento\\\\Framework\\\\Component\\\\ComponentRegistrar\\.$#"
+			count: 2
+			path: tests/Unit/Bootstrap/ReinitializeGuardTest.php
+
+		-
+			message: "#^Dead catch \\- Inchoo\\\\MagentoBricklayer\\\\Exception\\\\MagentoNotFoundException is never thrown in the try block\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/ReinitializeGuardTest.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: tests/Unit/Bootstrap/ReinitializeGuardTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Config/ConfigInitializerTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Config/ConfigLoaderTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Guidelines/LocalGuidelineAdditionsTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Guidelines/LocalOverridesTest.php
+
+		-
+			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
+			count: 1
+			path: tests/Unit/Guidelines/ToolScannerTest.php
+
+		-
+			message: "#^Parameter \\#2 \\$subject of function preg_match_all expects string, string\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Guidelines/ToolScannerTest.php
+
+		-
+			message: "#^Access to constant MODULE on an unknown class Magento\\\\Framework\\\\Component\\\\ComponentRegistrar\\.$#"
+			count: 4
+			path: tests/Unit/Support/ComponentRegistrationTest.php
+
+		-
+			message: "#^Call to static method register\\(\\) on an unknown class Magento\\\\Framework\\\\Component\\\\ComponentRegistrar\\.$#"
+			count: 4
+			path: tests/Unit/Support/ComponentRegistrationTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$operations_json of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\BatchTools\\:\\:batchExecute\\(\\) expects string, string\\|false given\\.$#"
+			count: 6
+			path: tests/Unit/Tool/BatchToolsTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$filename of function file_get_contents expects string, string\\|false given\\.$#"
+			count: 3
+			path: tests/Unit/Tool/CheckClassTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$string of function str_word_count expects string, string\\|null given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/CheckClassTest.php
+
+		-
+			message: "#^Parameter \\#2 \\$string of function explode expects string, string\\|false given\\.$#"
+			count: 3
+			path: tests/Unit/Tool/CheckClassTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/ChecksConfigTest.php
+
+		-
+			message: "#^Call to an undefined method ReflectionType\\:\\:getName\\(\\)\\.$#"
+			count: 2
+			path: tests/Unit/Tool/CodeRunnerToolsTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|null given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/CodeRunnerToolsTest.php
+
+		-
+			message: "#^Parameter \\#2 \\$haystack of method PHPUnit\\\\Framework\\\\Assert\\:\\:assertStringContainsString\\(\\) expects string, string\\|null given\\.$#"
+			count: 5
+			path: tests/Unit/Tool/CodeRunnerToolsTest.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: tests/Unit/Tool/Concern/ChecksConfigTest.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 2
+			path: tests/Unit/Tool/Concern/ChecksConfigTest.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:callFilterFields\\(\\)\\.$#"
+			count: 4
+			path: tests/Unit/Tool/Concern/FiltersFieldsTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$reportData of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\Diagnostic\\\\ExceptionParser\\:\\:parseReportFile\\(\\) expects array\\<string, mixed\\>, array\\<int, string\\> given\\.$#"
+			count: 2
+			path: tests/Unit/Tool/Diagnostic/ExceptionParserTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$reportData of method Inchoo\\\\MagentoBricklayer\\\\Mcp\\\\Tool\\\\Diagnostic\\\\ExceptionParser\\:\\:parseReportFile\\(\\) expects array\\<string, mixed\\>, array\\<int\\|string, string\\> given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/Diagnostic/ExceptionParserTest.php
+
+		-
+			message: "#^Access to constant MODE_PRODUCTION on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: tests/Unit/Tool/Fixture/ChecksConfigTestSubject.php
+
+		-
+			message: "#^Call to method getMode\\(\\) on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: tests/Unit/Tool/Fixture/ChecksConfigTestSubject.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/LocalDocsIndexTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_diff expects array, array\\<int, string\\>\\|false given\\.$#"
+			count: 1
+			path: tests/Unit/Tool/LocalSkillResolutionTest.php
+
+		-
+			message: "#^Access to constant MODE_DEVELOPER on an unknown class Magento\\\\Framework\\\\App\\\\State\\.$#"
+			count: 1
+			path: tests/Unit/Tool/OrderCreateShippingRatesTest.php
+
+		-
+			message: "#^Call to method method\\(\\) on an unknown class Magento\\\\Catalog\\\\Api\\\\Data\\\\ProductInterface\\.$#"
+			count: 2
+			path: tests/Unit/Tool/OrderCreateShippingRatesTest.php
+
+		-
+			message: "#^Instantiated class Magento\\\\Framework\\\\DataObject not found\\.$#"
+			count: 1
+			path: tests/Unit/Tool/OrderCreateShippingRatesTest.php
+
+		-
+			message: "#^Property class@anonymous/tests/Unit/Tool/OrderCreateShippingRatesTest\\.php\\:107\\:\\:\\$calls is never read, only written\\.$#"
+			count: 1
+			path: tests/Unit/Tool/OrderCreateShippingRatesTest.php
+
+		-
+			message: "#^Property class@anonymous/tests/Unit/Tool/OrderCreateShippingRatesTest\\.php\\:78\\:\\:\\$calls is never read, only written\\.$#"
+			count: 1
+			path: tests/Unit/Tool/OrderCreateShippingRatesTest.php
+
+		-
+			message: "#^Parameter \\#1 \\$filename of function file_get_contents expects string, string\\|false given\\.$#"
+			count: 2
+			path: tests/Unit/Tool/SkillHintTest.php
+
+		-
+			message: "#^Parameter \\#2 \\$string of function explode expects string, string\\|false given\\.$#"
+			count: 2
+			path: tests/Unit/Tool/SkillHintTest.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:testTruncate\\(\\)\\.$#"
+			count: 4
+			path: tests/Unit/Tool/TruncationTest.php
+
+		-
+			message: "#^Parameter \\#2 \\$haystack of method PHPUnit\\\\Framework\\\\Assert\\:\\:assertStringContainsString\\(\\) expects string, string\\|null given\\.$#"
+			count: 2
+			path: tests/Unit/Tool/VerbosityTest.php

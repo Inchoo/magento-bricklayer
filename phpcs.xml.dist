@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ruleset name="MagentoBricklayer">
+    <description>PSR-12 with project-specific adjustments.</description>
+
+    <file>src</file>
+    <file>tests</file>
+
+    <arg name="colors"/>
+    <arg value="p"/>
+
+    <!-- Warnings (line length) stay visible but do not fail the gate; errors do. -->
+    <config name="ignore_warnings_on_exit" value="1"/>
+
+    <rule ref="PSR12"/>
+
+    <!-- Descriptive test method names are exempt from the camelCase sniff. -->
+    <rule ref="PSR1.Methods.CamelCapsMethodName">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Namespace-level function overrides and conditional stub loading are deliberate in tests. -->
+    <rule ref="PSR1.Files.SideEffects">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+</ruleset>

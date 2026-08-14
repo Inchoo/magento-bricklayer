@@ -262,6 +262,10 @@ class ConfigInitializerTest extends TestCase
 
     public function testItReportsCreatedFalseWhenTheConfigFileWriteFails(): void
     {
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $this->markTestSkipped('chmod-based unwritable-directory simulation has no effect when running as root.');
+        }
+
         // Make the directory read-only so file_put_contents() fails
         chmod($this->tempDir, 0444);
 

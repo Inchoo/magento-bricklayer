@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -395,6 +396,8 @@ class ConfigLoader
         if ($path === null) {
             return false;
         }
+
+        clearstatcache(true, $path);
 
         if (!file_exists($path)) {
             return $this->configMtime !== null;

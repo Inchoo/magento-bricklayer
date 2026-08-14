@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -300,8 +301,10 @@ class ConfigurationTools
 
                 // Match area: global = etc/events.xml (not inside area subfolder)
                 if ($area === 'global') {
-                    if (!preg_match('#/etc/events\.xml$#', $relativePath)
-                        || preg_match('#/etc/(frontend|adminhtml|webapi_rest|webapi_soap|graphql|crontab)/#', $relativePath)) {
+                    if (
+                        !preg_match('#/etc/events\.xml$#', $relativePath)
+                        || preg_match('#/etc/(frontend|adminhtml|webapi_rest|webapi_soap|graphql|crontab)/#', $relativePath)
+                    ) {
                         continue;
                     }
                 } else {
