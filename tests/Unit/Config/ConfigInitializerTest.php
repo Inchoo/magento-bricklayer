@@ -269,10 +269,18 @@ class ConfigInitializerTest extends TestCase
         // Make the directory read-only so file_put_contents() fails
         chmod($this->tempDir, 0444);
 
-        $result = $this->initializer->generate($this->tempDir);
+        // The failing file_put_contents() emits an expected PHP warning;
+        // swallow it locally so the strict failOnWarning gate stays meaningful
+        // for unexpected warnings elsewhere.
+        set_error_handler(static fn(): bool => true, E_WARNING);
 
-        // Restore permissions for tearDown cleanup
-        chmod($this->tempDir, 0755);
+        try {
+            $result = $this->initializer->generate($this->tempDir);
+        } finally {
+            restore_error_handler();
+            // Restore permissions for tearDown cleanup
+            chmod($this->tempDir, 0755);
+        }
 
         $this->assertFalse($result['created']);
     }
