@@ -11,7 +11,13 @@
 
 declare(strict_types=1);
 
-require $argv[1];
+$autoload = $_SERVER['argv'][1] ?? null;
+if ($autoload === null) {
+    fwrite(STDERR, "Usage: php execution_guard_fatal.php <autoload>\n");
+    exit(1);
+}
+
+require $autoload;
 
 \Inchoo\MagentoBricklayer\Support\ExecutionGuard::beginRequest('code-runner', 42);
 

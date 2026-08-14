@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -103,8 +104,7 @@ class RoutingTools
             }
 
             usort($endpoints, fn($a, $b) =>
-                strcmp($a['path'], $b['path']) ?: strcmp($a['method'], $b['method'])
-            );
+                strcmp($a['path'], $b['path']) ?: strcmp($a['method'], $b['method']));
 
             $result = [
                 'total' => count($endpoints),

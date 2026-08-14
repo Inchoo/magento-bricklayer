@@ -67,7 +67,7 @@ Every pull request must pass `composer check`:
 2. **PHPStan** — at the level pinned in `phpstan.neon.dist` (level 8 at the time of writing).
 3. **PHPUnit** — the full unit suite. New code ships with tests; `tests/Unit/` mirrors the `src/` layout, so put the test where the class lives.
 
-Code must run on every PHP version from the `composer.json` floor upward (currently `>=8.1`, kept deliberately low for Magento 2.4.4–2.4.6 support) — don't use syntax newer than the floor allows. CI runs the same gates across the supported PHP range.
+Code must run on every PHP version from the `composer.json` floor upward (currently `>=8.3`, aligned with Magento 2.4.7+; deprecation fixes target the newest supported PHP) — don't use syntax newer than the floor allows. CI runs the same gates across the supported PHP range.
 
 ## Tool implementation conventions
 

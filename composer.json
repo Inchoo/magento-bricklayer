@@ -25,16 +25,17 @@
     ],
     "version": "1.18.0",
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.3",
         "mcp/sdk": "^0.3 || ^1.0",
         "psy/psysh": "^0.12",
         "symfony/console": "^5.4 || ^6.0 || ^7.0",
         "psr/log": "^2.0 || ^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^1.10",
-        "squizlabs/php_codesniffer": "^3.7"
+        "squizlabs/php_codesniffer": "^3.7",
+        "webonyx/graphql-php": "^15.0"
     },
     "autoload": {
         "psr-4": {
@@ -58,9 +59,9 @@
     "scripts": {
         "test": "phpunit",
         "test-coverage": "phpunit --coverage-html build/coverage",
-        "phpstan": "phpstan analyse src tests --level=8",
-        "phpcs": "phpcs --standard=PSR12 src tests",
-        "phpcbf": "phpcbf --standard=PSR12 src tests",
+        "phpstan": "phpstan analyse",
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf",
         "check": [
             "@phpcs",
             "@phpstan",

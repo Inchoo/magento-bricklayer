@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) Inchoo. All rights reserved.
  * See LICENSE.txt for license details.
@@ -122,14 +123,18 @@ class MagentoDetector
             return 'hooli';
         }
 
-        if (file_exists($magentoRoot . '/.warden/warden-env.yml') ||
-            file_exists($magentoRoot . '/.env.warden')) {
+        if (
+            file_exists($magentoRoot . '/.warden/warden-env.yml') ||
+            file_exists($magentoRoot . '/.env.warden')
+        ) {
             return 'warden';
         }
 
-        if (file_exists($magentoRoot . '/docker-compose.yml') ||
+        if (
+            file_exists($magentoRoot . '/docker-compose.yml') ||
             file_exists($magentoRoot . '/compose.yml') ||
-            file_exists($magentoRoot . '/docker-compose.yaml')) {
+            file_exists($magentoRoot . '/docker-compose.yaml')
+        ) {
             return 'docker-compose';
         }
 

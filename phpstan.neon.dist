@@ -1,3 +1,6 @@
+includes:
+    - phpstan-baseline.neon
+
 parameters:
     level: 8
     paths:
@@ -5,6 +8,7 @@ parameters:
         - tests
     excludePaths:
         - vendor
+        - tests/Stubs
     checkMissingIterableValueType: false
     checkGenericClassInNonGenericObjectType: false
     reportUnmatchedIgnoredErrors: false

@@ -104,8 +104,8 @@ Each tool response includes hints pointing to the next logical step — introspe
 
 ## Requirements
 
-- PHP 8.1 or higher
-- Magento 2.4.4 or higher
+- PHP 8.3 or higher
+- Magento 2.4.7 or higher
 - Composer 2.2 or higher
 
 ## Installation
