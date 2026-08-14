@@ -12,6 +12,7 @@ namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 use Inchoo\MagentoBricklayer\Mcp\Tool\DevelopmentTools;
 use Inchoo\MagentoBricklayer\Mcp\Tool\GraphqlTools;
 use Inchoo\MagentoBricklayer\Mcp\Tool\LogTools;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ToolConsolidationRoutingTest extends TestCase
@@ -29,9 +30,7 @@ class ToolConsolidationRoutingTest extends TestCase
         $this->assertStringContainsString('resolvers', $result['message']);
     }
 
-    /**
-     * @dataProvider validGraphqlTargetsProvider
-     */
+    #[DataProvider('validGraphqlTargetsProvider')]
     public function testGraphqlValidTargetPassesRouting(string $target): void
     {
         $tools = new GraphqlTools();

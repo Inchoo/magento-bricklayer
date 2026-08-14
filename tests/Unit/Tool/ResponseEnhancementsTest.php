@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -24,9 +25,8 @@ class ResponseEnhancementsTest extends TestCase
 {
     /**
      * Verifies the has_more formula used in list tool responses.
-     *
-     * @dataProvider hasMoreProvider
      */
+    #[DataProvider('hasMoreProvider')]
     public function testHasMorePaginationFormula(
         int $currentPage,
         int $pageSize,

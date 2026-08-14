@@ -41,11 +41,9 @@ class ReinitializeGuardTest extends TestCase
         $ref = new \ReflectionClass(MagentoBootstrap::class);
 
         $sentinels = $ref->getProperty('sentinelMtimes');
-        $sentinels->setAccessible(true);
         $sentinels->setValue(null, ['app/etc/config.php' => 123]);
 
         $stats = $ref->getProperty('lastReinitStats');
-        $stats->setAccessible(true);
         $stats->setValue(null, ['registration_files' => ['/some/file.php']]);
 
         MagentoBootstrap::reset();
@@ -143,7 +141,6 @@ class ReinitializeGuardTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty($property);
-        $prop->setAccessible(true);
         $prop->setValue(null, $value);
     }
 
@@ -151,7 +148,6 @@ class ReinitializeGuardTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty($property);
-        $prop->setAccessible(true);
 
         return $prop->getValue(null);
     }

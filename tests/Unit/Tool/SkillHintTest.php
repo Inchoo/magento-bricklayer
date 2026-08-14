@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Mcp\Capability\Attribute\McpTool;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,9 +21,7 @@ use PHPUnit\Framework\TestCase;
  */
 class SkillHintTest extends TestCase
 {
-    /**
-     * @dataProvider skillHintMethodsProvider
-     */
+    #[DataProvider('skillHintMethodsProvider')]
     public function testSkillHintPresentInSuccessPath(string $class, string $method, string $expectedHintFragment): void
     {
         $fqcn = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\' . $class;
@@ -71,9 +70,8 @@ class SkillHintTest extends TestCase
 
     /**
      * Verify _skill_hint is NOT in error return paths.
-     *
-     * @dataProvider errorReturnProvider
      */
+    #[DataProvider('errorReturnProvider')]
     public function testSkillHintNotInErrorPath(string $class, string $method): void
     {
         $fqcn = 'Inchoo\\MagentoBricklayer\\Mcp\\Tool\\' . $class;

@@ -94,7 +94,6 @@ class StalenessDetectionTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty('magentoRoot');
-        $prop->setAccessible(true);
         $prop->setValue(null, $path);
     }
 
@@ -102,7 +101,6 @@ class StalenessDetectionTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $method = $ref->getMethod('snapshotSentinels');
-        $method->setAccessible(true);
         $method->invoke(null);
     }
 
@@ -110,7 +108,6 @@ class StalenessDetectionTest extends TestCase
     {
         $ref = new \ReflectionClass(MagentoBootstrap::class);
         $prop = $ref->getProperty('sentinelMtimes');
-        $prop->setAccessible(true);
         $prop->setValue(null, []);
     }
 

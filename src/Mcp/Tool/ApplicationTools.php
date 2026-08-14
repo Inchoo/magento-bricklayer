@@ -21,7 +21,8 @@ class ApplicationTools
 
     #[McpTool(
         name: 'application-info',
-        description: 'Returns Magento version, PHP version, deploy mode, and installation summary. Use include=stores for store hierarchy.',
+        description: 'Returns Magento version, PHP version, deploy mode, and installation summary. '
+            . 'Use include=stores for store hierarchy.',
         meta: ['hidden' => true]
     )]
     public function getApplicationInfo(string $include = ''): array

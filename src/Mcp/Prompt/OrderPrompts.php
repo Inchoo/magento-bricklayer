@@ -108,6 +108,7 @@ PROMPT);
         string $conditions = '',
         string $description = ''
     ): array {
+        // phpcs:disable Generic.Files.LineLength -- prompt heredoc content
         return $this->userMessage(<<<PROMPT
 Create a customer segment with the following specifications:
 
@@ -163,5 +164,6 @@ Note: Customer Segments are an Adobe Commerce (Enterprise) feature. For Communit
 
 Provide the most appropriate solution based on the Magento edition being used.
 PROMPT);
+        // phpcs:enable Generic.Files.LineLength
     }
 }

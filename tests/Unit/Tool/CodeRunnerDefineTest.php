@@ -175,7 +175,6 @@ class CodeRunnerDefineTest extends TestCase
         // that array_unique reduces the values (proving dedup is needed and works)
         $ref = new \ReflectionClass(CodeRunnerTools::class);
         $prop = $ref->getProperty('definedFunctions');
-        $prop->setAccessible(true);
         $raw = $prop->getValue();
 
         $this->assertCount(2, $raw, 'Raw array should have 2 entries (one per function name)');

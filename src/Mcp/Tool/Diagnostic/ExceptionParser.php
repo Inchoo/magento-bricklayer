@@ -21,14 +21,16 @@ class ExceptionParser
 {
     private const TIMESTAMP_PATTERN = '/^\[\d{4}-/';
     private const HEADER_PATTERN = '/^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(\w+)\.(\w+):\s*(.*)$/';
-    private const EXCEPTION_CHAIN_PATTERN = '/([\w\\\\]+(?:Exception|Error))\(code:\s*(\d+)\):\s*(.*?)\s+at\s+([^\s:]+):(\d+)/';
+    private const EXCEPTION_CHAIN_PATTERN =
+        '/([\w\\\\]+(?:Exception|Error))\(code:\s*(\d+)\):\s*(.*?)\s+at\s+([^\s:]+):(\d+)/';
     private const STACK_FRAME_PATTERN = '/^#(\d+)\s+(.+?)\((\d+)\):\s*(.*)$/';
 
     /**
      * Pattern for raw PHP error lines that can start a new block.
      * Matches: "PHP Fatal error:", "TypeError:", "ValueError:", "Magento\...\Exception:", etc.
      */
-    private const RAW_ERROR_PATTERN = '/^(?:PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:|[\w\\\\]+(?:Exception|Error)\s*:)/';
+    private const RAW_ERROR_PATTERN =
+        '/^(?:PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:|[\w\\\\]+(?:Exception|Error)\s*:)/';
 
     /**
      * @param array<string> $rawLines Raw lines from tail-read of log file
@@ -277,12 +279,21 @@ class ExceptionParser
         ];
 
         // Try "PHP Fatal error: Uncaught ExceptionClass: message in /file:line"
-        if (preg_match('/^PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:\s*(?:Uncaught\s+)?([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $firstLine, $m)) {
+        if (
+            preg_match(
+                '/^PHP\s+(?:Fatal|Parse|Warning|Notice)\s+error\s*:\s*(?:Uncaught\s+)?'
+                    . '([\w\\\\]+(?:Exception|Error)):\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/',
+                $firstLine,
+                $m
+            )
+        ) {
             $entry['level'] = 'CRITICAL';
             $entry['class'] = $m[1];
             $entry['message'] = trim($m[2]);
             $this->applyFileAndLine($entry, $m[3] ?? '', $m[4] ?? '');
-        } elseif (preg_match('/^([\w\\\\]+(?:Exception|Error))\s*:\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $firstLine, $m)) {
+        } elseif (
+            preg_match('/^([\w\\\\]+(?:Exception|Error))\s*:\s*(.*?)(?:\s+in\s+(\S+):(\d+))?$/', $firstLine, $m)
+        ) {
             // Try "ExceptionClass: message in /file:line"
             $entry['class'] = $m[1];
             $entry['message'] = trim($m[2]);

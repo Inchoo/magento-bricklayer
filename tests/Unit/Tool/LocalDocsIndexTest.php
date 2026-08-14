@@ -47,7 +47,8 @@ class LocalDocsIndexTest extends TestCase
         mkdir($dir, 0755, true);
         file_put_contents(
             $dir . '/SKILL.md',
-            "---\nname: CSP Scripts\ndescription: Manage Content Security Policy scripts in Magento.\n---\n\n# CSP Scripts"
+            "---\nname: CSP Scripts\ndescription: Manage Content Security Policy "
+                . "scripts in Magento.\n---\n\n# CSP Scripts"
         );
 
         $tools = new SearchTools($this->magentoRoot, $this->packageRoot);

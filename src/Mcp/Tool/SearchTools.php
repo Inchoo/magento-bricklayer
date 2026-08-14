@@ -360,7 +360,15 @@ class SearchTools
                 'View DI configuration for classes',
                 'List plugins, events, and preferences',
             ],
-            'tools' => ['check-class', 'configuration-get', 'configuration-list', 'di-configuration', 'plugin-list', 'event-list', 'preference-list'],
+            'tools' => [
+                'check-class',
+                'configuration-get',
+                'configuration-list',
+                'di-configuration',
+                'plugin-list',
+                'event-list',
+                'preference-list',
+            ],
         ],
     ];
 
@@ -791,7 +799,8 @@ class SearchTools
                    "- Operations: order, customer, product, category, log, cache, indexer\n" .
                    "- Advanced: payment, shipping, checkout, ui-component, message-queue, import\n" .
                    "- Quality: testing, security, performance, coding-standards\n\n" .
-                   "Tip: Use the `development-context` tool with category `list` to see all {$categoryCount} coding guideline categories.";
+                   "Tip: Use the `development-context` tool with category `list` "
+                       . "to see all {$categoryCount} coding guideline categories.";
         }
 
         $topCategories = array_slice(array_column($results, 'category'), 0, 3);
@@ -826,7 +835,8 @@ class SearchTools
             }
 
             if (!empty($indexData['dev_context'])) {
-                $guidance .= "  For coding guidelines: use `development-context` with category `{$indexData['dev_context']}`\n";
+                $guidance .= "  For coding guidelines: use `development-context` "
+                    . "with category `{$indexData['dev_context']}`\n";
             }
         }
 

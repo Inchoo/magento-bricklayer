@@ -26,7 +26,8 @@ class BatchTools
 
     #[McpTool(
         name: 'batch-execute',
-        description: 'Run multiple tools in one call. Input: JSON array of {tool, params} objects. Max 20 per call. Cannot nest batch-execute or code-runner.'
+        description: 'Run multiple tools in one call. Input: JSON array of {tool, params} objects. '
+            . 'Max 20 per call. Cannot nest batch-execute or code-runner.'
     )]
     public function batchExecute(string $operations_json): array
     {

@@ -33,6 +33,7 @@ class ReferenceResource
     )]
     public function getEventsReference(): string
     {
+        // phpcs:disable Generic.Files.LineLength -- markdown nowdoc content
         return <<<'MARKDOWN'
 # Magento Events Reference
 
@@ -204,6 +205,7 @@ class CustomService
 4. **Handle exceptions** - Don't break the event chain
 5. **Use area-specific events** - frontend, adminhtml, webapi
 MARKDOWN;
+        // phpcs:enable Generic.Files.LineLength
     }
 
     /**

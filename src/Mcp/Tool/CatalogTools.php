@@ -63,7 +63,8 @@ class CatalogTools
             foreach ($product->getCustomAttributes() ?? [] as $attr) {
                 $eavAttribute = $eavConfig->getAttribute('catalog_product', $attr->getAttributeCode());
                 if ($eavAttribute && $eavAttribute->getIsUserDefined()) {
-                    $result['_hint'] = 'Custom attributes present. Use eav-attributes entity_type=catalog_product for metadata';
+                    $result['_hint'] = 'Custom attributes present. '
+                        . 'Use eav-attributes entity_type=catalog_product for metadata';
                     break;
                 }
             }
@@ -87,7 +88,8 @@ class CatalogTools
      */
     #[McpTool(
         name: 'product-list',
-        description: 'Search products. Use fields to limit response. Set count_only=true to check size before fetching.',
+        description: 'Search products. Use fields to limit response. '
+            . 'Set count_only=true to check size before fetching.',
         meta: ['hidden' => true]
     )]
     public function listProducts(
@@ -432,7 +434,9 @@ class CatalogTools
         }
 
         try {
-            $galleryManagement = MagentoBootstrap::get(\Magento\Catalog\Api\ProductAttributeMediaGalleryManagementInterface::class);
+            $galleryManagement = MagentoBootstrap::get(
+                \Magento\Catalog\Api\ProductAttributeMediaGalleryManagementInterface::class
+            );
             $entries = $galleryManagement->getList($sku);
 
             $media = [];
@@ -496,8 +500,12 @@ class CatalogTools
         }
 
         try {
-            $galleryManagement = MagentoBootstrap::get(\Magento\Catalog\Api\ProductAttributeMediaGalleryManagementInterface::class);
-            $entryFactory = MagentoBootstrap::get(\Magento\Catalog\Api\Data\ProductAttributeMediaGalleryEntryInterfaceFactory::class);
+            $galleryManagement = MagentoBootstrap::get(
+                \Magento\Catalog\Api\ProductAttributeMediaGalleryManagementInterface::class
+            );
+            $entryFactory = MagentoBootstrap::get(
+                \Magento\Catalog\Api\Data\ProductAttributeMediaGalleryEntryInterfaceFactory::class
+            );
             $contentFactory = MagentoBootstrap::get(\Magento\Framework\Api\Data\ImageContentInterfaceFactory::class);
 
             $entry = $entryFactory->create();
@@ -818,7 +826,9 @@ class CatalogTools
         }
 
         try {
-            $categoryLinkManagement = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryLinkManagementInterface::class);
+            $categoryLinkManagement = MagentoBootstrap::get(
+                \Magento\Catalog\Api\CategoryLinkManagementInterface::class
+            );
             $categoryRepository = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
 
             // Verify category exists
@@ -882,7 +892,9 @@ class CatalogTools
         }
 
         try {
-            $categoryLinkManagement = MagentoBootstrap::get(\Magento\Catalog\Api\CategoryLinkManagementInterface::class);
+            $categoryLinkManagement = MagentoBootstrap::get(
+                \Magento\Catalog\Api\CategoryLinkManagementInterface::class
+            );
 
             $skuList = array_map('trim', explode(',', $skus));
 

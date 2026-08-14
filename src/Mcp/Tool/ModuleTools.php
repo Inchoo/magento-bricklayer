@@ -23,11 +23,16 @@ class ModuleTools
 
     #[McpTool(
         name: 'module-list',
-        description: 'Lists installed modules. Use verbosity to control detail. Set count_only=true to check size before fetching.',
+        description: 'Lists installed modules. Use verbosity to control detail. '
+            . 'Set count_only=true to check size before fetching.',
         meta: ['hidden' => true]
     )]
-    public function listModules(bool $enabledOnly = false, string $vendor = '', bool $count_only = false, string $verbosity = 'standard'): array
-    {
+    public function listModules(
+        bool $enabledOnly = false,
+        string $vendor = '',
+        bool $count_only = false,
+        string $verbosity = 'standard'
+    ): array {
         if ($error = $this->requireValidVerbosity($verbosity)) {
             return $error;
         }
@@ -80,9 +85,12 @@ class ModuleTools
                         'version' => $version,
                         'path' => $path,
                         'is_magento' => $moduleVendor === 'Magento',
-                        'has_etc' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/etc'),
-                        'has_setup' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Setup'),
-                        'has_api' => $path !== null && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Api'),
+                        'has_etc' => $path !== null
+                            && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/etc'),
+                        'has_setup' => $path !== null
+                            && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Setup'),
+                        'has_api' => $path !== null
+                            && is_dir(MagentoBootstrap::getMagentoRoot() . '/' . $path . '/Api'),
                     ],
                     default => [
                         'name' => $name,

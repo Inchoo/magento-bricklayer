@@ -43,7 +43,6 @@ class CodeRunnerToolsTest extends TestCase
         }
 
         $method = new \ReflectionMethod(CodeRunnerTools::class, 'runPsysh');
-        $method->setAccessible(true);
 
         // Empty scope vars → no Magento bootstrap needed for plain arithmetic.
         $result = $method->invoke($this->runner, 'return 6 * 7;', 'execute', []);
@@ -75,7 +74,6 @@ class CodeRunnerToolsTest extends TestCase
         }
 
         $method = new \ReflectionMethod(CodeRunnerTools::class, 'runPsysh');
-        $method->setAccessible(true);
 
         $scopeA = ['get' => static fn(string $c): string => 'A:' . $c];
         $first = $method->invoke($this->runner, 'return get("Foo");', 'execute', $scopeA);

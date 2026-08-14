@@ -60,7 +60,8 @@ class CodeRunnerTools
 
     #[McpTool(
         name: 'code-runner',
-        description: 'Executes PHP in Magento context. Preferred for multi-step operations — one call replaces many tool calls. '
+        description: 'Executes PHP in Magento context. '
+            . 'Preferred for multi-step operations — one call replaces many tool calls. '
             . 'Helpers: get(class), create(class), repo(class), config(path). '
             . 'Read-only by default. Disabled in production. Call code-runner-help for docs.'
     )]
@@ -206,7 +207,8 @@ class CodeRunnerTools
                 'repo(string $class)' => 'Get a repository instance (alias for get())',
                 'config(string $path, string $scope = "default", int $scopeId = 0)' => 'Read system config value',
                 'query(string $sql, array $binds = [])' => 'Execute a read-only SELECT query. Returns array of rows.',
-                'runLog(mixed $value, string $label = "")' => 'Capture a value to return to the agent in the "log" key of the response.',
+                'runLog(mixed $value, string $label = "")'
+                    => 'Capture a value to return to the agent in the "log" key of the response.',
             ],
             'variables' => [
                 '$om, $di, $objectManager' => 'ObjectManager instance',
@@ -226,17 +228,21 @@ class CodeRunnerTools
                 'area (string, optional)' => 'Magento area to emulate. Empty for default.',
                 'allow_write (bool, default false)' => 'When false, DB changes are rolled back automatically.',
                 'timeout (int, default 30)' => 'Max execution time in seconds.',
-                'mode (string, default execute)' => 'execute = run code, define = save reusable functions for the session.',
+                'mode (string, default execute)'
+                    => 'execute = run code, define = save reusable functions for the session.',
             ],
             'examples' => [
                 'Batch product lookup' => '$repo = repo(\Magento\Catalog\Api\ProductRepositoryInterface::class);'
-                    . "\n" . '$results = []; foreach (["SKU1","SKU2"] as $s) { $p = $repo->get($s); $results[$s] = $p->getName(); }'
+                    . "\n" . '$results = []; foreach (["SKU1","SKU2"] as $s) '
+                    . '{ $p = $repo->get($s); $results[$s] = $p->getName(); }'
                     . "\n" . 'return $results;',
                 'Count orders by status' => '$resource = get(\Magento\Framework\App\ResourceConnection::class);'
                     . "\n" . '$conn = $resource->getConnection();'
-                    . "\n" . 'return $conn->fetchAll("SELECT status, COUNT(*) as cnt FROM sales_order GROUP BY status");',
+                    . "\n" . 'return $conn->fetchAll("SELECT status, COUNT(*) as cnt '
+                    . 'FROM sales_order GROUP BY status");',
                 'Check config value' => 'return config("general/locale/code");',
-                'Inspect DI preference' => 'return get_class(get(\Magento\Catalog\Api\ProductRepositoryInterface::class));',
+                'Inspect DI preference'
+                    => 'return get_class(get(\Magento\Catalog\Api\ProductRepositoryInterface::class));',
                 'Log multiple results' => 'runLog(config("general/locale/code"), "locale");'
                     . "\n" . 'runLog(query("SELECT COUNT(*) as cnt FROM catalog_product_entity"), "product count");'
                     . "\n" . '// Both values appear in the "log" key of the response',
@@ -251,8 +257,10 @@ class CodeRunnerTools
                 'clearing' => 'Functions are cleared on reinitialize.',
             ],
             'safety' => [
-                'read_only_mode' => 'By default, a DB transaction wraps execution and is rolled back. Set allow_write=true to persist.',
-                'blocked_functions' => 'exec, shell_exec, system, passthru, eval, unlink, file_put_contents, exit, die, header',
+                'read_only_mode' => 'By default, a DB transaction wraps execution and is rolled back. '
+                    . 'Set allow_write=true to persist.',
+                'blocked_functions' => 'exec, shell_exec, system, passthru, eval, unlink, '
+                    . 'file_put_contents, exit, die, header',
                 'production' => 'code-runner is completely disabled in production deploy mode.',
                 'timeout' => 'Default 30s, max configurable via tools.code-runner.max_timeout in config.',
             ],
@@ -513,8 +521,10 @@ class CodeRunnerTools
             $returnValue = null;
 
             try {
-                $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog) { '
-                    . $code . ' ; return null; })($di, $om, $objectManager, $get, $create, $repo, $config, $query, $runLog);';
+                $wrappedCode = 'return (function($di, $om, $objectManager, $get, $create, $repo, '
+                    . '$config, $query, $runLog) { '
+                    . $code . ' ; return null; })($di, $om, $objectManager, $get, '
+                    . '$create, $repo, $config, $query, $runLog);';
                 $returnValue = eval($wrappedCode);
                 $returnValue = $this->formatReturnValue($returnValue);
             } catch (\Throwable $e) {
@@ -735,7 +745,12 @@ class CodeRunnerTools
         // Clear the Registry (current_category, current_product, etc.)
         try {
             $registry = $om->get(\Magento\Framework\Registry::class);
-            foreach (['current_category', 'current_product', 'current_order', 'current_customer', 'current_invoice', 'current_shipment', 'current_creditmemo', 'current_cms_page'] as $key) {
+            foreach (
+                [
+                'current_category', 'current_product', 'current_order', 'current_customer',
+                'current_invoice', 'current_shipment', 'current_creditmemo', 'current_cms_page'
+                ] as $key
+            ) {
                 $registry->unregister($key);
             }
         } catch (\Throwable $e) {

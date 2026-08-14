@@ -98,6 +98,7 @@ class McpServerFactory
 
         $toolCount = $this->getToolCount();
 
+        // phpcs:disable Generic.Files.LineLength -- server instructions heredoc content
         return <<<INSTRUCTIONS
         Magento {$edition} {$version} ({$mode} mode).
         CRITICAL: Magento resolves DI, plugins, preferences, and events at runtime across modules. Reading source files alone misses overrides from other modules. Before modifying any class:
@@ -110,5 +111,6 @@ class McpServerFactory
         Use code-runner for multi-step operations instead of chaining individual tools.
         On list tools: use fields to limit response, count_only=true to check size.
         INSTRUCTIONS;
+        // phpcs:enable Generic.Files.LineLength
     }
 }

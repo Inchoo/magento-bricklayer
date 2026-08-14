@@ -11,6 +11,7 @@ namespace Inchoo\MagentoBricklayer\Tests\Unit\Tool;
 
 use Inchoo\MagentoBricklayer\Mcp\Tool\ToolRegistry;
 use Mcp\Capability\Attribute\McpTool;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -66,7 +67,11 @@ class ProgressiveDisclosureTest extends TestCase
         $this->assertSame(
             17,
             $tier1Count,
-            sprintf('Expected 17 Tier 1 (visible) tools, found %d: %s', $tier1Count, implode(', ', array_keys(array_filter(self::$toolVisibility, fn(bool $hidden) => !$hidden))))
+            sprintf(
+                'Expected 17 Tier 1 (visible) tools, found %d: %s',
+                $tier1Count,
+                implode(', ', array_keys(array_filter(self::$toolVisibility, fn(bool $hidden) => !$hidden)))
+            )
         );
     }
 
@@ -90,9 +95,7 @@ class ProgressiveDisclosureTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider expectedTier1ToolsProvider
-     */
+    #[DataProvider('expectedTier1ToolsProvider')]
     public function testSpecificTier1ToolIsNotHidden(string $toolName): void
     {
         $this->assertArrayHasKey(

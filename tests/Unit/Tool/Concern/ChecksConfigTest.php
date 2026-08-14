@@ -48,7 +48,6 @@ class ChecksConfigTest extends TestCase
     private function callGetConfigLoader(object $subject): ConfigLoader
     {
         $method = new \ReflectionMethod($subject, 'getConfigLoader');
-        $method->setAccessible(true);
         return $method->invoke($subject);
     }
 
