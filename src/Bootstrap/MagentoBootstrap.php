@@ -223,6 +223,11 @@ class MagentoBootstrap
             throw BootstrapException::objectManagerNotInitialized();
         }
 
+        // Must run before anything below re-reads file content: the registry
+        // guard includes app/etc/config.php, and the fresh ObjectManager
+        // re-includes it plus every generated/compiled file.
+        self::invalidateOpcache();
+
         $registration = new ComponentRegistration();
         self::$lastReinitStats = [
             'registration_files' => $registration->registerNewComponents($magentoRoot),
@@ -247,6 +252,39 @@ class MagentoBootstrap
         // persists, new components were registered above, and Bootstrap::create()
         // builds the fresh ObjectManager.
         return self::initialize($magentoRoot);
+    }
+
+    /**
+     * Drop this process's opcache and stat/realpath caches so reinit reads
+     * current file content, not boot-time compiles.
+     *
+     * In a long-running CLI process opcache never revalidates timestamps
+     * when opcache.revalidate_freq > 0: the revalidate window is measured
+     * against the request start time, which is frozen at process start, so
+     * the window never elapses. app/etc/config.php (and any PHP file edited
+     * after it was first included — generated metadata, interceptors,
+     * module classes) would otherwise be served in their boot-time versions
+     * forever, making a fresh ObjectManager blind to modules enabled
+     * mid-session. CLI opcache memory is per-process; invalidating it
+     * cannot affect php-fpm or other CLI processes.
+     *
+     * Every cached script is invalidated individually: opcache_reset()
+     * only schedules a restart for the next request, which in a daemon
+     * never comes — it returns true and changes nothing. Forced
+     * opcache_invalidate() takes effect immediately. Already-loaded class
+     * definitions are unaffected either way; only files that get
+     * re-included (configs, generated metadata) recompile.
+     */
+    private static function invalidateOpcache(): void
+    {
+        if (function_exists('opcache_invalidate') && function_exists('opcache_get_status')) {
+            $status = opcache_get_status(true);
+            foreach (array_keys(is_array($status) ? ($status['scripts'] ?? []) : []) as $script) {
+                opcache_invalidate((string) $script, true);
+            }
+        }
+
+        clearstatcache(true);
     }
 
     /**

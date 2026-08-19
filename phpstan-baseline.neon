@@ -1939,6 +1939,18 @@ parameters:
 			path: tests/Unit/Bootstrap/ReinitializeGuardTest.php
 
 		-
+			message: '#^Access to constant MODULE on an unknown class Magento\\Framework\\Component\\ComponentRegistrar\.$#'
+			identifier: class.notFound
+			count: 1
+			path: tests/Unit/Bootstrap/ReinitializeOpcacheTest.php
+
+		-
+			message: '#^Call to static method register\(\) on an unknown class Magento\\Framework\\Component\\ComponentRegistrar\.$#'
+			identifier: class.notFound
+			count: 1
+			path: tests/Unit/Bootstrap/ReinitializeOpcacheTest.php
+
+		-
 			message: '#^Dead catch \- Inchoo\\MagentoBricklayer\\Exception\\MagentoNotFoundException is never thrown in the try block\.$#'
 			identifier: catch.neverThrown
 			count: 1
