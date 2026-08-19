@@ -1,3 +1,8 @@
+# Unreleased
+
+**Fixes**
+* **`reinitialize` no longer serves boot-time file content from opcache.** With `opcache.enable_cli=On` and `opcache.revalidate_freq > 0`, a long-running CLI process never revalidates cached scripts — the revalidate window is measured against the request start time, which is frozen at process start — so `app/etc/config.php` (and any PHP file changed after first include) was served in its boot-time version forever. A module enabled mid-session then stayed invisible no matter how often `reinitialize` ran: the fresh ObjectManager and the stale-registry guard both re-`include`d the poisoned compile (symptom: `modules_loaded` one short of `config.php`, `registered_components` correct, `newly_registered_files: 0`, no warning). Reinit now force-invalidates every cached script first (per-script `opcache_invalidate` — `opcache_reset()` only schedules a restart for a next request that never comes in a daemon) and clears the stat/realpath caches. CLI opcache is per-process, so this cannot affect php-fpm or other processes.
+
 # 1.18.0
 
 A feature release adding Mistral Vibe and OpenAI Codex agent support, a Magewire 3 skill suite contributed by the Magewire author, a Hyvä Checkout architecture skill, and nested sub-skill resources — plus `reinitialize` fixes that make modules created mid-session visible and stop stale-registry cache poisoning. No breaking changes.
