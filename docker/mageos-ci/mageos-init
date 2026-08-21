@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+#
+# Brings the baked Mage-OS installation up against sidecar services.
+#
+# Waits for the database and OpenSearch, imports the seed dump if the
+# database is empty, then points env.php and the search configuration at
+# the actual service hostnames (the seed is dumped against 127.0.0.1 on
+# the bake runner). Idempotent: safe to run more than once.
+#
+# All connection details are overridable via environment variables; the
+# defaults match the service names used by the GitHub Actions workflows.
+
+set -euo pipefail
+
+MAGEOS_ROOT=${MAGEOS_ROOT:-/var/www/mageos}
+DB_HOST=${MAGEOS_DB_HOST:-db}
+DB_PORT=${MAGEOS_DB_PORT:-3306}
+DB_NAME=${MAGEOS_DB_NAME:-mageos}
+DB_USER=${MAGEOS_DB_USER:-root}
+DB_PASSWORD=${MAGEOS_DB_PASSWORD:-mageos}
+SEARCH_HOST=${MAGEOS_SEARCH_HOST:-opensearch}
+SEARCH_PORT=${MAGEOS_SEARCH_PORT:-9200}
+SEED=${MAGEOS_SEED:-/opt/mageos/seed.sql.gz}
+
+MYSQL_BIN=$(command -v mariadb || command -v mysql)
+export MYSQL_PWD="$DB_PASSWORD"
+
+echo "==> Waiting for database at ${DB_HOST}:${DB_PORT}"
+for i in $(seq 1 60); do
+    if "$MYSQL_BIN" --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+        --execute='SELECT 1' >/dev/null 2>&1; then
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "Database did not become ready in time" >&2
+        exit 1
+    fi
+    sleep 2
+done
+
+echo "==> Waiting for OpenSearch at ${SEARCH_HOST}:${SEARCH_PORT}"
+for i in $(seq 1 60); do
+    if curl -fs "http://${SEARCH_HOST}:${SEARCH_PORT}/_cluster/health" >/dev/null 2>&1; then
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "OpenSearch did not become ready in time" >&2
+        exit 1
+    fi
+    sleep 2
+done
+
+"$MYSQL_BIN" --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+    --execute="CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`"
+
+TABLES=$("$MYSQL_BIN" --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+    --skip-column-names --batch \
+    --execute="SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${DB_NAME}'")
+
+if [ "$TABLES" -eq 0 ]; then
+    echo "==> Importing seed dump into ${DB_NAME}"
+    zcat "$SEED" | "$MYSQL_BIN" --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" "$DB_NAME"
+else
+    echo "==> Database already contains ${TABLES} tables, skipping seed import"
+fi
+
+cd "$MAGEOS_ROOT"
+
+echo "==> Pointing env.php at ${DB_HOST}"
+bin/magento setup:config:set \
+    --db-host="$DB_HOST" --db-name="$DB_NAME" \
+    --db-user="$DB_USER" --db-password="$DB_PASSWORD" \
+    --skip-db-validation --no-interaction
+
+echo "==> Pointing search configuration at ${SEARCH_HOST}:${SEARCH_PORT}"
+bin/magento config:set catalog/search/opensearch_server_hostname "$SEARCH_HOST"
+bin/magento config:set catalog/search/opensearch_server_port "$SEARCH_PORT"
+
+bin/magento cache:flush
+
+echo "==> Mage-OS ready at ${MAGEOS_ROOT}"
+bin/magento --version

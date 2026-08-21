@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Integration suite: requires a bootable Magento installation, selected via
+    the BRICKLAYER_MAGENTO_ROOT environment variable. Run with:
+
+        BRICKLAYER_MAGENTO_ROOT=/path/to/magento composer test-integration
+
+    Kept out of phpunit.xml.dist on purpose so `composer check` stays runnable
+    without a Magento installation. Runtime strictness (output, warnings,
+    notices, deprecations) is relaxed relative to the unit config because the
+    Magento runtime under test is not ours to gate; test failures are.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
+         bootstrap="tests/Integration/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         beStrictAboutOutputDuringTests="false"
+         failOnRisky="true"
+         failOnWarning="false"
+         failOnNotice="false"
+         failOnDeprecation="false"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerDeprecations="false">
+    <testsuites>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

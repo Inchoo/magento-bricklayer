@@ -1,0 +1,142 @@
+# Integration lane: full-stack testing against a real, installed Mage-OS.
+#
+# Runs inside the pre-baked image from the mageos-image workflow (job
+# container), with MariaDB and OpenSearch as sidecar services. The working
+# tree is injected into the Mage-OS installation via a Composer path
+# repository, exactly like a real `composer require` install, then
+# `bricklayer install` + `verify` and the Integration PHPUnit suite run
+# against it (tool behavior against live runtime state, config gating with
+# hot reload, code-runner, reinitialize, and a full MCP stdio handshake).
+#
+# Selective trigger by design: path-filtered pushes/PRs, manual dispatch,
+# and workflow_call from the bake workflow. Content-only changes (skills,
+# guidelines, docs) do not run it. Because of the paths filter this check
+# must NOT be marked "required" in branch protection, or PRs that skip it
+# will never become mergeable.
+
+name: integration
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Full image reference to test against'
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Full image reference to test against (empty = latest)'
+        required: false
+        default: ''
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'bin/**'
+      - 'composer.json'
+      - 'tests/Integration/**'
+      - 'phpunit.integration.xml.dist'
+      - '.github/workflows/integration.yml'
+  push:
+    branches: [develop]
+    paths:
+      - 'src/**'
+      - 'bin/**'
+      - 'composer.json'
+      - 'tests/Integration/**'
+      - 'phpunit.integration.xml.dist'
+      - '.github/workflows/integration.yml'
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: integration-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  mageos:
+    name: Mage-OS integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      # The repo path must stay lowercase (GHCR requirement); update on repo move.
+      image: ${{ inputs.image || 'ghcr.io/inchoo/magento-bricklayer/mageos-ci:latest' }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: mageos
+          MARIADB_DATABASE: mageos
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      opensearch:
+        image: opensearchproject/opensearch:3.2.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        options: >-
+          --health-cmd="curl -fs http://localhost:9200/_cluster/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MAGEOS_ROOT: /var/www/mageos
+      BRICKLAYER_MAGENTO_ROOT: /var/www/mageos
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Boot Mage-OS (import seed, retarget services)
+        run: mageos-init
+
+      - uses: actions/cache@v4
+        with:
+          path: /root/.composer/cache
+          key: composer-integration-${{ hashFiles('composer.json') }}
+          restore-keys: composer-integration-
+
+      - name: Install package dev dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Install Bricklayer into Mage-OS via Composer path repository
+        run: |
+          # Pin the working tree to a version that can never exist on Packagist,
+          # so the path repository always wins regardless of repository order.
+          # --no-dev matches the bake: Mage-OS's require-dev (PHPUnit, PHPStan)
+          # must stay out of the autoloader the suite shares with the package's.
+          composer config version 0.0.0
+          cd "$MAGEOS_ROOT"
+          composer config repositories.bricklayer \
+            "{\"type\": \"path\", \"url\": \"$GITHUB_WORKSPACE\", \"options\": {\"symlink\": true}}"
+          composer require --update-no-dev --no-interaction --no-progress "inchoo/magento-bricklayer:0.0.0"
+
+      - name: bricklayer install + verify
+        working-directory: /var/www/mageos
+        run: |
+          php vendor/bin/bricklayer install --env=native --agents=claude-code --force
+          php vendor/bin/bricklayer verify
+
+      - name: Run integration suite
+        run: composer test-integration
+
+      - name: Upload Magento logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mageos-logs-${{ github.run_id }}
+          path: |
+            /var/www/mageos/var/log
+            /var/www/mageos/var/report
+          if-no-files-found: ignore
+          retention-days: 5
