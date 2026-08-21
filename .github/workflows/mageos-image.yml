@@ -1,0 +1,164 @@
+# Bakes the Mage-OS CI/sandbox image used by the integration lane.
+#
+# The image contains an installed Mage-OS tree (minimal edition, developer
+# mode), a SQL seed
+# dump, and a `mageos-init` script that restores the seed against sidecar
+# MariaDB/OpenSearch containers. Bricklayer itself is deliberately NOT baked
+# in; the integration workflow injects the working tree via a Composer path
+# repository on every run.
+#
+# Runs daily (fresh Mage-OS + base image), on demand, and when the bake
+# inputs change. After a successful push it re-runs the integration lane
+# against the exact tag it just built.
+
+name: mageos-image
+
+on:
+  workflow_dispatch:
+    inputs:
+      mageos-version:
+        description: 'mage-os/project-minimal-edition version constraint (empty = latest stable)'
+        required: false
+        default: ''
+      php-version:
+        description: 'PHP version baked into the image'
+        required: false
+        default: '8.4'
+  schedule:
+    - cron: '30 4 * * *'
+  push:
+    branches: [develop]
+    paths:
+      - 'docker/mageos-ci/**'
+      - '.github/workflows/mageos-image.yml'
+
+jobs:
+  bake:
+    name: Bake Mage-OS image (PHP ${{ inputs.php-version || '8.4' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}:${{ steps.versions.outputs.tag }}
+    env:
+      PHP_VERSION: ${{ inputs.php-version || '8.4' }}
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: mageos
+          MARIADB_DATABASE: mageos
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      opensearch:
+        image: opensearchproject/opensearch:3.2.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -fs http://localhost:9200/_cluster/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: meta
+        name: Resolve image name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/mageos-ci" >> "$GITHUB_OUTPUT"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: bcmath, gd, intl, pdo_mysql, soap, sockets, xsl, zip
+          ini-values: memory_limit=-1
+          coverage: none
+          tools: composer:v2
+
+      - name: Create Mage-OS project
+        run: |
+          # --no-dev keeps Mage-OS's own PHPUnit/PHPStan out of the image: the
+          # integration lane runs Bricklayer's dev tools from the working tree,
+          # and two majors of the same package on one autoloader collide.
+          CONSTRAINT="${{ inputs.mageos-version }}"
+          composer create-project --repository-url=https://repo.mage-os.org/ \
+            "mage-os/project-minimal-edition${CONSTRAINT:+:$CONSTRAINT}" mageos \
+            --no-dev --no-interaction --no-progress
+
+      - name: Install Mage-OS
+        working-directory: mageos
+        run: |
+          bin/magento setup:install \
+            --base-url=http://mageos.test/ \
+            --db-host=127.0.0.1 --db-name=mageos --db-user=root --db-password=mageos \
+            --backend-frontname=admin \
+            --admin-firstname=Bricklayer --admin-lastname=CI \
+            --admin-email=admin@example.com --admin-user=admin --admin-password='Admin123!Ci' \
+            --language=en_US --currency=EUR --timezone=UTC --use-rewrites=1 \
+            --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 \
+            --opensearch-index-prefix=mageos \
+            --no-interaction
+          bin/magento deploy:mode:set developer
+
+      - id: versions
+        name: Resolve Mage-OS version for the image tag
+        run: |
+          V=$(composer --working-dir=mageos show mage-os/product-minimal-edition --format=json \
+            2>/dev/null | jq -r '.versions[0]' || true)
+          if [ -z "$V" ] || [ "$V" = "null" ]; then V=unknown; fi
+          echo "mageos=$V" >> "$GITHUB_OUTPUT"
+          echo "tag=${V}-php${PHP_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Dump database seed
+        run: |
+          docker exec -e MYSQL_PWD=mageos ${{ job.services.db.id }} \
+            mariadb-dump --user=root mageos | gzip -9 > docker/mageos-ci/seed.sql.gz
+          ls -lh docker/mageos-ci/seed.sql.gz
+
+      - name: Prune volatile state before baking
+        working-directory: mageos
+        run: |
+          rm -rf var/cache var/page_cache var/session var/log var/report generated/code
+          mkdir -p var/log generated/code
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/mageos-ci/Dockerfile
+          push: true
+          build-args: |
+            PHP_VERSION=${{ env.PHP_VERSION }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.versions.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Mage-OS ${{ steps.versions.outputs.mageos }} CI sandbox for magento-bricklayer
+
+  # Validate the freshly baked image with the full integration lane.
+  integration:
+    needs: bake
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/integration.yml
+    with:
+      image: ${{ needs.bake.outputs.image }}
