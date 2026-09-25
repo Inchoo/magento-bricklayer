@@ -1,16 +1,18 @@
-# Mage-OS CI image
+# Mage-OS CI images
 
-Pre-baked Mage-OS installation used by the `integration` GitHub Actions workflow, published to
-`ghcr.io/inchoo/magento-bricklayer/mageos-ci`. It exists so integration runs skip the expensive part
-(`composer create-project` + `setup:install`, roughly 10 minutes) and go straight to testing Bricklayer
-against a live Magento runtime. The same image doubles as a disposable local sandbox.
+Pre-baked Mage-OS installations used by the `integration` GitHub Actions workflow, published to
+`ghcr.io/inchoo/magento-bricklayer/mageos-ci`, one per Mage-OS edition: `minimal`
+(`mage-os/project-minimal-edition`, the slim distribution without bundled extensions) and `community`
+(`mage-os/project-community-edition`, the regular distribution). They exist so integration runs skip the
+expensive part (`composer create-project` + `setup:install`, roughly 10 minutes) and go straight to testing
+Bricklayer against a live Magento runtime. The same images double as disposable local sandboxes.
 
 ## What is inside
 
 PHP CLI with all Magento extensions (plus `pcntl` and CLI opcache, deliberately, to match long-lived MCP
-server conditions), Composer, a MariaDB client, an installed Mage-OS tree (`mage-os/project-minimal-edition`,
-the slim distribution without bundled extensions) at `/var/www/mageos` in developer mode, a gzipped database seed at `/opt/mageos/seed.sql.gz`, and `mageos-init` on `PATH`. Mage-OS is
-installed with `--no-dev`: its own PHPUnit and PHPStan would otherwise share one autoloader with the
+server conditions), Composer, a MariaDB client, an installed Mage-OS tree of the given edition at
+`/var/www/mageos` in developer mode, a gzipped database seed at `/opt/mageos/seed.sql.gz`, and `mageos-init`
+on `PATH`. Mage-OS is installed with `--no-dev`: its own PHPUnit and PHPStan would otherwise share one autoloader with the
 package's dev tools during the integration run and collide on major versions.
 
 Bricklayer is not baked in. CI injects the working tree via a Composer path repository on every run, so the
@@ -35,9 +37,11 @@ docker run -d --name opensearch --network mageos \
   -e discovery.type=single-node -e DISABLE_SECURITY_PLUGIN=true \
   -e DISABLE_INSTALL_DEMO_CONFIG=true -e OPENSEARCH_JAVA_OPTS='-Xms512m -Xmx512m' \
   opensearchproject/opensearch:3.2.0
-docker run -it --network mageos ghcr.io/inchoo/magento-bricklayer/mageos-ci:latest \
+docker run -it --network mageos ghcr.io/inchoo/magento-bricklayer/mageos-ci:community \
   bash -c 'mageos-init && bash'
 ```
+
+Use the `minimal` tag for the slim edition (`latest` is an alias for it).
 
 Inside the container, `composer require inchoo/magento-bricklayer` (or a path repository pointing at a
 mounted checkout) gives you a working install to poke at. `bin/magento` and `vendor/bin/bricklayer` behave
@@ -45,10 +49,11 @@ as on any dev install.
 
 ## Rebaking
 
-The `mageos-image` workflow rebakes daily, on manual dispatch (with `mageos-version` and `php-version`
-inputs), and whenever files in this directory change. Tags: `latest` plus `<mageos-version>-php<php>`.
-Every successful bake re-runs the integration lane against the exact tag it pushed, so a broken bake is
-caught immediately rather than on the next code PR.
+The `mageos-image` workflow rebakes both editions daily, on manual dispatch (with `edition`,
+`mageos-version` and `php-version` inputs), and whenever files in this directory change. Tags per edition:
+`<edition>` (floating) plus `<edition>-<mageos-version>-php<php>`; `latest` is kept as a compatibility alias
+for `minimal`. Bakes are serialized, and every successful bake re-runs the integration lane against the
+floating edition tags it just pushed, so a broken bake is caught immediately rather than on the next code PR.
 
 First-time setup: after the first bake, set the GHCR package visibility to public (repository Packages
 settings). Fork PRs can only pull the image without credentials once it is public.
@@ -61,5 +66,5 @@ supported upstream matrix, and it keeps the client tooling inside the image triv
 gives us, while a MariaDB server needs no workarounds for dump or import. Switching to MySQL means changing
 the two service blocks in both workflows and solving the client question in the Dockerfile.
 
-The seed is minimal (no sample data). Tests that need entities create and remove them through Bricklayer's
+The seed carries no sample data in either edition. Tests that need entities create and remove them through Bricklayer's
 own tools, which is itself coverage.

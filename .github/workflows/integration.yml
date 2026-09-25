@@ -1,7 +1,8 @@
 # Integration lane: full-stack testing against a real, installed Mage-OS.
 #
-# Runs inside the pre-baked image from the mageos-image workflow (job
-# container), with MariaDB and OpenSearch as sidecar services. The working
+# Runs inside the pre-baked images from the mageos-image workflow (job
+# container), one job per Mage-OS edition (`minimal` and `community`),
+# with MariaDB and OpenSearch as sidecar services. The working
 # tree is injected into the Mage-OS installation via a Composer path
 # repository, exactly like a real `composer require` install, then
 # `bricklayer install` + `verify` and the Integration PHPUnit suite run
@@ -19,15 +20,26 @@ name: integration
 on:
   workflow_call:
     inputs:
+      edition:
+        description: 'Mage-OS edition(s) to test against: all, minimal or community'
+        type: string
+        required: false
+        default: all
       image:
-        description: 'Full image reference to test against'
+        description: 'Full image reference to test against (overrides the edition tag; pair with a single edition)'
         type: string
         required: false
         default: ''
   workflow_dispatch:
     inputs:
+      edition:
+        description: 'Mage-OS edition(s) to test against'
+        required: false
+        type: choice
+        default: all
+        options: [all, minimal, community]
       image:
-        description: 'Full image reference to test against (empty = latest)'
+        description: 'Full image reference to test against (overrides the edition tag; pair with a single edition)'
         required: false
         default: ''
   pull_request:
@@ -58,12 +70,16 @@ concurrency:
 
 jobs:
   mageos:
-    name: Mage-OS integration
-    runs-on: ubuntu-latest
+    name: Mage-OS ${{ matrix.edition }} integration
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: ${{ fromJSON(inputs.edition == 'minimal' && '["minimal"]' || inputs.edition == 'community' && '["community"]' || '["minimal", "community"]') }}
     container:
       # The repo path must stay lowercase (GHCR requirement); update on repo move.
-      image: ${{ inputs.image || 'ghcr.io/inchoo/magento-bricklayer/mageos-ci:latest' }}
+      image: ${{ inputs.image || format('ghcr.io/inchoo/magento-bricklayer/mageos-ci:{0}', matrix.edition) }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -100,7 +116,7 @@ jobs:
       - name: Boot Mage-OS (import seed, retarget services)
         run: mageos-init
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: /root/.composer/cache
           key: composer-integration-${{ hashFiles('composer.json') }}
@@ -132,9 +148,9 @@ jobs:
 
       - name: Upload Magento logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: mageos-logs-${{ github.run_id }}
+          name: mageos-logs-${{ matrix.edition }}-${{ github.run_id }}
           path: |
             /var/www/mageos/var/log
             /var/www/mageos/var/report
