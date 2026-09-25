@@ -1,35 +1,24 @@
-# Bakes the Mage-OS CI/sandbox images used by the integration lane.
+# Bakes the Mage-OS CI/sandbox image used by the integration lane.
 #
-# One image per Mage-OS edition (a matrix): `minimal` (slim distribution
-# without bundled extensions) and `community` (the regular distribution).
-# Each image contains an installed Mage-OS tree (developer mode), a SQL
-# seed dump, and a `mageos-init` script that restores the seed against
-# sidecar MariaDB/OpenSearch containers. Bricklayer itself is deliberately
-# NOT baked in; the integration workflow injects the working tree via a
-# Composer path repository on every run.
-#
-# Tags per edition: `<edition>` (floating) and `<edition>-<mageos>-php<php>`.
-# `latest` stays a compatibility alias for `minimal`.
+# The image contains an installed Mage-OS tree (community edition, the
+# regular distribution, in developer mode), a SQL seed dump, and a
+# `mageos-init` script that restores the seed against sidecar
+# MariaDB/OpenSearch containers. Bricklayer itself is deliberately NOT baked
+# in; the integration workflow injects the working tree via a Composer path
+# repository on every run.
 #
 # Runs daily (fresh Mage-OS + base image), on demand, and when the bake
 # inputs change. After a successful push it re-runs the integration lane
-# against the floating edition tags it just pushed. Bakes are serialized
-# (concurrency group, no cancellation) so those tags cannot be overtaken by
-# a competing bake before the re-run reads them.
+# against the exact tag it just built. Bakes are serialized (concurrency
+# group, no cancellation) so `latest` is never overtaken mid-run.
 
 name: mageos-image
 
 on:
   workflow_dispatch:
     inputs:
-      edition:
-        description: 'Mage-OS edition(s) to bake'
-        required: false
-        type: choice
-        default: all
-        options: [all, minimal, community]
       mageos-version:
-        description: 'mage-os/project-<edition>-edition version constraint (empty = latest stable)'
+        description: 'mage-os/project-community-edition version constraint (empty = latest stable)'
         required: false
         default: ''
       php-version:
@@ -50,19 +39,16 @@ concurrency:
 
 jobs:
   bake:
-    name: Bake Mage-OS ${{ matrix.edition }} image (PHP ${{ inputs.php-version || '8.4' }})
+    name: Bake Mage-OS image (PHP ${{ inputs.php-version || '8.4' }})
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        edition: ${{ fromJSON(inputs.edition == 'minimal' && '["minimal"]' || inputs.edition == 'community' && '["community"]' || '["minimal", "community"]') }}
+    outputs:
+      image: ${{ steps.meta.outputs.image }}:${{ steps.versions.outputs.tag }}
     env:
       PHP_VERSION: ${{ inputs.php-version || '8.4' }}
-      EDITION: ${{ matrix.edition }}
     services:
       db:
         image: mariadb:11.4
@@ -113,7 +99,7 @@ jobs:
           # and two majors of the same package on one autoloader collide.
           CONSTRAINT="${{ inputs.mageos-version }}"
           composer create-project --repository-url=https://repo.mage-os.org/ \
-            "mage-os/project-${EDITION}-edition${CONSTRAINT:+:$CONSTRAINT}" mageos \
+            "mage-os/project-community-edition${CONSTRAINT:+:$CONSTRAINT}" mageos \
             --no-dev --no-interaction --no-progress
 
       - name: Install Mage-OS
@@ -134,24 +120,11 @@ jobs:
       - id: versions
         name: Resolve Mage-OS version for the image tag
         run: |
-          V=$(composer --working-dir=mageos show "mage-os/product-${EDITION}-edition" --format=json \
+          V=$(composer --working-dir=mageos show mage-os/product-community-edition --format=json \
             2>/dev/null | jq -r '.versions[0]' || true)
           if [ -z "$V" ] || [ "$V" = "null" ]; then V=unknown; fi
           echo "mageos=$V" >> "$GITHUB_OUTPUT"
-          echo "tag=${EDITION}-${V}-php${PHP_VERSION}" >> "$GITHUB_OUTPUT"
-
-      - id: tags
-        name: Resolve image tags
-        run: |
-          IMAGE="${{ steps.meta.outputs.image }}"
-          {
-            echo "list<<EOT"
-            echo "${IMAGE}:${EDITION}"
-            echo "${IMAGE}:${{ steps.versions.outputs.tag }}"
-            # `latest` is a compatibility alias for the minimal edition.
-            if [ "$EDITION" = "minimal" ]; then echo "${IMAGE}:latest"; fi
-            echo "EOT"
-          } >> "$GITHUB_OUTPUT"
+          echo "tag=${V}-php${PHP_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Dump database seed
         run: |
@@ -178,13 +151,14 @@ jobs:
           push: true
           build-args: |
             PHP_VERSION=${{ env.PHP_VERSION }}
-          tags: ${{ steps.tags.outputs.list }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.versions.outputs.tag }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Mage-OS ${{ steps.versions.outputs.mageos }} (${{ matrix.edition }} edition) CI sandbox for magento-bricklayer
+            org.opencontainers.image.description=Mage-OS ${{ steps.versions.outputs.mageos }} CI sandbox for magento-bricklayer
 
-  # Validate the freshly baked images with the full integration lane, one
-  # job per edition, against the floating edition tag pushed above.
+  # Validate the freshly baked image with the full integration lane.
   integration:
     needs: bake
     permissions:
@@ -192,4 +166,4 @@ jobs:
       packages: read
     uses: ./.github/workflows/integration.yml
     with:
-      edition: ${{ inputs.edition || 'all' }}
+      image: ${{ needs.bake.outputs.image }}
