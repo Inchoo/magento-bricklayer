@@ -8,9 +8,9 @@ against a live Magento runtime. The same image doubles as a disposable local san
 ## What is inside
 
 PHP CLI with all Magento extensions (plus `pcntl` and CLI opcache, deliberately, to match long-lived MCP
-server conditions), Composer, a MariaDB client, an installed Mage-OS tree (`mage-os/project-minimal-edition`,
-the slim distribution without bundled extensions) at `/var/www/mageos` in developer mode, a gzipped database seed at `/opt/mageos/seed.sql.gz`, and `mageos-init` on `PATH`. Mage-OS is
-installed with `--no-dev`: its own PHPUnit and PHPStan would otherwise share one autoloader with the
+server conditions), Composer, a MariaDB client, an installed Mage-OS tree (`mage-os/project-community-edition`,
+the regular distribution) at `/var/www/mageos` in developer mode, a gzipped database seed at `/opt/mageos/seed.sql.gz`, and `mageos-init`
+on `PATH`. Mage-OS is installed with `--no-dev`: its own PHPUnit and PHPStan would otherwise share one autoloader with the
 package's dev tools during the integration run and collide on major versions.
 
 Bricklayer is not baked in. CI injects the working tree via a Composer path repository on every run, so the
@@ -20,8 +20,11 @@ image never goes stale relative to the code under test.
 
 The job starts three containers on one network: this image (job container), `mariadb:11.4` as `db`, and
 `opensearchproject/opensearch:3.2.0` as `opensearch`. `mageos-init` waits for both services, imports the
-seed if the database is empty, rewrites `env.php` and the search configuration to point at the service
-hostnames, and flushes caches. Hostnames and credentials are overridable via `MAGEOS_DB_HOST`,
+seed if the database is empty, rewrites `env.php` (in plain PHP, without booting Magento: the CLI
+instantiates every command first, and on the community edition one of them opens a DB connection in its
+constructor, which fails while `env.php` still points at the bake runner) and the search configuration to
+point at the service hostnames, and flushes caches. CI runs the checkout's copy of the script rather than
+the one baked into the image, so script fixes take effect on the PR that makes them. Hostnames and credentials are overridable via `MAGEOS_DB_HOST`,
 `MAGEOS_DB_NAME`, `MAGEOS_DB_USER`, `MAGEOS_DB_PASSWORD`, `MAGEOS_SEARCH_HOST`, `MAGEOS_SEARCH_PORT`,
 `MAGEOS_SEED`, and `MAGEOS_ROOT`.
 
@@ -47,8 +50,8 @@ as on any dev install.
 
 The `mageos-image` workflow rebakes daily, on manual dispatch (with `mageos-version` and `php-version`
 inputs), and whenever files in this directory change. Tags: `latest` plus `<mageos-version>-php<php>`.
-Every successful bake re-runs the integration lane against the exact tag it pushed, so a broken bake is
-caught immediately rather than on the next code PR.
+Bakes are serialized, and every successful bake re-runs the integration lane against the exact tag it
+pushed, so a broken bake is caught immediately rather than on the next code PR.
 
 First-time setup: after the first bake, set the GHCR package visibility to public (repository Packages
 settings). Fork PRs can only pull the image without credentials once it is public.
@@ -61,5 +64,5 @@ supported upstream matrix, and it keeps the client tooling inside the image triv
 gives us, while a MariaDB server needs no workarounds for dump or import. Switching to MySQL means changing
 the two service blocks in both workflows and solving the client question in the Dockerfile.
 
-The seed is minimal (no sample data). Tests that need entities create and remove them through Bricklayer's
+The seed carries no sample data. Tests that need entities create and remove them through Bricklayer's
 own tools, which is itself coverage.

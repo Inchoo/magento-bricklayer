@@ -23,7 +23,7 @@ final class ApplicationToolsTest extends IntegrationTestCase
         self::assertSame(PHP_VERSION, $result['php_version'] ?? null);
 
         $modules = self::arrayValue($result, 'modules');
-        self::assertGreaterThan(50, $modules['enabled'] ?? 0, 'Even the minimal edition reports its modules');
+        self::assertGreaterThan(50, $modules['enabled'] ?? 0, 'A Mage-OS install reports its modules');
 
         $stores = self::arrayValue($result, 'stores');
         self::assertGreaterThanOrEqual(1, $stores['store_views'] ?? 0);

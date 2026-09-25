@@ -1,7 +1,8 @@
 # Integration lane: full-stack testing against a real, installed Mage-OS.
 #
 # Runs inside the pre-baked image from the mageos-image workflow (job
-# container), with MariaDB and OpenSearch as sidecar services. The working
+# container; Mage-OS community edition), with MariaDB and OpenSearch as
+# sidecar services. The working
 # tree is injected into the Mage-OS installation via a Composer path
 # repository, exactly like a real `composer require` install, then
 # `bricklayer install` + `verify` and the Integration PHPUnit suite run
@@ -37,6 +38,7 @@ on:
       - 'composer.json'
       - 'tests/Integration/**'
       - 'phpunit.integration.xml.dist'
+      - 'docker/mageos-ci/mageos-init'
       - '.github/workflows/integration.yml'
   push:
     branches: [develop]
@@ -46,6 +48,7 @@ on:
       - 'composer.json'
       - 'tests/Integration/**'
       - 'phpunit.integration.xml.dist'
+      - 'docker/mageos-ci/mageos-init'
       - '.github/workflows/integration.yml'
 
 permissions:
@@ -59,10 +62,12 @@ concurrency:
 jobs:
   mageos:
     name: Mage-OS integration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     container:
       # The repo path must stay lowercase (GHCR requirement); update on repo move.
+      # The tag must already exist in GHCR (baked by the mageos-image workflow),
+      # or this job fails at container initialization with "manifest unknown".
       image: ${{ inputs.image || 'ghcr.io/inchoo/magento-bricklayer/mageos-ci:latest' }}
       credentials:
         username: ${{ github.actor }}
@@ -98,9 +103,11 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Boot Mage-OS (import seed, retarget services)
-        run: mageos-init
+        # The working-tree copy, not the one baked into the image, so fixes
+        # to the script take effect on the PR that makes them, before a rebake.
+        run: bash docker/mageos-ci/mageos-init
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: /root/.composer/cache
           key: composer-integration-${{ hashFiles('composer.json') }}
@@ -132,7 +139,7 @@ jobs:
 
       - name: Upload Magento logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mageos-logs-${{ github.run_id }}
           path: |

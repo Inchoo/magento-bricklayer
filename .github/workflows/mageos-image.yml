@@ -1,15 +1,16 @@
 # Bakes the Mage-OS CI/sandbox image used by the integration lane.
 #
-# The image contains an installed Mage-OS tree (minimal edition, developer
-# mode), a SQL seed
-# dump, and a `mageos-init` script that restores the seed against sidecar
+# The image contains an installed Mage-OS tree (community edition, the
+# regular distribution, in developer mode), a SQL seed dump, and a
+# `mageos-init` script that restores the seed against sidecar
 # MariaDB/OpenSearch containers. Bricklayer itself is deliberately NOT baked
 # in; the integration workflow injects the working tree via a Composer path
 # repository on every run.
 #
 # Runs daily (fresh Mage-OS + base image), on demand, and when the bake
 # inputs change. After a successful push it re-runs the integration lane
-# against the exact tag it just built.
+# against the exact tag it just built. Bakes are serialized (concurrency
+# group, no cancellation) so `latest` is never overtaken mid-run.
 
 name: mageos-image
 
@@ -17,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       mageos-version:
-        description: 'mage-os/project-minimal-edition version constraint (empty = latest stable)'
+        description: 'mage-os/project-community-edition version constraint (empty = latest stable)'
         required: false
         default: ''
       php-version:
@@ -32,10 +33,14 @@ on:
       - 'docker/mageos-ci/**'
       - '.github/workflows/mageos-image.yml'
 
+concurrency:
+  group: mageos-image
+  cancel-in-progress: false
+
 jobs:
   bake:
     name: Bake Mage-OS image (PHP ${{ inputs.php-version || '8.4' }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -94,7 +99,7 @@ jobs:
           # and two majors of the same package on one autoloader collide.
           CONSTRAINT="${{ inputs.mageos-version }}"
           composer create-project --repository-url=https://repo.mage-os.org/ \
-            "mage-os/project-minimal-edition${CONSTRAINT:+:$CONSTRAINT}" mageos \
+            "mage-os/project-community-edition${CONSTRAINT:+:$CONSTRAINT}" mageos \
             --no-dev --no-interaction --no-progress
 
       - name: Install Mage-OS
@@ -115,7 +120,7 @@ jobs:
       - id: versions
         name: Resolve Mage-OS version for the image tag
         run: |
-          V=$(composer --working-dir=mageos show mage-os/product-minimal-edition --format=json \
+          V=$(composer --working-dir=mageos show mage-os/product-community-edition --format=json \
             2>/dev/null | jq -r '.versions[0]' || true)
           if [ -z "$V" ] || [ "$V" = "null" ]; then V=unknown; fi
           echo "mageos=$V" >> "$GITHUB_OUTPUT"
@@ -133,13 +138,13 @@ jobs:
           rm -rf var/cache var/page_cache var/session var/log var/report generated/code
           mkdir -p var/log generated/code
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/mageos-ci/Dockerfile

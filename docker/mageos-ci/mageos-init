@@ -66,11 +66,21 @@ fi
 
 cd "$MAGEOS_ROOT"
 
+# Rewrite env.php without booting Magento. `setup:config:set` would do it,
+# but the Magento CLI instantiates every registered command first, and on
+# the community edition one of them opens a DB connection in its
+# constructor: with env.php still pointing at the bake runner's 127.0.0.1
+# that fails and the CLI exits 255 even though the write succeeded.
 echo "==> Pointing env.php at ${DB_HOST}"
-bin/magento setup:config:set \
-    --db-host="$DB_HOST" --db-name="$DB_NAME" \
-    --db-user="$DB_USER" --db-password="$DB_PASSWORD" \
-    --skip-db-validation --no-interaction
+# shellcheck disable=SC2016  # PHP code, $argv is PHP's
+php -r '
+    [, $file, $host, $name, $user, $password] = $argv;
+    $config = include $file;
+    $config["db"]["connection"]["default"] = [
+        "host" => $host, "dbname" => $name, "username" => $user, "password" => $password,
+    ] + ($config["db"]["connection"]["default"] ?? []);
+    file_put_contents($file, "<?php\nreturn " . var_export($config, true) . ";\n");
+' app/etc/env.php "$DB_HOST" "$DB_NAME" "$DB_USER" "$DB_PASSWORD"
 
 echo "==> Pointing search configuration at ${SEARCH_HOST}:${SEARCH_PORT}"
 bin/magento config:set catalog/search/opensearch_server_hostname "$SEARCH_HOST"
