@@ -71,7 +71,7 @@ concurrency:
 jobs:
   mageos:
     name: Mage-OS ${{ matrix.edition }} integration
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -79,6 +79,9 @@ jobs:
         edition: ${{ fromJSON(inputs.edition == 'minimal' && '["minimal"]' || inputs.edition == 'community' && '["community"]' || '["minimal", "community"]') }}
     container:
       # The repo path must stay lowercase (GHCR requirement); update on repo move.
+      # An edition tag exists only after the mageos-image workflow has baked it:
+      # when adding an edition, dispatch that workflow on the branch first, or
+      # this job fails at container initialization with "manifest unknown".
       image: ${{ inputs.image || format('ghcr.io/inchoo/magento-bricklayer/mageos-ci:{0}', matrix.edition) }}
       credentials:
         username: ${{ github.actor }}
@@ -114,7 +117,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Boot Mage-OS (import seed, retarget services)
-        run: mageos-init
+        # The working-tree copy, not the one baked into the image, so fixes
+        # to the script take effect on the PR that makes them, before a rebake.
+        run: bash docker/mageos-ci/mageos-init
 
       - uses: actions/cache@v6
         with:

@@ -22,8 +22,11 @@ image never goes stale relative to the code under test.
 
 The job starts three containers on one network: this image (job container), `mariadb:11.4` as `db`, and
 `opensearchproject/opensearch:3.2.0` as `opensearch`. `mageos-init` waits for both services, imports the
-seed if the database is empty, rewrites `env.php` and the search configuration to point at the service
-hostnames, and flushes caches. Hostnames and credentials are overridable via `MAGEOS_DB_HOST`,
+seed if the database is empty, rewrites `env.php` (in plain PHP, without booting Magento: the CLI
+instantiates every command first, and on the community edition one of them opens a DB connection in its
+constructor, which fails while `env.php` still points at the bake runner) and the search configuration to
+point at the service hostnames, and flushes caches. CI runs the checkout's copy of the script rather than
+the one baked into the image, so script fixes take effect on the PR that makes them. Hostnames and credentials are overridable via `MAGEOS_DB_HOST`,
 `MAGEOS_DB_NAME`, `MAGEOS_DB_USER`, `MAGEOS_DB_PASSWORD`, `MAGEOS_SEARCH_HOST`, `MAGEOS_SEARCH_PORT`,
 `MAGEOS_SEED`, and `MAGEOS_ROOT`.
 
